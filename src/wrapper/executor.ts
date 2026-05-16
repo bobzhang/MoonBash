@@ -6,6 +6,10 @@ export interface ExecutorToolDef {
   execute: (...args: any[]) => unknown;
 }
 
+export interface ExecutorToolContext {
+  elicit(request: ExecutorElicitationContext["request"]): Promise<ExecutorElicitationResponse>;
+}
+
 export interface ExecutorElicitationContext {
   readonly toolId: string;
   readonly args: unknown;
@@ -208,7 +212,7 @@ interface ToolEntry {
 
 interface CustomSourceToolDef {
   description?: string;
-  execute: (args: any) => unknown;
+  execute: (args: any, ctx?: ExecutorToolContext) => unknown;
 }
 
 interface CustomSourceDefinition {
@@ -380,6 +384,7 @@ function normalizeCustomSource(input: Record<string, unknown>): CustomSourceDefi
 
 async function createLocalSDKHandle(
   setup: (sdk: ExecutorSDKHandle) => Promise<void>,
+  onElicitation?: ExecutorConfig["onElicitation"],
 ): Promise<ExecutorSDKHandle> {
   const tools: Record<string, ExecutorToolDef> = Object.create(null);
   const toolMetadata: ExecutorToolMetadata[] = [];
@@ -405,7 +410,18 @@ async function createLocalSDKHandle(
         if (!tool) {
           throw new Error(`Unknown tool: ${toolId}`);
         }
-        return tool.execute(args);
+        const ctx: ExecutorToolContext = {
+          elicit: async (request) => {
+            if (onElicitation === "accept-all") {
+              return { action: "accept" };
+            }
+            if (typeof onElicitation === "function") {
+              return onElicitation({ toolId, args, request });
+            }
+            return { action: "decline" };
+          },
+        };
+        return tool.execute(args, ctx);
       },
     },
     sources: {
@@ -470,7 +486,7 @@ export async function createExecutor(config: ExecutorConfig = {}): Promise<Execu
   };
 
   if (config.setup) {
-    const sdk = await createLocalSDKHandle(config.setup);
+    const sdk = await createLocalSDKHandle(config.setup, config.onElicitation);
     for (const tool of await sdk.tools.list()) {
       if (!Object.hasOwn(inlineTools, tool.id)) {
         entries.push({ path: tool.id, description: tool.description });

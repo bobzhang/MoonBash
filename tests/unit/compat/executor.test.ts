@@ -111,4 +111,90 @@ describe("just-bash executor companion compatibility", () => {
     expect(result.stderr).toContain("Tool invocation denied: ops.deleteThing (needs review)");
     expect(seen).toEqual(["ops.deleteThing:ops:object", "ops.deleteThing:ops:object"]);
   });
+
+  it("routes setup source elicitation through configured handlers", async () => {
+    const executor = await createExecutor({
+      setup: async (sdk) => {
+        await sdk.sources.add({
+          kind: "custom",
+          name: "profile",
+          tools: {
+            create: {
+              execute: async (_args: unknown, ctx: any) => {
+                const response = await ctx.elicit({
+                  _tag: "FormElicitation",
+                  message: "Profile details",
+                  requestedSchema: { type: "object" },
+                });
+                return { action: response.action, name: response.content?.name ?? null };
+              },
+            },
+          },
+        });
+      },
+      onElicitation: async (ctx) => {
+        expect(ctx.toolId).toBe("profile.create");
+        expect(ctx.args).toEqual({ seed: true });
+        expect(ctx.request).toMatchObject({
+          _tag: "FormElicitation",
+          message: "Profile details",
+        });
+        return { action: "accept", content: { name: "Ada" } };
+      },
+    });
+
+    await expect(executor.invokeTool("profile.create", '{"seed":true}')).resolves.toBe(
+      '{"action":"accept","name":"Ada"}',
+    );
+  });
+
+  it("declines setup source elicitation by default", async () => {
+    const executor = await createExecutor({
+      setup: async (sdk) => {
+        await sdk.sources.add({
+          kind: "custom",
+          name: "profile",
+          tools: {
+            create: {
+              execute: async (_args: unknown, ctx: any) => {
+                return ctx.elicit({
+                  _tag: "UrlElicitation",
+                  message: "Authorize",
+                  url: "https://example.com/oauth",
+                  elicitationId: "auth-1",
+                });
+              },
+            },
+          },
+        });
+      },
+    });
+
+    await expect(executor.invokeTool("profile.create", "")).resolves.toBe('{"action":"decline"}');
+  });
+
+  it("supports accept-all setup source elicitation", async () => {
+    const executor = await createExecutor({
+      setup: async (sdk) => {
+        await sdk.sources.add({
+          kind: "custom",
+          name: "profile",
+          tools: {
+            create: {
+              execute: async (_args: unknown, ctx: any) => {
+                return ctx.elicit({
+                  _tag: "FormElicitation",
+                  message: "Profile details",
+                  requestedSchema: { type: "object" },
+                });
+              },
+            },
+          },
+        });
+      },
+      onElicitation: "accept-all",
+    });
+
+    await expect(executor.invokeTool("profile.create", "")).resolves.toBe('{"action":"accept"}');
+  });
 });
