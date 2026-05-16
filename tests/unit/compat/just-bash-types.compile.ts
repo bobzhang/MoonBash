@@ -9,6 +9,7 @@ import {
   ReadWriteFs,
   Sandbox,
   TeePlugin,
+  EMPTY_BYTES,
   bytesOutput,
   decodeBytesToUtf8,
   defineCommand,
@@ -33,13 +34,16 @@ import {
   type ReadFileOptions,
   type ReadWriteFsOptions,
   type RunCommandParams,
+  type SandboxCommandFinished,
   type SandboxOptions,
   type SecureFetch,
   type WriteFileOptions,
 } from "../../../src/wrapper/index";
 
 const bytes: ByteString = encodeUtf8ToBytes("hello");
+const emptyBytes: ByteString = EMPTY_BYTES;
 decodeBytesToUtf8(bytes);
+decodeBytesToUtf8(emptyBytes);
 textOutput("hello");
 bytesOutput(bytes);
 
@@ -145,7 +149,7 @@ new BashTransformPipeline().use(new TeePlugin({ outputDir: "/tmp" })).transform(
 
 DefenseInDepthBox.isInSandboxedContext();
 void Sandbox.create(sandboxOptions).then(async (sandbox) => {
-  const command = await sandbox.runCommand(runCommandParams);
+  const command: SandboxCommandFinished = await sandbox.runCommand(runCommandParams);
   command.exitCode.toFixed();
   await command.stdout();
   await command.stderr();

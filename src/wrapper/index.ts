@@ -7,6 +7,7 @@ export type {
   CommandFinished,
   OutputMessage,
   RunCommandParams,
+  CommandFinished as SandboxCommandFinished,
   SandboxOptions,
   WriteFilesInput,
 } from "./sandbox";

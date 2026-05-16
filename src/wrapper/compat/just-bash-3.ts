@@ -3,6 +3,7 @@ export const JUST_BASH_3_ROOT_EXPORTS = [
   "BashTransformPipeline",
   "CommandCollectorPlugin",
   "DefenseInDepthBox",
+  "EMPTY_BYTES",
   "InMemoryFs",
   "MountableFs",
   "NetworkAccessDeniedError",
