@@ -2,7 +2,7 @@
 
 This document defines the public API surface of MoonBash, designed to be 100% compatible with `just-bash`.
 
-Status note (2026-05-16): MoonBash is aligning to `just-bash@3.0.1`. The compatibility work now covers root exports, command-name helpers, ByteString helpers, a compile-only public type consumer, low-risk `ExecOptions` fields (`replaceEnv`, `stdinKind`, `args`, pre-aborted `signal`), and the public async `InMemoryFs` runtime API. `MountableFs`, `OverlayFs`, `ReadWriteFs`, Sandbox runtime behavior, Transform/parser behavior, JavaScript runtime commands, executor compatibility, and packaging parity are planned in separate phases.
+Status note (2026-05-16): MoonBash is aligning to `just-bash@3.0.1`. The compatibility work now covers root exports, command-name helpers, ByteString helpers, a compile-only public type consumer, low-risk `ExecOptions` fields (`replaceEnv`, `stdinKind`, `args`, pre-aborted `signal`), public async `InMemoryFs`, and `MountableFs` routing/cross-filesystem behavior. `OverlayFs`, `ReadWriteFs`, Sandbox runtime behavior, Transform/parser behavior, JavaScript runtime commands, executor compatibility, and packaging parity are planned in separate phases.
 
 ## 1. Core Classes
 
@@ -360,7 +360,7 @@ class ReadWriteFs implements IFileSystem {
 
 ```typescript
 class MountableFs implements IFileSystem {
-  constructor(baseFs: IFileSystem);
+  constructor(options?: MountableFsOptions);
 
   /**
    * Mount a filesystem at a virtual path.
@@ -372,6 +372,9 @@ class MountableFs implements IFileSystem {
    * Unmount a filesystem.
    */
   unmount(mountPoint: string): void;
+
+  getMounts(): ReadonlyArray<{ mountPoint: string; filesystem: IFileSystem }>;
+  isMountPoint(path: string): boolean;
 }
 ```
 

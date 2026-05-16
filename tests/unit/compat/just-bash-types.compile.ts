@@ -105,7 +105,11 @@ const dirent: DirentEntry = {
 const mountableOptions: MountableFsOptions = { base: fs };
 const overlayOptions: OverlayFsOptions = { root: process.cwd() };
 const readWriteOptions: ReadWriteFsOptions = { root: process.cwd() };
-new MountableFs({ base: fs });
+const mountableFs = new MountableFs({ base: fs });
+mountableFs.mount("/mnt", new InMemoryFs());
+mountableFs.unmount("/mnt");
+mountableFs.getMounts();
+mountableFs.isMountPoint("/mnt");
 new OverlayFs({ root: process.cwd() });
 new ReadWriteFs({ root: process.cwd() });
 void readOptions;

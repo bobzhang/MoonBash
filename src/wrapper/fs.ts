@@ -84,6 +84,7 @@ export interface IFileSystem {
   stat(path: string): Promise<FsStat>;
   mkdir(path: string, options?: MkdirOptions): Promise<void>;
   readdir(path: string): Promise<string[]>;
+  readdirWithFileTypes?(path: string): Promise<DirentEntry[]>;
   rm(path: string, options?: RmOptions): Promise<void>;
   cp(src: string, dest: string, options?: CpOptions): Promise<void>;
   mv(src: string, dest: string): Promise<void>;
@@ -860,13 +861,430 @@ export interface MountConfig {
 }
 
 export interface MountableFsOptions {
-  base: IFileSystem;
+  base?: IFileSystem;
   mounts?: MountConfig[];
 }
 
-export class MountableFs extends InMemoryFs {
-  constructor(readonly options: MountableFsOptions) {
-    super();
+interface RoutedFsPath {
+  fs: IFileSystem;
+  relativePath: string;
+  mountPoint?: string;
+}
+
+function directoryStat(mode = 0o755): FsStat {
+  return {
+    isFile: false,
+    isDirectory: true,
+    isSymbolicLink: false,
+    mode,
+    size: 0,
+    mtime: new Date(),
+  };
+}
+
+function isEnoent(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("ENOENT");
+}
+
+export class MountableFs implements IFileSystem {
+  private readonly baseFs: IFileSystem;
+  private readonly mounts = new Map<string, MountConfig>();
+
+  constructor(options: MountableFsOptions = {}) {
+    this.baseFs = options.base ?? new InMemoryFs();
+    for (const mount of options.mounts ?? []) {
+      this.mount(mount.mountPoint, mount.filesystem);
+    }
+  }
+
+  mount(mountPoint: string, filesystem: IFileSystem): void {
+    this.validateMountPath(mountPoint);
+    const normalized = normalizePath(mountPoint);
+    this.validateMount(normalized);
+    this.mounts.set(normalized, { mountPoint: normalized, filesystem });
+  }
+
+  unmount(mountPoint: string): void {
+    const normalized = normalizePath(mountPoint);
+    if (!this.mounts.has(normalized)) {
+      throw new Error(`No filesystem mounted at '${mountPoint}'`);
+    }
+    this.mounts.delete(normalized);
+  }
+
+  getMounts(): ReadonlyArray<{ mountPoint: string; filesystem: IFileSystem }> {
+    return [...this.mounts.values()].map(({ mountPoint, filesystem }) => ({
+      mountPoint,
+      filesystem,
+    }));
+  }
+
+  isMountPoint(path: string): boolean {
+    return this.mounts.has(normalizePath(path));
+  }
+
+  private validateMountPath(path: string): void {
+    for (const part of path.split("/")) {
+      if (part === "." || part === "..") {
+        throw new Error(`Invalid mount point '${path}': contains '.' or '..' segments`);
+      }
+    }
+  }
+
+  private validateMount(mountPoint: string): void {
+    if (mountPoint === "/") {
+      throw new Error("Cannot mount at root '/'");
+    }
+    for (const existing of this.mounts.keys()) {
+      if (existing === mountPoint) {
+        continue;
+      }
+      if (mountPoint.startsWith(`${existing}/`)) {
+        throw new Error(`Cannot mount at '${mountPoint}': inside existing mount '${existing}'`);
+      }
+      if (existing.startsWith(`${mountPoint}/`)) {
+        throw new Error(`Cannot mount at '${mountPoint}': would contain existing mount '${existing}'`);
+      }
+    }
+  }
+
+  private routePath(path: string): RoutedFsPath {
+    assertValidPath(path, "access");
+    const normalized = normalizePath(path);
+    let best: MountConfig | undefined;
+    for (const mount of this.mounts.values()) {
+      if (
+        normalized === mount.mountPoint ||
+        normalized.startsWith(`${mount.mountPoint}/`)
+      ) {
+        if (!best || mount.mountPoint.length > best.mountPoint.length) {
+          best = mount;
+        }
+      }
+    }
+    if (!best) {
+      return { fs: this.baseFs, relativePath: normalized };
+    }
+    if (normalized === best.mountPoint) {
+      return { fs: best.filesystem, relativePath: "/", mountPoint: best.mountPoint };
+    }
+    return {
+      fs: best.filesystem,
+      relativePath: normalized.slice(best.mountPoint.length) || "/",
+      mountPoint: best.mountPoint,
+    };
+  }
+
+  private getChildMountPoints(path: string): string[] {
+    const normalized = normalizePath(path);
+    const prefix = normalized === "/" ? "/" : `${normalized}/`;
+    const names: string[] = [];
+    for (const mountPoint of this.mounts.keys()) {
+      if (!mountPoint.startsWith(prefix)) {
+        continue;
+      }
+      const rest = mountPoint.slice(prefix.length);
+      const name = rest.split("/")[0];
+      if (name && !names.includes(name)) {
+        names.push(name);
+      }
+    }
+    return names.sort();
+  }
+
+  async readFile(path: string, options?: ReadFileOptions | BufferEncoding): Promise<string> {
+    const routed = this.routePath(path);
+    return routed.fs.readFile(routed.relativePath, options);
+  }
+
+  async readFileBytes(path: string): Promise<ByteString> {
+    const routed = this.routePath(path);
+    if (routed.fs.readFileBytes) {
+      return routed.fs.readFileBytes(routed.relativePath);
+    }
+    return bytesFromUint8Array(await routed.fs.readFileBuffer(routed.relativePath));
+  }
+
+  async readFileBuffer(path: string): Promise<Uint8Array> {
+    const routed = this.routePath(path);
+    return routed.fs.readFileBuffer(routed.relativePath);
+  }
+
+  async writeFile(
+    path: string,
+    content: FileContent,
+    options?: WriteFileOptions | BufferEncoding,
+  ): Promise<void> {
+    const routed = this.routePath(path);
+    return routed.fs.writeFile(routed.relativePath, content, options);
+  }
+
+  async appendFile(
+    path: string,
+    content: FileContent,
+    options?: WriteFileOptions | BufferEncoding,
+  ): Promise<void> {
+    const routed = this.routePath(path);
+    return routed.fs.appendFile(routed.relativePath, content, options);
+  }
+
+  async exists(path: string): Promise<boolean> {
+    const normalized = normalizePath(path);
+    if (this.mounts.has(normalized) || this.getChildMountPoints(normalized).length > 0) {
+      return true;
+    }
+    const routed = this.routePath(path);
+    return routed.fs.exists(routed.relativePath);
+  }
+
+  async stat(path: string): Promise<FsStat> {
+    const normalized = normalizePath(path);
+    const mount = this.mounts.get(normalized);
+    if (mount) {
+      try {
+        return await mount.filesystem.stat("/");
+      } catch {
+        return directoryStat();
+      }
+    }
+    if (this.getChildMountPoints(normalized).length > 0) {
+      try {
+        return await this.baseFs.stat(normalized);
+      } catch {
+        return directoryStat();
+      }
+    }
+    const routed = this.routePath(path);
+    return routed.fs.stat(routed.relativePath);
+  }
+
+  async lstat(path: string): Promise<FsStat> {
+    const normalized = normalizePath(path);
+    const mount = this.mounts.get(normalized);
+    if (mount) {
+      try {
+        return await mount.filesystem.lstat("/");
+      } catch {
+        return directoryStat();
+      }
+    }
+    if (this.getChildMountPoints(normalized).length > 0) {
+      try {
+        return await this.baseFs.lstat(normalized);
+      } catch {
+        return directoryStat();
+      }
+    }
+    const routed = this.routePath(path);
+    return routed.fs.lstat(routed.relativePath);
+  }
+
+  async mkdir(path: string, options?: MkdirOptions): Promise<void> {
+    const normalized = normalizePath(path);
+    if (this.mounts.has(normalized)) {
+      if (options?.recursive) {
+        return;
+      }
+      throw new Error(`EEXIST: directory already exists, mkdir '${path}'`);
+    }
+    if (this.getChildMountPoints(normalized).length > 0 && options?.recursive) {
+      return;
+    }
+    const routed = this.routePath(path);
+    return routed.fs.mkdir(routed.relativePath, options);
+  }
+
+  async readdir(path: string): Promise<string[]> {
+    const normalized = normalizePath(path);
+    const names = new Set<string>();
+    let deferredError: unknown;
+    const routed = this.routePath(path);
+    try {
+      for (const name of await routed.fs.readdir(routed.relativePath)) {
+        names.add(name);
+      }
+    } catch (error) {
+      if (!isEnoent(error)) {
+        throw error;
+      }
+      deferredError = error;
+    }
+
+    for (const child of this.getChildMountPoints(normalized)) {
+      names.add(child);
+    }
+
+    if (names.size === 0 && deferredError && !this.mounts.has(normalized)) {
+      throw deferredError;
+    }
+    return [...names].sort();
+  }
+
+  async readdirWithFileTypes(path: string): Promise<DirentEntry[]> {
+    const normalized = normalizePath(path);
+    const entries = new Map<string, DirentEntry>();
+    const routed = this.routePath(path);
+    let deferredError: unknown;
+
+    try {
+      const routedEntries = routed.fs.readdirWithFileTypes
+        ? await routed.fs.readdirWithFileTypes(routed.relativePath)
+        : (await routed.fs.readdir(routed.relativePath)).map((name) => ({
+          name,
+          isFile: false,
+          isDirectory: false,
+          isSymbolicLink: false,
+        }));
+      for (const entry of routedEntries) {
+        entries.set(entry.name, entry);
+      }
+    } catch (error) {
+      if (!isEnoent(error)) {
+        throw error;
+      }
+      deferredError = error;
+    }
+
+    for (const child of this.getChildMountPoints(normalized)) {
+      entries.set(child, {
+        name: child,
+        isFile: false,
+        isDirectory: true,
+        isSymbolicLink: false,
+      });
+    }
+
+    if (entries.size === 0 && deferredError && !this.mounts.has(normalized)) {
+      throw deferredError;
+    }
+    return [...entries.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async rm(path: string, options?: RmOptions): Promise<void> {
+    const normalized = normalizePath(path);
+    if (this.mounts.has(normalized)) {
+      throw new Error(`EBUSY: mount point, cannot remove '${path}'`);
+    }
+    if (this.getChildMountPoints(normalized).length > 0) {
+      throw new Error(`EBUSY: contains mount points, cannot remove '${path}'`);
+    }
+    const routed = this.routePath(path);
+    return routed.fs.rm(routed.relativePath, options);
+  }
+
+  async cp(src: string, dest: string, options?: CpOptions): Promise<void> {
+    const source = this.routePath(src);
+    const target = this.routePath(dest);
+    if (source.fs === target.fs) {
+      return source.fs.cp(source.relativePath, target.relativePath, options);
+    }
+    return this.crossMountCopy(src, dest, options);
+  }
+
+  async mv(src: string, dest: string): Promise<void> {
+    const normalized = normalizePath(src);
+    if (this.mounts.has(normalized)) {
+      throw new Error(`EBUSY: mount point, cannot move '${src}'`);
+    }
+    const source = this.routePath(src);
+    const target = this.routePath(dest);
+    if (source.fs === target.fs) {
+      return source.fs.mv(source.relativePath, target.relativePath);
+    }
+    await this.cp(src, dest, { recursive: true });
+    await this.rm(src, { recursive: true });
+  }
+
+  resolvePath(base: string, path: string): string {
+    if (path.startsWith("/")) {
+      return normalizePath(path);
+    }
+    return normalizePath(base === "/" ? `/${path}` : `${base}/${path}`);
+  }
+
+  getAllPaths(): string[] {
+    const paths = new Set<string>(this.baseFs.getAllPaths());
+    for (const [mountPoint, mount] of this.mounts.entries()) {
+      let current = "";
+      for (const part of mountPoint.split("/").filter(Boolean)) {
+        current = `${current}/${part}`;
+        paths.add(current);
+      }
+      for (const path of mount.filesystem.getAllPaths()) {
+        paths.add(path === "/" ? mountPoint : `${mountPoint}${path}`);
+      }
+    }
+    return [...paths].sort();
+  }
+
+  async chmod(path: string, mode: number): Promise<void> {
+    const normalized = normalizePath(path);
+    const mount = this.mounts.get(normalized);
+    if (mount) {
+      return mount.filesystem.chmod("/", mode);
+    }
+    const routed = this.routePath(path);
+    return routed.fs.chmod(routed.relativePath, mode);
+  }
+
+  async symlink(target: string, linkPath: string): Promise<void> {
+    const routed = this.routePath(linkPath);
+    return routed.fs.symlink(target, routed.relativePath);
+  }
+
+  async link(existingPath: string, newPath: string): Promise<void> {
+    const source = this.routePath(existingPath);
+    const target = this.routePath(newPath);
+    if (source.fs !== target.fs) {
+      throw new Error(`EXDEV: cross-device link not permitted, link '${existingPath}' -> '${newPath}'`);
+    }
+    return source.fs.link(source.relativePath, target.relativePath);
+  }
+
+  async readlink(path: string): Promise<string> {
+    const routed = this.routePath(path);
+    return routed.fs.readlink(routed.relativePath);
+  }
+
+  async realpath(path: string): Promise<string> {
+    const normalized = normalizePath(path);
+    if (this.mounts.has(normalized)) {
+      return normalized;
+    }
+    const routed = this.routePath(path);
+    const real = await routed.fs.realpath(routed.relativePath);
+    if (routed.mountPoint) {
+      return real === "/" ? routed.mountPoint : `${routed.mountPoint}${real}`;
+    }
+    return real;
+  }
+
+  async utimes(path: string, atime: Date, mtime: Date): Promise<void> {
+    const routed = this.routePath(path);
+    return routed.fs.utimes(routed.relativePath, atime, mtime);
+  }
+
+  private async crossMountCopy(src: string, dest: string, options?: CpOptions): Promise<void> {
+    const stat = await this.lstat(src);
+    if (stat.isFile) {
+      const content = await this.readFileBuffer(src);
+      await this.writeFile(dest, content);
+      await this.chmod(dest, stat.mode);
+      return;
+    }
+    if (stat.isDirectory) {
+      if (!options?.recursive) {
+        throw new Error(`cp: ${src} is a directory (not copied)`);
+      }
+      await this.mkdir(dest, { recursive: true });
+      for (const child of await this.readdir(src)) {
+        await this.crossMountCopy(joinPath(normalizePath(src), child), joinPath(normalizePath(dest), child), options);
+      }
+      return;
+    }
+    if (stat.isSymbolicLink) {
+      await this.symlink(await this.readlink(src), dest);
+    }
   }
 }
 
