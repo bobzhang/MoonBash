@@ -32,14 +32,26 @@ export type ExecutorElicitationHandler = (
   ctx: ExecutorElicitationContext,
 ) => Promise<ExecutorElicitationResponse>;
 
+export interface ExecutorToolMetadata {
+  id: string;
+  description?: string;
+  sourceId: string;
+}
+
+export interface ExecutorSourceMetadata {
+  id: string;
+  kind: string;
+  name: string;
+}
+
 export interface ExecutorSDKHandle {
   tools: {
-    list: (filter?: { sourceId?: string; query?: string }) => Promise<readonly unknown[]>;
+    list: (filter?: { sourceId?: string; query?: string }) => Promise<readonly ExecutorToolMetadata[]>;
     invoke: (toolId: string, args: unknown) => Promise<unknown>;
   };
   sources: {
     add: (input: Record<string, unknown>) => Promise<void>;
-    list: () => Promise<readonly unknown[]>;
+    list: () => Promise<readonly ExecutorSourceMetadata[]>;
   };
   close: () => Promise<void>;
 }
@@ -194,6 +206,17 @@ interface ToolEntry {
   description?: string;
 }
 
+interface CustomSourceToolDef {
+  description?: string;
+  execute: (args: any) => unknown;
+}
+
+interface CustomSourceDefinition {
+  kind: string;
+  name?: string;
+  tools: Record<string, CustomSourceToolDef>;
+}
+
 interface ToolSubcommand {
   name: string;
   originalPath: string;
@@ -326,6 +349,108 @@ export function buildNamespaceCommands(
   );
 }
 
+function objectEntries(value: unknown): [string, unknown][] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [];
+  }
+  return Object.entries(value as Record<string, unknown>);
+}
+
+function isCustomSourceToolDef(value: unknown): value is CustomSourceToolDef {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      typeof (value as { execute?: unknown }).execute === "function",
+  );
+}
+
+function normalizeCustomSource(input: Record<string, unknown>): CustomSourceDefinition {
+  const tools: Record<string, CustomSourceToolDef> = Object.create(null);
+  for (const [name, tool] of objectEntries(input.tools)) {
+    if (isCustomSourceToolDef(tool)) {
+      tools[name] = tool;
+    }
+  }
+  return {
+    kind: String(input.kind ?? "custom"),
+    name: typeof input.name === "string" && input.name.length > 0 ? input.name : undefined,
+    tools,
+  };
+}
+
+async function createLocalSDKHandle(
+  setup: (sdk: ExecutorSDKHandle) => Promise<void>,
+): Promise<ExecutorSDKHandle> {
+  const tools: Record<string, ExecutorToolDef> = Object.create(null);
+  const toolMetadata: ExecutorToolMetadata[] = [];
+  const sourceMetadata: ExecutorSourceMetadata[] = [];
+
+  const sdk: ExecutorSDKHandle = {
+    tools: {
+      list: async (filter) => {
+        let result = [...toolMetadata];
+        if (filter?.sourceId) {
+          result = result.filter((tool) => tool.sourceId === filter.sourceId);
+        }
+        if (filter?.query) {
+          result = result.filter((tool) =>
+            tool.id.includes(filter.query ?? "") ||
+              (tool.description?.includes(filter.query ?? "") ?? false),
+          );
+        }
+        return result;
+      },
+      invoke: async (toolId, args) => {
+        const tool = tools[toolId];
+        if (!tool) {
+          throw new Error(`Unknown tool: ${toolId}`);
+        }
+        return tool.execute(args);
+      },
+    },
+    sources: {
+      add: async (input) => {
+        const source = normalizeCustomSource(input);
+        if (source.kind !== "custom") {
+          throw new Error(
+            `moon-bash executor setup currently supports only custom sources without @executor-js/sdk: ${source.kind}`,
+          );
+        }
+        if (!source.name) {
+          throw new Error("custom executor source requires a non-empty name");
+        }
+        if (sourceMetadata.some((existing) => existing.id === source.name)) {
+          throw new Error(`Duplicate executor source: ${source.name}`);
+        }
+        if (Object.keys(source.tools).length === 0) {
+          throw new Error(`custom executor source "${source.name}" requires tools`);
+        }
+        sourceMetadata.push({ id: source.name, kind: source.kind, name: source.name });
+        for (const [name, tool] of Object.entries(source.tools)) {
+          const id = `${source.name}.${name}`;
+          tools[id] = tool;
+          toolMetadata.push({
+            id,
+            description: tool.description,
+            sourceId: source.name,
+          });
+        }
+      },
+      list: async () => [...sourceMetadata],
+    },
+    close: async () => {
+      for (const path of Object.keys(tools)) {
+        delete tools[path];
+      }
+      toolMetadata.length = 0;
+      sourceMetadata.length = 0;
+    },
+  };
+
+  await setup(sdk);
+  return sdk;
+}
+
 export async function createExecutor(config: ExecutorConfig = {}): Promise<ExecutorHandle> {
   const inlineTools = Object.assign(Object.create(null), config.tools ?? {}) as Record<
     string,
@@ -345,7 +470,54 @@ export async function createExecutor(config: ExecutorConfig = {}): Promise<Execu
   };
 
   if (config.setup) {
-    throw new Error("moon-bash executor SDK discovery is not implemented yet");
+    const sdk = await createLocalSDKHandle(config.setup);
+    for (const tool of await sdk.tools.list()) {
+      if (!Object.hasOwn(inlineTools, tool.id)) {
+        entries.push({ path: tool.id, description: tool.description });
+      }
+    }
+
+    const sdkInvokeTool = async (path: string, argsJson: string): Promise<string> => {
+      const args = parseToolArgs(argsJson);
+      const approval = config.onToolApproval;
+      if (approval && approval !== "allow-all") {
+        if (approval === "deny-all") {
+          throw new Error(`Tool invocation denied: ${path}`);
+        }
+        const metadata = (await sdk.tools.list()).find((tool) => tool.id === path);
+        const decision = await approval({
+          toolPath: path,
+          sourceId: metadata?.sourceId ?? "unknown",
+          sourceName: metadata?.sourceId ?? "unknown",
+          operationKind: "unknown",
+          args,
+          reason: `Tool ${path} invoked`,
+          approvalLabel: null,
+        });
+        if (!decision.approved) {
+          throw new Error(
+            `Tool invocation denied: ${path}${decision.reason ? ` (${decision.reason})` : ""}`,
+          );
+        }
+      }
+      const result = await sdk.tools.invoke(path, args);
+      return result === undefined ? "" : JSON.stringify(result);
+    };
+
+    const combinedInvokeTool = async (path: string, argsJson: string): Promise<string> => {
+      if (Object.hasOwn(inlineTools, path)) {
+        return invokeTool(path, argsJson);
+      }
+      return sdkInvokeTool(path, argsJson);
+    };
+
+    return {
+      commands: config.exposeToolsAsCommands === false
+        ? []
+        : buildNamespaceCommands(entries, combinedInvokeTool),
+      invokeTool: combinedInvokeTool,
+      sdk,
+    };
   }
 
   return {

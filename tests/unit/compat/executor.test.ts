@@ -50,4 +50,65 @@ describe("just-bash executor companion compatibility", () => {
     expect(executor.commands).toEqual([]);
     await expect(executor.invokeTool("math.add", '{"a":8,"b":9}')).resolves.toBe('{"sum":17}');
   });
+
+  it("discovers custom setup sources without external executor SDK packages", async () => {
+    const executor = await createExecutor({
+      setup: async (sdk) => {
+        await sdk.sources.add({
+          kind: "custom",
+          name: "weather",
+          tools: {
+            forecast: {
+              description: "Get a forecast",
+              execute: ({ city = "unknown" }: { city?: string }) => ({ city, tempC: 23 }),
+            },
+          },
+        });
+      },
+    });
+    const bash = new Bash({ customCommands: executor.commands });
+
+    await expect(executor.invokeTool("weather.forecast", '{"city":"Paris"}')).resolves.toBe(
+      '{"city":"Paris","tempC":23}',
+    );
+    expect((await bash.exec("weather forecast city=Berlin")).stdout).toBe(
+      '{"city":"Berlin","tempC":23}\n',
+    );
+    await expect(executor.sdk?.tools.list()).resolves.toEqual([
+      { id: "weather.forecast", description: "Get a forecast", sourceId: "weather" },
+    ]);
+    await expect(executor.sdk?.sources.list()).resolves.toEqual([
+      { id: "weather", kind: "custom", name: "weather" },
+    ]);
+  });
+
+  it("applies setup source approval gates to direct and command tool calls", async () => {
+    const seen: string[] = [];
+    const executor = await createExecutor({
+      setup: async (sdk) => {
+        await sdk.sources.add({
+          kind: "custom",
+          name: "ops",
+          tools: {
+            deleteThing: {
+              execute: ({ id }: { id?: string }) => ({ deleted: id }),
+            },
+          },
+        });
+      },
+      onToolApproval: async (request) => {
+        seen.push(`${request.toolPath}:${request.sourceId}:${request.args && typeof request.args}`);
+        return { approved: false, reason: "needs review" };
+      },
+    });
+    const bash = new Bash({ customCommands: executor.commands });
+
+    await expect(executor.invokeTool("ops.deleteThing", '{"id":"a"}')).rejects.toThrow(
+      "Tool invocation denied: ops.deleteThing (needs review)",
+    );
+    const result = await bash.exec("ops delete-thing id=b");
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Tool invocation denied: ops.deleteThing (needs review)");
+    expect(seen).toEqual(["ops.deleteThing:ops:object", "ops.deleteThing:ops:object"]);
+  });
 });
