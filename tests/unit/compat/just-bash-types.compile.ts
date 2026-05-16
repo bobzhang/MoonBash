@@ -28,6 +28,7 @@ import {
   type ExecOptions,
   type IFileSystem,
   type JavaScriptConfig,
+  type MountConfig,
   type MountableFsOptions,
   type NetworkConfig,
   type OverlayFsOptions,
@@ -123,6 +124,7 @@ const dirent: DirentEntry = {
   isSymbolicLink: false,
 };
 const mountableOptions: MountableFsOptions = { base: fs };
+const mountConfig: MountConfig = { mountPoint: "/mnt", filesystem: fs };
 const overlayOptions: OverlayFsOptions = { root: process.cwd() };
 const readWriteOptions: ReadWriteFsOptions = { root: process.cwd() };
 const sandboxOptions: SandboxOptions = { cwd: "/", fs };
@@ -138,6 +140,7 @@ void readOptions;
 void writeOptions;
 void dirent;
 void mountableOptions;
+void mountConfig;
 void overlayOptions;
 void readWriteOptions;
 void sandboxOptions;

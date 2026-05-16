@@ -35,6 +35,7 @@ export type {
   LazyFileEntry,
   LazyFileProvider,
   MkdirOptions,
+  MountConfig,
   RmOptions,
   SymlinkEntry,
 } from "./fs";

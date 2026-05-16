@@ -98,6 +98,7 @@ export type {
   LazyFileEntry,
   LazyFileProvider,
   MkdirOptions,
+  MountConfig,
   MountableFsOptions,
   ReadFileOptions,
   RmOptions,
