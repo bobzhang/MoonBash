@@ -31,6 +31,10 @@
     "./browser": {
       "types": "./dist/browser.d.mts",
       "import": "./dist/browser.mjs"
+    },
+    "./executor": {
+      "types": "./dist/executor.d.mts",
+      "import": "./dist/executor.mjs"
     }
   },
   "scripts": {

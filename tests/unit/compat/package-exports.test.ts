@@ -36,6 +36,10 @@ describe("package export compatibility", () => {
       types: "./dist/browser.d.mts",
       import: "./dist/browser.mjs",
     });
+    expect(pkg.exports["./executor"]).toEqual({
+      types: "./dist/executor.d.mts",
+      import: "./dist/executor.mjs",
+    });
     expect(pkg.files).toContain("dist/");
   });
 
@@ -47,6 +51,8 @@ describe("package export compatibility", () => {
       "dist/index.d.cts",
       "dist/browser.mjs",
       "dist/browser.d.mts",
+      "dist/executor.mjs",
+      "dist/executor.d.mts",
     ]) {
       expect(existsSync(resolve(root, path)), path).toBe(true);
     }
@@ -75,6 +81,13 @@ describe("package export compatibility", () => {
     expect("OverlayFs" in browser).toBe(false);
     expect("ReadWriteFs" in browser).toBe(false);
     expect("Sandbox" in browser).toBe(false);
+  });
+
+  it("loads built executor subpath", async () => {
+    const executor = await import(resolve(root, "dist/executor.mjs"));
+
+    expect(typeof executor.createExecutor).toBe("function");
+    expect(typeof executor.parseToolArgs).toBe("function");
   });
 
   it("provides value declarations for CommonJS consumers", async () => {

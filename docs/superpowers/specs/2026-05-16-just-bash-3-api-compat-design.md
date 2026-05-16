@@ -161,13 +161,15 @@ Status (2026-05-16): a basic TypeScript facade for `js-exec` now registers when 
 - Implement inline tools, SDK-driven discovery adapter hooks where available, approval/elicitation hooks, and bash command generation.
 - Add executor example and docs tests.
 
+Status (2026-05-16): `moon-bash/executor` now provides an inline-tools companion compatible with the stable public pieces of `@just-bash/executor@1.0.2`: `createExecutor()`, `parseToolArgs()`, namespace command generation, kebab-case/camelCase aliases, `--json`, key-value flags, stdin JSON, help output, `exposeToolsAsCommands`, and `invokeTool()` for host-side callers. SDK-driven discovery, approval/elicitation pipelines, and end-to-end `javascript.invokeTool` calls from inside `js-exec` remain open until the full worker/QuickJS runtime is implemented.
+
 ### Phase I: Packaging and Verification
 
 - Match package exports for root and browser entry points.
 - Verify Node ESM, CJS if supported, browser bundle, CLI if supported, and type declarations.
 - Run `moon -C src check --target js`, `vp run test:safe`, targeted upstream compatibility tests, and generated API matrix tests.
 
-Status (2026-05-16): root package exports now expose browser, require, and import conditions aligned with `just-bash@3.0.1`; the `./browser` subpath is present; `vp pack` builds `index.mjs`, `index.cjs`, `browser.mjs`, and matching `.d.mts`/`.d.cts` declarations. Package export tests verify direct dist imports, package-name ESM import, CommonJS require, browser subpath import without Node-only exports, and a NodeNext CommonJS TypeScript consumer. Full publish/package smoke tests and any future CLI/executor packaging remain open.
+Status (2026-05-16): root package exports now expose browser, require, and import conditions aligned with `just-bash@3.0.1`; the `./browser` and `./executor` subpaths are present; `vp pack` builds `index.mjs`, `index.cjs`, `browser.mjs`, `executor.mjs`, and matching declarations. Package export tests verify direct dist imports, package-name ESM import, CommonJS require, browser subpath import without Node-only exports, executor subpath import, and a NodeNext CommonJS TypeScript consumer. Full publish/package smoke tests and any future CLI packaging remain open.
 
 ## Testing Strategy
 
@@ -190,6 +192,5 @@ Passing a narrow MoonBash comparison suite is not enough to claim API compatibil
 
 ## Open Questions
 
-1. Package naming for executor compatibility: publish a separate `@moon-bash/executor` package or expose an internal `moon-bash/executor` subpath.
-2. Browser support target for optional runtime APIs: match upstream exclusions exactly or expose MoonBash-specific browser fallbacks where safe.
-3. Transform parser source of truth: MoonBit AST adapter preferred, TS parser facade acceptable if exact upstream AST compatibility blocks progress.
+1. Browser support target for optional runtime APIs: match upstream exclusions exactly or expose MoonBash-specific browser fallbacks where safe.
+2. Transform parser source of truth: MoonBit AST adapter preferred, TS parser facade acceptable if exact upstream AST compatibility blocks progress.

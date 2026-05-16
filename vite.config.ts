@@ -31,6 +31,7 @@ export default defineConfig({
     entry: {
       index: "src/wrapper/index.ts",
       browser: "src/wrapper/browser.ts",
+      executor: "src/wrapper/executor.ts",
     },
     dts: true,
     format: ["esm", "cjs"],
