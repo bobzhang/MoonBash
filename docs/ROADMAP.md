@@ -50,7 +50,7 @@ Phase 6: just-bash 3 API Compatibility       🔧 IN PROGRESS
   → Sandbox runCommand, Command, file helpers, custom fs, and overlayRoot landed
   → Transform/parser facade for simple commands, pipelines, basic compound AST, and recursive command collection landed
   → Node ESM, CommonJS, and browser subpath package exports landed
-  → Basic TypeScript js-exec facade and upstream node stub landed
+  → Basic TypeScript js-exec facade, upstream CLI option/error semantics, and upstream node stub landed
   → Inline-tools executor companion and executor package subpath landed
   → Executor setup custom sources, approval gates, and elicitation gates landed
   → Basic javascript.invokeTool tools proxy wiring landed

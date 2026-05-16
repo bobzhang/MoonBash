@@ -61,6 +61,55 @@ describe("just-bash JavaScript runtime compatibility", () => {
     expect(calls).toEqual([{ path: "math.add", argsJson: '{"a":3,"b":4}' }]);
   });
 
+  it("matches just-bash js-exec no-input failure", async () => {
+    const bash = new Bash({ javascript: true });
+
+    const result = await bash.exec("js-exec");
+
+    expect(result.exitCode).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe("js-exec: no input provided (use -c CODE or provide a script file)\n");
+  });
+
+  it("matches just-bash js-exec option errors", async () => {
+    const bash = new Bash({ javascript: true });
+
+    const missingInlineCode = await bash.exec("js-exec -c");
+    const unknownOption = await bash.exec("js-exec --bad-option");
+
+    expect(missingInlineCode.exitCode).toBe(2);
+    expect(missingInlineCode.stdout).toBe("");
+    expect(missingInlineCode.stderr).toBe("js-exec: option requires an argument -- 'c'\n");
+    expect(unknownOption.exitCode).toBe(2);
+    expect(unknownOption.stdout).toBe("");
+    expect(unknownOption.stderr).toBe("js-exec: unrecognized option '--bad-option'\n");
+  });
+
+  it("matches just-bash js-exec version output", async () => {
+    const bash = new Bash({ javascript: true });
+
+    const result = await bash.exec("js-exec --version");
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("QuickJS (quickjs-emscripten)\n");
+    expect(result.stderr).toBe("");
+  });
+
+  it("treats -- as the end of js-exec options", async () => {
+    const bash = new Bash({
+      javascript: true,
+      files: {
+        "/dash-script.js": "console.log(process.argv.join('|'))",
+      },
+    });
+
+    const result = await bash.exec("js-exec -- /dash-script.js left right");
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("/dash-script.js|left|right\n");
+    expect(result.stderr).toBe("");
+  });
+
   it("reports node as a js-exec compatibility stub", async () => {
     const bash = new Bash({ javascript: true });
 

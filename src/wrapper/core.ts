@@ -396,6 +396,12 @@ interface NodeWorkerPendingExec {
   reject: (error: Error) => void;
 }
 
+interface JavaScriptParsedArgs {
+  code: string;
+  filename: string;
+  argv: string[];
+}
+
 interface SqlJsInitOptions {
   locateFile?: (file: string) => string;
 }
@@ -982,7 +988,7 @@ export class Bash {
   private parseJavaScriptArgs(
     args: string[],
     ctx: CommandContext,
-  ): { code: string; filename: string; argv: string[] } | { result: ExecResult } {
+  ): JavaScriptParsedArgs | { result: ExecResult } {
     const rest = [...args];
     let inlineCode: string | undefined;
     let scriptPath: string | undefined;
@@ -992,7 +998,7 @@ export class Bash {
         return { result: { stdout: JS_EXEC_HELP, stderr: "", exitCode: 0 } };
       }
       if (arg === "--version" || arg === "-V") {
-        return { result: { stdout: "js-exec 3.0.1\n", stderr: "", exitCode: 0 } };
+        return { result: { stdout: "QuickJS (quickjs-emscripten)\n", stderr: "", exitCode: 0 } };
       }
       if (arg === "-m" || arg === "--module" || arg === "--strip-types") {
         continue;
@@ -1000,12 +1006,18 @@ export class Bash {
       if (arg === "-c") {
         inlineCode = rest.shift();
         if (inlineCode === undefined) {
-          return { result: { stdout: "", stderr: "js-exec: option requires an argument -- c\n", exitCode: 1 } };
+          return { result: { stdout: "", stderr: "js-exec: option requires an argument -- 'c'\n", exitCode: 2 } };
         }
         break;
       }
-      if (arg.startsWith("-")) {
-        return { result: { stdout: "", stderr: `js-exec: unknown option: ${arg}\n`, exitCode: 1 } };
+      if (arg === "--") {
+        if (rest.length > 0) {
+          scriptPath = rest.shift();
+        }
+        break;
+      }
+      if (arg.startsWith("-") && arg !== "-") {
+        return { result: { stdout: "", stderr: `js-exec: unrecognized option '${arg}'\n`, exitCode: 2 } };
       }
       scriptPath = arg;
       break;
@@ -1016,21 +1028,24 @@ export class Bash {
     }
     if (scriptPath) {
       try {
+        const resolvedPath = ctx.fs.exists(scriptPath)
+          ? scriptPath
+          : this.normalizePath(scriptPath);
         return {
-          code: ctx.fs.readFile(scriptPath),
-          filename: scriptPath,
-          argv: [scriptPath, ...rest],
+          code: ctx.fs.readFile(resolvedPath),
+          filename: resolvedPath,
+          argv: [resolvedPath, ...rest],
         };
       } catch (error) {
-        return { result: { stdout: "", stderr: `js-exec: ${toErrorMessage(error)}\n`, exitCode: 1 } };
+        return { result: { stdout: "", stderr: `js-exec: can't open file '${scriptPath}': ${toErrorMessage(error)}\n`, exitCode: 2 } };
       }
     }
 
     const stdinCode = decodeBytesToUtf8(ctx.stdin);
-    if (stdinCode.length > 0) {
-      return { code: stdinCode, filename: "stdin", argv: ["js-exec"] };
+    if (stdinCode.trim().length > 0) {
+      return { code: stdinCode, filename: "<stdin>", argv: ["<stdin>"] };
     }
-    return { result: { stdout: JS_EXEC_HELP, stderr: "", exitCode: 0 } };
+    return { result: { stdout: "", stderr: "js-exec: no input provided (use -c CODE or provide a script file)\n", exitCode: 2 } };
   }
 
   private async importNodeVm(): Promise<typeof import("node:vm")> {
