@@ -2,7 +2,7 @@
 
 This document defines the public API surface of MoonBash, designed to be 100% compatible with `just-bash`.
 
-Status note (2026-05-16): MoonBash is aligning to `just-bash@3.0.1`. The compatibility work now covers root exports, command-name helpers, ByteString helpers, a compile-only public type consumer, low-risk `ExecOptions` fields (`replaceEnv`, `stdinKind`, `args`, pre-aborted `signal`), public async `InMemoryFs`, `MountableFs` routing/cross-filesystem behavior, root-confined `ReadWriteFs`, copy-on-write `OverlayFs`, and the Vercel-style `Sandbox` object model. Transform/parser behavior, JavaScript runtime commands, executor compatibility, and packaging parity are planned in separate phases.
+Status note (2026-05-16): MoonBash is aligning to `just-bash@3.0.1`. The compatibility work now covers root exports, command-name helpers, ByteString helpers, a compile-only public type consumer, low-risk `ExecOptions` fields (`replaceEnv`, `stdinKind`, `args`, pre-aborted `signal`), public async `InMemoryFs`, `MountableFs` routing/cross-filesystem behavior, root-confined `ReadWriteFs`, copy-on-write `OverlayFs`, the Vercel-style `Sandbox` object model, and the basic Transform/parser facade. JavaScript runtime commands, executor compatibility, packaging parity, and full upstream AST coverage are planned in separate phases.
 
 ## 1. Core Classes
 

@@ -47,7 +47,8 @@ Phase 6: just-bash 3 API Compatibility       🔧 IN PROGRESS
   → ReadWriteFs direct root-confined Node filesystem access landed
   → OverlayFs copy-on-write host-directory access landed
   → Sandbox runCommand, Command, file helpers, custom fs, and overlayRoot landed
-  → Remaining: Transform/parser behavior, js-exec/node runtime, executor companion, CJS/browser packaging parity
+  → Basic Transform/parser facade landed
+  → Remaining: js-exec/node runtime, executor companion, CJS/browser packaging parity, full upstream AST coverage
 ```
 
 **Current comparison test pass rate: 523/523 (100%)**
