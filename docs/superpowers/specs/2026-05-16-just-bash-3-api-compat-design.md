@@ -153,6 +153,8 @@ Status (2026-05-16): a basic TypeScript compatibility facade is implemented for 
 - Align Python and SQLite registration semantics with upstream.
 - Add worker timeout, output limit, network, and tool invocation tests.
 
+Status (2026-05-16): a basic TypeScript facade for `js-exec` now registers when `javascript` is configured and covers `js-exec -c`, virtual filesystem script files, bootstrap code, stdin-as-code, and the upstream `node` stub message. This is a compatibility bridge for public API progress, not the final QuickJS runtime: full QuickJS isolation, Node-compatible module shims, worker timeout/output limits, `javascript.invokeTool`, and upstream `js-exec` test import remain open.
+
 ### Phase H: Executor Companion
 
 - Add a separate compatibility module or package for executor integration.

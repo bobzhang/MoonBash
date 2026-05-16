@@ -25,6 +25,7 @@ import type {
   MoonBashFetchResponse,
   MoonBashVmRequest,
   MoonBashVmResponse,
+  JavaScriptConfig,
 } from "./types";
 import {
   getCommandNames,
@@ -34,7 +35,12 @@ import {
 } from "./commands/registry";
 import { parse } from "./parser";
 import { serialize } from "./transform";
-import { encodeUtf8ToBytes, latin1FromBytes, unsafeBytesFromLatin1 } from "./encoding";
+import {
+  decodeBytesToUtf8,
+  encodeUtf8ToBytes,
+  latin1FromBytes,
+  unsafeBytesFromLatin1,
+} from "./encoding";
 import type { BashTransformResult, TransformPlugin } from "./transform";
 
 export type {
@@ -579,6 +585,50 @@ function shellSingleQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
+const JS_EXEC_HELP = `js-exec - Sandboxed JavaScript/TypeScript runtime with Node.js-compatible APIs
+
+Usage: js-exec [OPTIONS] [-c CODE | FILE] [ARGS...]
+
+Options:
+  -c CODE          Execute inline code
+  -m, --module     Enable ES module mode (import/export)
+  --strip-types    Strip TypeScript type annotations
+  --version, -V    Show version
+  --help           Show this help
+
+Examples:
+  js-exec -c "console.log(1 + 2)"
+  js-exec script.js
+  js-exec app.ts
+  echo 'console.log("hello")' | js-exec
+`;
+
+class JavaScriptProcessExit extends Error {
+  constructor(readonly code: number) {
+    super(`process exited with code ${code}`);
+  }
+}
+
+function formatJavaScriptConsoleValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+  if (value === undefined) {
+    return "undefined";
+  }
+  if (value === null) {
+    return "null";
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
 function normalizePosixPath(inputPath: string, cwd = "/"): string {
   const base = inputPath.startsWith("/")
     ? inputPath
@@ -733,6 +783,13 @@ export class Bash {
     this.nodeEntryModuleUrlPromise = null;
     this.nodeExecWorkerIdleTimer = null;
 
+    if (normalizedOptions.javascript) {
+      const javaScriptCommands = this.createJavaScriptRuntimeCommands(normalizedOptions.javascript);
+      for (const command of javaScriptCommands) {
+        this.eagerCustomCommands.set(command.name, command);
+      }
+    }
+
     for (const customCommand of normalizedOptions.customCommands ?? []) {
       if (isLazyCommand(customCommand)) {
         this.lazyCustomCommands.set(customCommand.name, customCommand);
@@ -770,6 +827,148 @@ export class Bash {
       current += `/${parts[i]}`;
       this.dirs[current] = "1";
     }
+  }
+
+  private createJavaScriptRuntimeCommands(config: true | JavaScriptConfig): Command[] {
+    const javaScriptConfig = config === true ? {} : config;
+    const runJavaScript = (args: string[], ctx: CommandContext) =>
+      this.executeJavaScriptCommand(args, ctx, javaScriptConfig);
+
+    return [
+      defineCommand("js-exec", runJavaScript),
+      defineCommand("node", async () => ({
+        stdout: "",
+        stderr: `node: this sandbox uses js-exec instead of node\n\n${JS_EXEC_HELP}`,
+        exitCode: 1,
+      })),
+    ];
+  }
+
+  private async executeJavaScriptCommand(
+    args: string[],
+    ctx: CommandContext,
+    config: JavaScriptConfig,
+  ): Promise<ExecResult> {
+    const parsed = this.parseJavaScriptArgs(args, ctx);
+    if ("result" in parsed) {
+      return parsed.result;
+    }
+
+    const stdoutChunks: string[] = [];
+    const stderrChunks: string[] = [];
+    let exitCode = 0;
+    const appendLine = (chunks: string[], values: unknown[]): void => {
+      chunks.push(`${values.map(formatJavaScriptConsoleValue).join(" ")}\n`);
+    };
+    const sandbox: Record<string, unknown> = {};
+    const processObject = {
+      argv: parsed.argv,
+      env: Object.fromEntries(ctx.env),
+      cwd: () => ctx.cwd,
+      exit: (code = 0): never => {
+        exitCode = Number.isFinite(Number(code)) ? Number(code) : 0;
+        throw new JavaScriptProcessExit(exitCode);
+      },
+      platform: "linux",
+      arch: "x64",
+      version: "v22.0.0",
+      versions: { node: "22.0.0" },
+    };
+    sandbox.globalThis = sandbox;
+    sandbox.console = {
+      log: (...values: unknown[]) => appendLine(stdoutChunks, values),
+      error: (...values: unknown[]) => appendLine(stderrChunks, values),
+      warn: (...values: unknown[]) => appendLine(stderrChunks, values),
+    };
+    sandbox.process = processObject;
+    sandbox.Buffer = globalThis.Buffer;
+    sandbox.URL = globalThis.URL;
+    sandbox.URLSearchParams = globalThis.URLSearchParams;
+    try {
+      const vm = await this.importNodeVm();
+      const context = vm.createContext(sandbox);
+      if (config.bootstrap) {
+        const bootstrapScript = new vm.Script(config.bootstrap, { filename: "bootstrap.js" });
+        await bootstrapScript.runInContext(context);
+      }
+      const script = new vm.Script(parsed.code, { filename: parsed.filename });
+      await script.runInContext(context);
+    } catch (error) {
+      if (!(error instanceof JavaScriptProcessExit)) {
+        return {
+          stdout: stdoutChunks.join(""),
+          stderr: `${toErrorMessage(error)}\n`,
+          exitCode: 1,
+        };
+      }
+    }
+
+    return {
+      stdout: stdoutChunks.join(""),
+      stderr: stderrChunks.join(""),
+      exitCode,
+    };
+  }
+
+  private parseJavaScriptArgs(
+    args: string[],
+    ctx: CommandContext,
+  ): { code: string; filename: string; argv: string[] } | { result: ExecResult } {
+    const rest = [...args];
+    let inlineCode: string | undefined;
+    let scriptPath: string | undefined;
+    while (rest.length > 0) {
+      const arg = rest.shift() ?? "";
+      if (arg === "--help") {
+        return { result: { stdout: JS_EXEC_HELP, stderr: "", exitCode: 0 } };
+      }
+      if (arg === "--version" || arg === "-V") {
+        return { result: { stdout: "js-exec 3.0.1\n", stderr: "", exitCode: 0 } };
+      }
+      if (arg === "-m" || arg === "--module" || arg === "--strip-types") {
+        continue;
+      }
+      if (arg === "-c") {
+        inlineCode = rest.shift();
+        if (inlineCode === undefined) {
+          return { result: { stdout: "", stderr: "js-exec: option requires an argument -- c\n", exitCode: 1 } };
+        }
+        break;
+      }
+      if (arg.startsWith("-")) {
+        return { result: { stdout: "", stderr: `js-exec: unknown option: ${arg}\n`, exitCode: 1 } };
+      }
+      scriptPath = arg;
+      break;
+    }
+
+    if (inlineCode !== undefined) {
+      return { code: inlineCode, filename: "-c", argv: ["js-exec", ...rest] };
+    }
+    if (scriptPath) {
+      try {
+        return {
+          code: ctx.fs.readFile(scriptPath),
+          filename: scriptPath,
+          argv: [scriptPath, ...rest],
+        };
+      } catch (error) {
+        return { result: { stdout: "", stderr: `js-exec: ${toErrorMessage(error)}\n`, exitCode: 1 } };
+      }
+    }
+
+    const stdinCode = decodeBytesToUtf8(ctx.stdin);
+    if (stdinCode.length > 0) {
+      return { code: stdinCode, filename: "stdin", argv: ["js-exec"] };
+    }
+    return { result: { stdout: JS_EXEC_HELP, stderr: "", exitCode: 0 } };
+  }
+
+  private async importNodeVm(): Promise<typeof import("node:vm")> {
+    if (!this.isNodeRuntime()) {
+      throw new Error("js-exec: JavaScript runtime is not available in this environment");
+    }
+    return (await this.invokeDynamicImport("node:vm")) as typeof import("node:vm");
   }
 
   private installDefaultBinStubs(): void {

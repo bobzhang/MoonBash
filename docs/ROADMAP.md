@@ -49,7 +49,8 @@ Phase 6: just-bash 3 API Compatibility       🔧 IN PROGRESS
   → Sandbox runCommand, Command, file helpers, custom fs, and overlayRoot landed
   → Basic Transform/parser facade landed
   → Node ESM, CommonJS, and browser subpath package exports landed
-  → Remaining: js-exec/node runtime, executor companion, full upstream AST coverage
+  → Basic TypeScript js-exec facade and upstream node stub landed
+  → Remaining: full QuickJS/js-exec runtime, javascript.invokeTool, executor companion, full upstream AST coverage
 ```
 
 **Current comparison test pass rate: 523/523 (100%)**
@@ -632,7 +633,7 @@ All binary/codec work is pure MoonBit (zero JS runtime dependencies). Community 
 | API surface compatibility | 100% drop-in for `just-bash@3.0.1` | 🔧 root exports/type/package slices landed; runtime gaps remain |
 | Bundle size (gzip) | <100 KB | TBD |
 | Cold start time | <5 ms | TBD |
-| Command surface coverage | `just-bash@3.0.1` default + optional command groups | 🔧 helper lists aligned; optional JS runtime pending |
+| Command surface coverage | `just-bash@3.0.1` default + optional command groups | 🔧 helper lists aligned; basic JS facade landed |
 | Bash behavior accuracy | >95% (comparison tests) | ✅ 100% (523/523) |
 | Spec suite integration | Oils bash + awk + sed + grep + jq | ✅ integrated |
 | Spec compatibility pass status (2026-02-19) | Full green | 🔧 grep `54` failed, jq `170` failed, bash chunked run `683+` failed confirmed |

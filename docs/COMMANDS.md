@@ -2,7 +2,7 @@
 
 MoonBash tracks the `just-bash@3.0.1` public command surface: 82 default command names plus optional network, Python, and JavaScript command groups. Shell builtins may add additional Bash-compatible names that are not part of `getCommandNames()`. Most command behavior runs as pure in-memory MoonBit logic; commands that require host capabilities (network, timers, optional external runtimes) cross an explicit FFI boundary.
 
-Status note (2026-05-16): default and optional command-name helper lists are aligned to `just-bash@3.0.1`. Optional runtime semantics for `js-exec`/`node` are still planned; current entries are registration placeholders.
+Status note (2026-05-16): default and optional command-name helper lists are aligned to `just-bash@3.0.1`. The TypeScript facade now provides basic `js-exec` support for inline code, script files, bootstrap code, and the upstream `node` stub when `javascript` is configured. Full QuickJS isolation, Node-compatible module shims, and `javascript.invokeTool` remain planned runtime work.
 
 ## Command Categories
 
