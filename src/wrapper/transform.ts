@@ -5,12 +5,12 @@ export interface TransformContext {
   metadata: Record<string, unknown>;
 }
 
-export interface TransformResult<TMetadata extends object = Record<string, unknown>> {
+export interface TransformResult<TMetadata extends object = object> {
   ast: ScriptNode;
   metadata?: TMetadata;
 }
 
-export interface TransformPlugin<TMetadata extends object = Record<string, unknown>> {
+export interface TransformPlugin<TMetadata extends object = object> {
   name: string;
   transform(context: TransformContext): TransformResult<TMetadata>;
 }

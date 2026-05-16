@@ -33,6 +33,7 @@
     "test": "moon -C src build --target js --release && vp test run",
     "test:comparison": "moon -C src build --target js --release && vp test run tests/comparison/",
     "test:comparison:record": "RECORD_FIXTURES=1 vp run test:comparison",
+    "test:compat:types": "tsc -p tsconfig.compat.json",
     "test:safe": "moon -C src build --target js --release && bash scripts/test-safe.sh",
     "test:watch": "moon -C src build --target js --release && vp test watch",
     "check": "moon -C src check",

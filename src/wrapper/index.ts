@@ -59,6 +59,7 @@ export type {
   MoonBashVmRequest,
   MoonBashVmResponse,
   TimerOptions,
+  JavaScriptConfig,
   VmOptions,
 } from "./types";
 export type {
@@ -677,7 +678,7 @@ export class Bash {
   private nodeExecWorkerQueue: Promise<void>;
   private nodeEntryModuleUrlPromise: Promise<string> | null;
   private nodeExecWorkerIdleTimer: ReturnType<typeof setTimeout> | null;
-  private transformPlugins: TransformPlugin[] = [];
+  private transformPlugins: TransformPlugin<object>[] = [];
   readonly fs: FileSystem;
 
   constructor(options: BashOptions = {}) {
@@ -3072,7 +3073,7 @@ while (true) {
     return this.fs;
   }
 
-  registerTransformPlugin(plugin: TransformPlugin): void {
+  registerTransformPlugin(plugin: TransformPlugin<object>): void {
     this.transformPlugins.push(plugin);
   }
 
