@@ -1298,13 +1298,3 @@ export class OverlayFs extends InMemoryFs {
     super();
   }
 }
-
-export interface ReadWriteFsOptions {
-  root: string;
-}
-
-export class ReadWriteFs extends InMemoryFs {
-  constructor(readonly options: ReadWriteFsOptions) {
-    super();
-  }
-}

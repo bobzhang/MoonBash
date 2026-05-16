@@ -19,7 +19,7 @@ export {
   defineCommand,
   exec,
   isLazyCommand,
-} from "./index";
+} from "./core";
 
 export type {
   BufferEncoding,
