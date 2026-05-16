@@ -267,7 +267,7 @@ export class Sandbox {
     if (this.fs) {
       await this.fs.mkdir(path, opts);
     }
-    this.bashEnv.getFs().mkdir(path, opts);
+    await this.bashEnv.fs.mkdir(path, opts);
   }
 
   async stop(): Promise<void> {

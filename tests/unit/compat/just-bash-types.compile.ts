@@ -153,6 +153,8 @@ const execOptions: ExecOptions = {
 const bash = new Bash(options);
 bash.registerCommand(command);
 void bash.exec("echo hello", execOptions);
+const bashFs: IFileSystem = bash.fs;
+void bashFs.readFile("/data.txt");
 void bash.readFile("/data.txt");
 void bash.writeFile("/data.txt", "updated");
 bash.registerTransformPlugin(new CommandCollectorPlugin());

@@ -116,4 +116,34 @@ describe("InMemoryFs compatibility", () => {
     expect(await fs.readFile("/input.txt")).toBe("changed\n");
     expect(await bash.readFile("/input.txt")).toBe("changed\n");
   });
+
+  it("exposes Bash.fs as the async just-bash filesystem interface", async () => {
+    const bash = new Bash({ files: { "/input.txt": "hello" }, cwd: "/" });
+
+    expect(bash.fs.readFile("/input.txt")).toBeInstanceOf(Promise);
+    expect(await bash.fs.readFile("/input.txt")).toBe("hello");
+
+    await bash.fs.mkdir("/dir", { recursive: true });
+    await bash.fs.writeFile("/dir/file.txt", "from fs\n");
+    expect(await bash.exec("cat /dir/file.txt")).toMatchObject({
+      stdout: "from fs\n",
+      exitCode: 0,
+    });
+
+    await bash.exec("echo from exec > /dir/file.txt");
+    expect(await bash.fs.readFile("/dir/file.txt")).toBe("from exec\n");
+    expect(await bash.fs.readdir("/dir")).toEqual(["file.txt"]);
+    expect((await bash.fs.stat("/dir/file.txt")).isFile).toBe(true);
+  });
+
+  it("preserves raw bytes through Bash.fs", async () => {
+    const bash = new Bash({ cwd: "/" });
+    const bytes = new Uint8Array([0, 0xff, 0x41]);
+
+    await bash.fs.writeFile("/blob.bin", bytes);
+
+    expect(await bash.fs.readFileBuffer("/blob.bin")).toEqual(bytes);
+    expect(latin1FromBytes(await bash.fs.readFileBytes!("/blob.bin"))).toBe("\x00\xffA");
+    expect(await bash.fs.readFile("/blob.bin", "binary")).toBe("\x00\xffA");
+  });
 });

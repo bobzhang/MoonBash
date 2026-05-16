@@ -36,11 +36,26 @@ import {
 import { parse } from "./parser";
 import { serialize } from "./transform";
 import {
+  bytesFromUint8Array,
   decodeBytesToUtf8,
   encodeUtf8ToBytes,
   latin1FromBytes,
+  type ByteString,
   unsafeBytesFromLatin1,
+  uint8ArrayFromBytes,
 } from "./encoding";
+import {
+  type BufferEncoding,
+  type CpOptions,
+  type DirentEntry as AsyncDirentEntry,
+  type FileContent,
+  type FsStat,
+  type IFileSystem,
+  type MkdirOptions,
+  type ReadFileOptions,
+  type RmOptions,
+  type WriteFileOptions,
+} from "./fs";
 import type { BashTransformResult, TransformPlugin } from "./transform";
 
 export type {
@@ -539,6 +554,9 @@ function stringifyPrimitive(value: boolean | number | bigint | symbol): string {
   return String(value);
 }
 
+const TEXT_ENCODER = new TextEncoder();
+const TEXT_DECODER = new TextDecoder();
+
 function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
   return (
     typeof value === "object" &&
@@ -768,7 +786,9 @@ export class Bash {
   private nodeEntryModuleUrlPromise: Promise<string> | null;
   private nodeExecWorkerIdleTimer: ReturnType<typeof setTimeout> | null;
   private transformPlugins: TransformPlugin<object>[] = [];
-  readonly fs: FileSystem;
+  private readonly binaryFsPaths = new Set<string>();
+  private readonly syncFs: FileSystem;
+  readonly fs: IFileSystem;
 
   constructor(options: BashOptions = {}) {
     const normalizedOptions: BashOptions = { ...options };
@@ -839,7 +859,8 @@ export class Bash {
     for (const filePath of Object.keys(this.files)) {
       this.addParentDirs(filePath);
     }
-    this.fs = this.createFsApi();
+    this.syncFs = this.createFsApi();
+    this.fs = this.createPublicFsApi();
   }
 
   registerCommand(command: Command): void {
@@ -1226,6 +1247,165 @@ export class Bash {
       chmod: (path: string, mode: number): void => {
         const normalized = this.normalizePath(path);
         this.modes[normalized] = Math.floor(mode).toString();
+      },
+    };
+  }
+
+  private createPublicFsApi(): IFileSystem {
+    const toFsStat = (stat: ReturnType<FileSystem["stat"]>): FsStat => ({
+      isFile: stat.isFile,
+      isDirectory: stat.isDirectory,
+      isSymbolicLink: stat.isSymlink,
+      mode: stat.mode,
+      size: stat.size,
+      mtime: new Date(stat.mtime),
+    });
+    const binaryStringToBytes = (content: string): Uint8Array => {
+      const bytes = new Uint8Array(content.length);
+      for (let i = 0; i < content.length; i += 1) {
+        bytes[i] = content.charCodeAt(i) & 0xff;
+      }
+      return bytes;
+    };
+    const toBytes = (
+      content: FileContent,
+      options?: WriteFileOptions | BufferEncoding,
+    ): Uint8Array => {
+      const encoding = typeof options === "string" ? options : options?.encoding;
+      if (content instanceof Uint8Array) {
+        return content;
+      }
+      if (encoding === "binary" || encoding === "latin1") {
+        return binaryStringToBytes(content);
+      }
+      if (encoding === "base64") {
+        const binary = typeof Buffer !== "undefined"
+          ? Buffer.from(content, "base64").toString("binary")
+          : atob(content);
+        return binaryStringToBytes(binary);
+      }
+      return TEXT_ENCODER.encode(content);
+    };
+    const isBinaryWrite = (
+      content: FileContent,
+      options?: WriteFileOptions | BufferEncoding,
+    ): boolean => {
+      const encoding = typeof options === "string" ? options : options?.encoding;
+      return content instanceof Uint8Array || encoding === "binary" || encoding === "latin1";
+    };
+    const decodeBytes = (
+      bytes: Uint8Array,
+      options?: ReadFileOptions | BufferEncoding,
+    ): string => {
+      const encoding = typeof options === "string" ? options : options?.encoding;
+      if (encoding === "binary" || encoding === "latin1") {
+        return latin1FromBytes(bytesFromUint8Array(bytes));
+      }
+      if (encoding === "base64") {
+        const binary = latin1FromBytes(bytesFromUint8Array(bytes));
+        return typeof Buffer !== "undefined"
+          ? Buffer.from(binary, "binary").toString("base64")
+          : btoa(binary);
+      }
+      return TEXT_DECODER.decode(bytes);
+    };
+    const bytesForPath = (path: string): Uint8Array => {
+      const normalized = this.normalizePath(path);
+      const content = this.syncFs.readFile(path);
+      return this.binaryFsPaths.has(normalized)
+        ? uint8ArrayFromBytes(unsafeBytesFromLatin1(content))
+        : TEXT_ENCODER.encode(content);
+    };
+
+    return {
+      readFile: async (path: string, options?: ReadFileOptions | BufferEncoding): Promise<string> =>
+        decodeBytes(await this.fs.readFileBuffer(path), options),
+      readFileBytes: async (path: string): Promise<ByteString> =>
+        bytesFromUint8Array(await this.fs.readFileBuffer(path)),
+      readFileBuffer: async (path: string): Promise<Uint8Array> => {
+        return bytesForPath(path);
+      },
+      writeFile: async (
+        path: string,
+        content: FileContent,
+        options?: WriteFileOptions | BufferEncoding,
+      ): Promise<void> => {
+        const normalized = this.normalizePath(path);
+        this.syncFs.writeFile(path, latin1FromBytes(bytesFromUint8Array(toBytes(content, options))));
+        if (isBinaryWrite(content, options)) {
+          this.binaryFsPaths.add(normalized);
+        } else {
+          this.binaryFsPaths.delete(normalized);
+        }
+      },
+      appendFile: async (
+        path: string,
+        content: FileContent,
+        options?: WriteFileOptions | BufferEncoding,
+      ): Promise<void> => {
+        const normalized = this.normalizePath(path);
+        this.syncFs.appendFile(path, latin1FromBytes(bytesFromUint8Array(toBytes(content, options))));
+        if (isBinaryWrite(content, options)) {
+          this.binaryFsPaths.add(normalized);
+        }
+      },
+      exists: async (path: string): Promise<boolean> => this.syncFs.exists(path),
+      stat: async (path: string): Promise<FsStat> => toFsStat(this.syncFs.stat(path)),
+      mkdir: async (path: string, options?: MkdirOptions): Promise<void> => {
+        this.syncFs.mkdir(path, options);
+      },
+      readdir: async (path: string): Promise<string[]> =>
+        this.syncFs.readdir(path).map((entry) => entry.name),
+      readdirWithFileTypes: async (path: string): Promise<AsyncDirentEntry[]> =>
+        this.syncFs.readdir(path).map((entry) => ({
+          name: entry.name,
+          isFile: entry.type === "file",
+          isDirectory: entry.type === "directory",
+          isSymbolicLink: entry.type === "symlink",
+        })),
+      rm: async (path: string, options?: RmOptions): Promise<void> => {
+        this.syncFs.rm(path, options);
+      },
+      cp: async (src: string, dest: string, options?: CpOptions): Promise<void> => {
+        this.syncFs.cp(src, dest, options);
+      },
+      mv: async (src: string, dest: string): Promise<void> => {
+        this.syncFs.mv(src, dest);
+      },
+      resolvePath: (base: string, path: string): string => normalizePosixPath(path, base),
+      getAllPaths: (): string[] =>
+        [...new Set([
+          ...Object.keys(this.files),
+          ...Object.keys(this.dirs),
+          ...Object.keys(this.links),
+        ])].sort(),
+      chmod: async (path: string, mode: number): Promise<void> => {
+        this.syncFs.chmod(path, mode);
+      },
+      symlink: async (target: string, linkPath: string): Promise<void> => {
+        const normalized = this.normalizePath(linkPath);
+        this.links[normalized] = target;
+        this.modes[normalized] = this.modes[normalized] ?? (0o777).toString();
+        this.addParentDirs(normalized);
+      },
+      link: async (existingPath: string, newPath: string): Promise<void> => {
+        this.syncFs.cp(existingPath, newPath);
+      },
+      readlink: async (path: string): Promise<string> => {
+        const normalized = this.normalizePath(path);
+        if (!Object.prototype.hasOwnProperty.call(this.links, normalized)) {
+          throw new Error(`No such file: ${normalized}`);
+        }
+        return this.links[normalized];
+      },
+      lstat: async (path: string): Promise<FsStat> => toFsStat(this.syncFs.stat(path)),
+      realpath: async (path: string): Promise<string> => this.normalizePath(path),
+      utimes: async (path: string, _atime: Date, mtime: Date): Promise<void> => {
+        const normalized = this.normalizePath(path);
+        if (!this.syncFs.exists(normalized)) {
+          throw new Error(`No such file: ${normalized}`);
+        }
+        this.modes[`${normalized}:mtime`] = String(mtime.getTime());
       },
     };
   }
@@ -3402,9 +3582,8 @@ while (true) {
 
   /**
    * Get the virtual filesystem interface.
-   * Note: Currently not implemented - filesystem is internal to execution.
    */
-  getFs(): FileSystem {
+  getFs(): IFileSystem {
     return this.fs;
   }
 
