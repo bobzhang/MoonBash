@@ -110,6 +110,23 @@ describe("just-bash JavaScript runtime compatibility", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("provides commonjs fs and path shims backed by the virtual filesystem", async () => {
+    const bash = new Bash({
+      javascript: true,
+      files: {
+        "/data/input.txt": "alpha",
+      },
+    });
+
+    const result = await bash.exec(
+      "js-exec -c 'const fs = require(\"fs\"); const path = require(\"node:path\"); const p = path.join(\"/data\", \"input.txt\"); console.log(fs.readFileSync(p, \"utf8\")); console.log(Buffer.isBuffer(fs.readFileSync(p))); console.log(fs.statSync(p).isFile()); console.log(fs.existsSync(path.resolve(\"/data\", \"missing.txt\")))'",
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("alpha\ntrue\ntrue\nfalse\n");
+    expect(result.stderr).toBe("");
+  });
+
   it("reports node as a js-exec compatibility stub", async () => {
     const bash = new Bash({ javascript: true });
 

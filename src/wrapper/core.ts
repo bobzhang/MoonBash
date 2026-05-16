@@ -402,6 +402,8 @@ interface JavaScriptParsedArgs {
   argv: string[];
 }
 
+type JavaScriptRequire = ((name: string) => unknown) & { resolve(name: string): string };
+
 interface SqlJsInitOptions {
   locateFile?: (file: string) => string;
 }
@@ -707,6 +709,75 @@ function normalizePosixPath(inputPath: string, cwd = "/"): string {
   return out.length === 0 ? "/" : `/${out.join("/")}`;
 }
 
+function normalizeModulePath(inputPath: string): string {
+  const normalized = normalizePosixPath(inputPath);
+  if (inputPath.endsWith("/") && normalized !== "/") {
+    return `${normalized}/`;
+  }
+  return normalized;
+}
+
+function dirnamePosixPath(inputPath: string): string {
+  if (!inputPath) {
+    return ".";
+  }
+  const normalized = normalizeModulePath(inputPath);
+  if (normalized === "/") {
+    return "/";
+  }
+  const trimmed = normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
+  const slash = trimmed.lastIndexOf("/");
+  if (slash <= 0) {
+    return trimmed.startsWith("/") ? "/" : ".";
+  }
+  return trimmed.slice(0, slash);
+}
+
+function basenamePosixPath(inputPath: string, ext = ""): string {
+  const trimmed = inputPath.endsWith("/") && inputPath !== "/" ? inputPath.slice(0, -1) : inputPath;
+  const slash = trimmed.lastIndexOf("/");
+  const base = slash === -1 ? trimmed : trimmed.slice(slash + 1);
+  return ext && base.endsWith(ext) ? base.slice(0, -ext.length) : base;
+}
+
+function extnamePosixPath(inputPath: string): string {
+  const base = basenamePosixPath(inputPath);
+  const dot = base.lastIndexOf(".");
+  if (dot <= 0) {
+    return "";
+  }
+  return base.slice(dot);
+}
+
+function relativePosixPath(from: string, to: string): string {
+  const fromParts = normalizePosixPath(from).split("/").filter(Boolean);
+  const toParts = normalizePosixPath(to).split("/").filter(Boolean);
+  let common = 0;
+  while (common < fromParts.length && common < toParts.length && fromParts[common] === toParts[common]) {
+    common += 1;
+  }
+  return [
+    ...Array.from({ length: fromParts.length - common }, () => ".."),
+    ...toParts.slice(common),
+  ].join("/") || "";
+}
+
+interface JavaScriptPathModule {
+  sep: "/";
+  delimiter: ":";
+  posix: JavaScriptPathModule;
+  join(...parts: string[]): string;
+  resolve(...parts: string[]): string;
+  normalize(path: string): string;
+  isAbsolute(path: string): boolean;
+  dirname(path: string): string;
+  basename(path: string, ext?: string): string;
+  extname(path: string): string;
+  relative(from: string, to: string): string;
+  parse(path: string): { root: string; dir: string; base: string; ext: string; name: string };
+  format(pathObject: { root?: string; dir?: string; base?: string; name?: string; ext?: string }): string;
+}
+
 function listChildren(paths: string[], dirPath: string): string[] {
   const prefix = dirPath === "/" ? "/" : `${dirPath}/`;
   const names = new Set<string>();
@@ -950,6 +1021,7 @@ export class Bash {
     sandbox.Buffer = globalThis.Buffer;
     sandbox.URL = globalThis.URL;
     sandbox.URLSearchParams = globalThis.URLSearchParams;
+    sandbox.require = this.createJavaScriptRequire(ctx);
     if (config.invokeTool) {
       sandbox.tools = createJavaScriptToolsProxy(config.invokeTool);
     }
@@ -1046,6 +1118,179 @@ export class Bash {
       return { code: stdinCode, filename: "<stdin>", argv: ["<stdin>"] };
     }
     return { result: { stdout: "", stderr: "js-exec: no input provided (use -c CODE or provide a script file)\n", exitCode: 2 } };
+  }
+
+  private createJavaScriptPathModule(ctx: CommandContext): JavaScriptPathModule {
+    const pathModule: JavaScriptPathModule = {
+      sep: "/" as const,
+      delimiter: ":" as const,
+      posix: undefined as unknown as JavaScriptPathModule,
+      join: (...parts: string[]): string => {
+        for (const part of parts) {
+          if (typeof part !== "string") {
+            throw new TypeError("Path must be a string");
+          }
+        }
+        if (parts.length === 0) {
+          return ".";
+        }
+        const joined = parts.filter((part) => part.length > 0).join("/");
+        return joined.length === 0 ? "." : normalizeModulePath(joined);
+      },
+      resolve: (...parts: string[]): string => {
+        for (const part of parts) {
+          if (typeof part !== "string") {
+            throw new TypeError("Path must be a string");
+          }
+        }
+        for (let index = parts.length - 1; index >= 0; index -= 1) {
+          const part = parts[index];
+          if (part.length === 0) {
+            continue;
+          }
+          if (part.startsWith("/")) {
+            return normalizePosixPath([part, ...parts.slice(index + 1)].join("/"));
+          }
+        }
+        return normalizePosixPath(parts.filter((part) => part.length > 0).join("/"), ctx.cwd);
+      },
+      normalize: normalizeModulePath,
+      isAbsolute: (path: string): boolean => path.startsWith("/"),
+      dirname: dirnamePosixPath,
+      basename: basenamePosixPath,
+      extname: extnamePosixPath,
+      relative: relativePosixPath,
+      parse: (path: string) => {
+        const root = path.startsWith("/") ? "/" : "";
+        const dir = dirnamePosixPath(path);
+        const base = basenamePosixPath(path);
+        const ext = extnamePosixPath(path);
+        const name = ext ? base.slice(0, -ext.length) : base;
+        return { root, dir, base, ext, name };
+      },
+      format: (pathObject: { root?: string; dir?: string; base?: string; name?: string; ext?: string }): string => {
+        const dir = pathObject.dir ?? pathObject.root ?? "";
+        const base = pathObject.base ?? `${pathObject.name ?? ""}${pathObject.ext ?? ""}`;
+        if (!dir) {
+          return base;
+        }
+        if (dir === "/") {
+          return `/${base}`;
+        }
+        return `${dir}/${base}`;
+      },
+    };
+    pathModule.posix = pathModule;
+    return pathModule;
+  }
+
+  private createJavaScriptFsModule(ctx: CommandContext): Record<string, unknown> {
+    const resolvePath = (path: string): string => normalizePosixPath(path, ctx.cwd);
+    const readFileBuffer = (path: string): Uint8Array =>
+      TEXT_ENCODER.encode(ctx.fs.readFile(resolvePath(path)));
+    const readFileSync = (path: string, options?: string | { encoding?: string }): string | Uint8Array => {
+      const encoding = typeof options === "string" ? options : options?.encoding;
+      const resolved = resolvePath(path);
+      if (encoding) {
+        return ctx.fs.readFile(resolved);
+      }
+      const bytes = readFileBuffer(resolved);
+      return typeof Buffer !== "undefined" ? Buffer.from(bytes) : bytes;
+    };
+    const writeFileSync = (path: string, content: unknown): void => {
+      const text = content instanceof Uint8Array
+        ? TEXT_DECODER.decode(content)
+        : typeof Buffer !== "undefined" && Buffer.isBuffer(content)
+          ? content.toString()
+          : String(content);
+      ctx.fs.writeFile(resolvePath(path), text);
+    };
+    const mkdirSync = (path: string, options?: { recursive?: boolean }): void => {
+      ctx.fs.mkdir(resolvePath(path), options);
+    };
+    const rmSync = (path: string, options?: { recursive?: boolean; force?: boolean }): void => {
+      ctx.fs.rm(resolvePath(path), options);
+    };
+    const statSync = (path: string) => {
+      const stat = ctx.fs.stat(resolvePath(path));
+      return {
+        ...stat,
+        isSymbolicLink: (): boolean => stat.isSymlink,
+        isFile: (): boolean => stat.isFile,
+        isDirectory: (): boolean => stat.isDirectory,
+      };
+    };
+    const existsSync = (path: string): boolean => ctx.fs.exists(resolvePath(path));
+    const readdirSync = (path: string): string[] =>
+      ctx.fs.readdir(resolvePath(path)).map((entry) => entry.name);
+
+    return {
+      readFileSync,
+      readFileBuffer,
+      writeFileSync,
+      statSync,
+      lstatSync: statSync,
+      readdirSync,
+      mkdirSync,
+      rmSync,
+      unlinkSync: (path: string): void => rmSync(path),
+      rmdirSync: (path: string): void => rmSync(path),
+      existsSync,
+      appendFileSync: (path: string, content: unknown): void => {
+        ctx.fs.appendFile(resolvePath(path), String(content));
+      },
+      readFile: (): never => {
+        throw new Error("fs.readFile() with callbacks is not supported. Use fs.readFileSync() or fs.promises.readFile() instead.");
+      },
+      writeFile: (): never => {
+        throw new Error("fs.writeFile() with callbacks is not supported. Use fs.writeFileSync() or fs.promises.writeFile() instead.");
+      },
+      promises: {
+        readFile: async (path: string, options?: string | { encoding?: string }) => readFileSync(path, options),
+        writeFile: async (path: string, content: unknown) => writeFileSync(path, content),
+        readdir: async (path: string) => readdirSync(path),
+        stat: async (path: string) => statSync(path),
+        lstat: async (path: string) => statSync(path),
+        mkdir: async (path: string, options?: { recursive?: boolean }) => mkdirSync(path, options),
+        rm: async (path: string, options?: { recursive?: boolean; force?: boolean }) => rmSync(path, options),
+        unlink: async (path: string) => rmSync(path),
+        rmdir: async (path: string) => rmSync(path),
+        access: async (path: string) => {
+          if (!existsSync(path)) {
+            throw new Error(`ENOENT: no such file or directory: ${path}`);
+          }
+        },
+      },
+    };
+  }
+
+  private createJavaScriptRequire(ctx: CommandContext): JavaScriptRequire {
+    const pathModule = this.createJavaScriptPathModule(ctx);
+    const fsModule = this.createJavaScriptFsModule(ctx);
+    const processModule = {
+      argv: ["js-exec"],
+      cwd: () => ctx.cwd,
+      env: Object.fromEntries(ctx.env),
+      platform: "linux",
+      arch: "x64",
+      version: "v22.0.0",
+      versions: { node: "22.0.0" },
+    };
+    const modules: Record<string, unknown> = {
+      fs: fsModule,
+      path: pathModule,
+      process: processModule,
+      buffer: { Buffer: globalThis.Buffer },
+    };
+    const requireFn = ((rawName: string): unknown => {
+      const name = rawName.startsWith("node:") ? rawName.slice(5) : rawName;
+      if (Object.prototype.hasOwnProperty.call(modules, name)) {
+        return modules[name];
+      }
+      throw new Error(`Cannot find module '${name}'. Run 'js-exec --help' for available modules.`);
+    }) as JavaScriptRequire;
+    requireFn.resolve = (name: string): string => name;
+    return requireFn;
   }
 
   private async importNodeVm(): Promise<typeof import("node:vm")> {
