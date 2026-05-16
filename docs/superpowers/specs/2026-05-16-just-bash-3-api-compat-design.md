@@ -165,6 +165,8 @@ Status (2026-05-16): a basic TypeScript compatibility facade is implemented for 
 - Verify Node ESM, CJS if supported, browser bundle, CLI if supported, and type declarations.
 - Run `moon -C src check --target js`, `vp run test:safe`, targeted upstream compatibility tests, and generated API matrix tests.
 
+Status (2026-05-16): root package exports now expose browser, require, and import conditions aligned with `just-bash@3.0.1`; the `./browser` subpath is present; `vp pack` builds `index.mjs`, `index.cjs`, `browser.mjs`, and matching `.d.mts`/`.d.cts` declarations. Package export tests verify direct dist imports, package-name ESM import, CommonJS require, browser subpath import without Node-only exports, and a NodeNext CommonJS TypeScript consumer. Full publish/package smoke tests and any future CLI/executor packaging remain open.
+
 ## Testing Strategy
 
 The compatibility suite must include:
@@ -188,5 +190,4 @@ Passing a narrow MoonBash comparison suite is not enough to claim API compatibil
 
 1. Package naming for executor compatibility: publish a separate `@moon-bash/executor` package or expose an internal `moon-bash/executor` subpath.
 2. Browser support target for optional runtime APIs: match upstream exclusions exactly or expose MoonBash-specific browser fallbacks where safe.
-3. CJS output target: upstream ships CJS; MoonBash currently focuses on ESM. Full API/package compatibility may require adding CJS packaging.
-4. Transform parser source of truth: MoonBit AST adapter preferred, TS parser facade acceptable if exact upstream AST compatibility blocks progress.
+3. Transform parser source of truth: MoonBit AST adapter preferred, TS parser facade acceptable if exact upstream AST compatibility blocks progress.

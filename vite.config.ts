@@ -28,9 +28,12 @@ export default defineConfig({
     testTimeout: 30000,
   },
   pack: {
-    entry: ["src/wrapper/index.ts"],
+    entry: {
+      index: "src/wrapper/index.ts",
+      browser: "src/wrapper/browser.ts",
+    },
     dts: true,
-    format: ["esm"],
+    format: ["esm", "cjs"],
     minify: packMinify,
     sourcemap: false,
   },
