@@ -778,6 +778,65 @@ interface JavaScriptPathModule {
   format(pathObject: { root?: string; dir?: string; base?: string; name?: string; ext?: string }): string;
 }
 
+function rewriteJavaScriptBuiltinImports(code: string): string {
+  let moduleCounter = 0;
+  const rewriteNamespaceImport = (
+    binding: string,
+    moduleName: string,
+  ): string => `const ${binding} = require(${JSON.stringify(moduleName)});`;
+  const rewriteDefaultNamedImport = (
+    defaultBinding: string | undefined,
+    namedBindings: string | undefined,
+    moduleName: string,
+  ): string => {
+    const moduleRef = `__moonBashModule${moduleCounter}`;
+    moduleCounter += 1;
+    const declarations = [`const ${moduleRef} = require(${JSON.stringify(moduleName)});`];
+    if (defaultBinding) {
+      declarations.push(`const ${defaultBinding.trim()} = ${moduleRef};`);
+    }
+    if (namedBindings) {
+      declarations.push(`const { ${namedBindings.trim()} } = ${moduleRef};`);
+    }
+    return declarations.join(" ");
+  };
+
+  let rewritten = code.replace(
+    /\bimport\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](node:)?(fs|path)["']\s*;?/g,
+    (_match, binding: string, nodePrefix: string | undefined, moduleName: string) =>
+      rewriteNamespaceImport(binding, nodePrefix ? `node:${moduleName}` : moduleName),
+  );
+  rewritten = rewritten.replace(
+    /\bimport\s+([A-Za-z_$][\w$]*)\s*,\s*\{([^}]+)\}\s+from\s+["'](node:)?(fs|path)["']\s*;?/g,
+    (
+      _match,
+      defaultBinding: string,
+      namedBindings: string,
+      nodePrefix: string | undefined,
+      moduleName: string,
+    ) => rewriteDefaultNamedImport(
+      defaultBinding,
+      namedBindings,
+      nodePrefix ? `node:${moduleName}` : moduleName,
+    ),
+  );
+  rewritten = rewritten.replace(
+    /\bimport\s+\{([^}]+)\}\s+from\s+["'](node:)?(fs|path)["']\s*;?/g,
+    (_match, namedBindings: string, nodePrefix: string | undefined, moduleName: string) =>
+      rewriteDefaultNamedImport(undefined, namedBindings, nodePrefix ? `node:${moduleName}` : moduleName),
+  );
+  rewritten = rewritten.replace(
+    /\bimport\s+([A-Za-z_$][\w$]*)\s+from\s+["'](node:)?(fs|path)["']\s*;?/g,
+    (_match, defaultBinding: string, nodePrefix: string | undefined, moduleName: string) =>
+      rewriteDefaultNamedImport(
+        defaultBinding,
+        undefined,
+        nodePrefix ? `node:${moduleName}` : moduleName,
+      ),
+  );
+  return rewritten;
+}
+
 function listChildren(paths: string[], dirPath: string): string[] {
   const prefix = dirPath === "/" ? "/" : `${dirPath}/`;
   const names = new Set<string>();
@@ -1035,7 +1094,8 @@ export class Bash {
           await bootstrapResult;
         }
       }
-      const script = new vm.Script(`(async () => {\n${parsed.code}\n})()`, { filename: parsed.filename });
+      const code = rewriteJavaScriptBuiltinImports(parsed.code);
+      const script = new vm.Script(`(async () => {\n${code}\n})()`, { filename: parsed.filename });
       const result = script.runInContext(context);
       if (isPromiseLike<void>(result)) {
         await result;

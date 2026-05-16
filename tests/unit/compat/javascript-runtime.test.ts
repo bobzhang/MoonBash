@@ -127,6 +127,23 @@ describe("just-bash JavaScript runtime compatibility", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("supports module-mode imports for fs and path shims", async () => {
+    const bash = new Bash({
+      javascript: true,
+      files: {
+        "/data/module.txt": "bravo",
+      },
+    });
+
+    const result = await bash.exec(
+      "js-exec -m -c 'import fs from \"fs\"; import path, { join } from \"node:path\"; const p = join(\"/data\", \"module.txt\"); console.log(fs.readFileSync(p, \"utf8\")); console.log(path.basename(p));'",
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("bravo\nmodule.txt\n");
+    expect(result.stderr).toBe("");
+  });
+
   it("reports node as a js-exec compatibility stub", async () => {
     const bash = new Bash({ javascript: true });
 
