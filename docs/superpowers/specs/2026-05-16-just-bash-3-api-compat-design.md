@@ -137,6 +137,8 @@ Status (2026-05-16): `InMemoryFs` is implemented in the TypeScript facade with a
 - Export `Sandbox`, `SandboxCommand`, and related types from the package entry.
 - Add upstream Sandbox tests.
 
+Status (2026-05-16): `Sandbox` and `SandboxCommand` now live in the TypeScript facade with `Sandbox.create`, `runCommand` overloads, detached commands, stdout/stderr/log helpers, writable stream forwarding, file helpers, `fs` and `overlayRoot` options, pre-aborted signal handling, and lifecycle no-ops. Remaining Sandbox risk is tied to deeper runtime cancellation/timeout semantics and broader upstream test import.
+
 ### Phase F: Transform and Parser Facade
 
 - Add AST export support from MoonBit or a TS compatibility parser facade.

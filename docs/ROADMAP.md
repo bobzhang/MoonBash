@@ -46,7 +46,8 @@ Phase 6: just-bash 3 API Compatibility       🔧 IN PROGRESS
   → MountableFs routing, mount management, and cross-filesystem copy/move landed
   → ReadWriteFs direct root-confined Node filesystem access landed
   → OverlayFs copy-on-write host-directory access landed
-  → Remaining: Sandbox, Transform/parser behavior, js-exec/node runtime, executor companion, CJS/browser packaging parity
+  → Sandbox runCommand, Command, file helpers, custom fs, and overlayRoot landed
+  → Remaining: Transform/parser behavior, js-exec/node runtime, executor companion, CJS/browser packaging parity
 ```
 
 **Current comparison test pass rate: 523/523 (100%)**

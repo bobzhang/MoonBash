@@ -32,6 +32,8 @@ import {
   type OverlayFsOptions,
   type ReadFileOptions,
   type ReadWriteFsOptions,
+  type RunCommandParams,
+  type SandboxOptions,
   type SecureFetch,
   type WriteFileOptions,
 } from "../../../src/wrapper/index";
@@ -105,6 +107,8 @@ const dirent: DirentEntry = {
 const mountableOptions: MountableFsOptions = { base: fs };
 const overlayOptions: OverlayFsOptions = { root: process.cwd() };
 const readWriteOptions: ReadWriteFsOptions = { root: process.cwd() };
+const sandboxOptions: SandboxOptions = { cwd: "/", fs };
+const runCommandParams: RunCommandParams = { cmd: "echo", args: ["hello"], detached: false };
 const mountableFs = new MountableFs({ base: fs });
 mountableFs.mount("/mnt", new InMemoryFs());
 mountableFs.unmount("/mnt");
@@ -118,10 +122,28 @@ void dirent;
 void mountableOptions;
 void overlayOptions;
 void readWriteOptions;
+void sandboxOptions;
+void runCommandParams;
 
 const ast = parse("echo hello");
 serialize(ast);
 new BashTransformPipeline().use(new TeePlugin({ outputDir: "/tmp" })).transform("echo hello");
 
 DefenseInDepthBox.isInSandboxedContext();
-void Sandbox.create({ cwd: "/home/user" });
+void Sandbox.create(sandboxOptions).then(async (sandbox) => {
+  const command = await sandbox.runCommand(runCommandParams);
+  command.exitCode.toFixed();
+  await command.stdout();
+  await command.stderr();
+  await command.output();
+  for await (const message of command.logs()) {
+    message.timestamp.toISOString();
+  }
+  await sandbox.writeFiles({ "/tmp/a.txt": "a" });
+  await sandbox.readFile("/tmp/a.txt", "utf-8");
+  await sandbox.mkDir("/tmp/dir", { recursive: true });
+  await sandbox.stop();
+  await sandbox.extendTimeout(1000);
+  sandbox.domain?.toString();
+  sandbox.bashEnvInstance.getCwd();
+});
