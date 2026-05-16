@@ -26,6 +26,16 @@ import type {
   MoonBashVmRequest,
   MoonBashVmResponse,
 } from "./types";
+import {
+  getCommandNames,
+  getJavaScriptCommandNames,
+  getNetworkCommandNames,
+  getPythonCommandNames,
+} from "./commands/registry";
+import { parse } from "./parser";
+import { serialize } from "./transform";
+import { encodeUtf8ToBytes, latin1FromBytes, unsafeBytesFromLatin1 } from "./encoding";
+import type { BashTransformResult, TransformPlugin } from "./transform";
 
 export type {
   BashExecResult,
@@ -51,6 +61,107 @@ export type {
   TimerOptions,
   VmOptions,
 } from "./types";
+export type {
+  AllCommandName,
+  CommandName,
+  JavaScriptCommandName,
+  NetworkCommandName,
+  PythonCommandName,
+} from "./commands/registry";
+export {
+  getCommandNames,
+  getJavaScriptCommandNames,
+  getNetworkCommandNames,
+  getPythonCommandNames,
+} from "./commands/registry";
+export type {
+  BufferEncoding,
+  CpOptions,
+  DirectoryEntry,
+  FileContent,
+  FileEntry,
+  FileInit,
+  FileSystemFactory,
+  FsEntry,
+  FsStat,
+  IFileSystem,
+  LazyFileEntry,
+  LazyFileProvider,
+  MkdirOptions,
+  RmOptions,
+  SymlinkEntry,
+} from "./fs";
+export {
+  InMemoryFs,
+  MountableFs,
+  OverlayFs,
+  ReadWriteFs,
+} from "./fs";
+export type {
+  AllowedUrl,
+  AllowedUrlEntry,
+  FetchResult,
+  HttpMethod,
+  NetworkConfig,
+  RequestTransform,
+  SecureFetch,
+  SecureFetchOptions,
+} from "./network";
+export {
+  NetworkAccessDeniedError,
+  RedirectNotAllowedError,
+  TooManyRedirectsError,
+} from "./network";
+export type {
+  DefenseInDepthConfig,
+  DefenseInDepthHandle,
+  DefenseInDepthStats,
+  SecurityViolation,
+  SecurityViolationType,
+} from "./security";
+export {
+  createConsoleViolationCallback,
+  DefenseInDepthBox,
+  SecurityViolationError,
+  SecurityViolationLogger,
+} from "./security";
+export type {
+  CommandNode,
+  PipelineNode,
+  ScriptNode,
+  SimpleCommandNode,
+  StatementNode,
+  WordNode,
+} from "./parser";
+export { parse } from "./parser";
+export {
+  BashTransformPipeline,
+  CommandCollectorPlugin,
+  serialize,
+  TeePlugin,
+} from "./transform";
+export type { ByteString, OutputKind } from "./encoding";
+export {
+  bytesOutput,
+  decodeBytesToUtf8,
+  EMPTY_BYTES,
+  encodeUtf8ToBytes,
+  latin1FromBytes,
+  stdoutAsBytes,
+  stdoutKind,
+  textOutput,
+  unsafeBytesFromLatin1,
+} from "./encoding";
+export type {
+  BashTransformResult,
+  CommandCollectorMetadata,
+  TeeFileInfo,
+  TeePluginMetadata,
+  TeePluginOptions,
+  TransformContext,
+  TransformPlugin,
+  TransformResult,
+} from "./transform";
 
 // Import the compiled MoonBit engine from the release build used by packaging.
 // @ts-ignore - generated file has no type declarations
@@ -267,6 +378,47 @@ type VmBridgeImpl = (
   request: MoonBashVmRequest,
 ) => MoonBashVmResponse | Promise<MoonBashVmResponse>;
 
+const INTERNAL_SHELL_COMMAND_NAMES = [
+  "export",
+  "unset",
+  "set",
+  "shift",
+  "exec",
+  "exit",
+  "return",
+  "break",
+  "continue",
+  "read",
+  "readarray",
+  "mapfile",
+  "test",
+  "[",
+  "[[",
+  "printf",
+  "eval",
+  "source",
+  ".",
+  "local",
+  "readonly",
+  "declare",
+  "typeset",
+  "getopts",
+  "let",
+  ":",
+  "type",
+  "command",
+  "builtin",
+  "hash",
+  "shopt",
+  "complete",
+  "compgen",
+  "compopt",
+  "pushd",
+  "popd",
+  "dirs",
+  "cd",
+] as const;
+
 const PYODIDE_EXEC_SNIPPET = `
 import contextlib
 import io
@@ -464,10 +616,6 @@ function listChildren(paths: string[], dirPath: string): string[] {
   return [...names].sort();
 }
 
-export function getCommandNames(): string[] {
-  return [...DEFAULT_COMMAND_NAMES];
-}
-
 export function isLazyCommand(command: CustomCommand): command is LazyCommand {
   return typeof (command as LazyCommand).load === "function";
 }
@@ -529,6 +677,7 @@ export class Bash {
   private nodeExecWorkerQueue: Promise<void>;
   private nodeEntryModuleUrlPromise: Promise<string> | null;
   private nodeExecWorkerIdleTimer: ReturnType<typeof setTimeout> | null;
+  private transformPlugins: TransformPlugin[] = [];
   readonly fs: FileSystem;
 
   constructor(options: BashOptions = {}) {
@@ -615,7 +764,7 @@ export class Bash {
 
   private installDefaultBinStubs(): void {
     const executableMode = (0o755).toString();
-    for (const commandName of DEFAULT_COMMAND_NAMES) {
+    for (const commandName of this.getRegisteredCommandNamesForLayout()) {
       const stubPath = `/bin/${commandName}`;
       if (!Object.prototype.hasOwnProperty.call(this.files, stubPath)) {
         this.files[stubPath] = `${DEFAULT_BIN_STUB_PREFIX}${commandName}\n`;
@@ -624,6 +773,23 @@ export class Bash {
         this.modes[stubPath] = executableMode;
       }
     }
+  }
+
+  private getRegisteredCommandNamesForLayout(): string[] {
+    const names = new Set<string>(getCommandNames());
+    for (const name of INTERNAL_SHELL_COMMAND_NAMES) names.add(name);
+    if (this.options.fetch || this.options.network) {
+      for (const name of getNetworkCommandNames()) names.add(name);
+    }
+    if (this.options.python) {
+      for (const name of getPythonCommandNames()) names.add(name);
+    }
+    if (this.options.javascript) {
+      for (const name of getJavaScriptCommandNames()) names.add(name);
+    }
+    for (const name of this.eagerCustomCommands.keys()) names.add(name);
+    for (const name of this.lazyCustomCommands.keys()) names.add(name);
+    return [...names];
   }
 
   private createFsApi(): FileSystem {
@@ -1069,8 +1235,9 @@ export class Bash {
       return undefined;
     }
 
-    const fetchImpl = networkOptions.fetch
-      ? networkOptions.fetch
+    const legacyFetch = "fetch" in networkOptions ? networkOptions.fetch : undefined;
+    const fetchImpl = legacyFetch
+      ? legacyFetch
       : (request: MoonBashFetchRequest) => this.defaultFetch(request);
 
     return (requestJson: string): string => {
@@ -1433,7 +1600,13 @@ export class Bash {
       const subCwd = normalizePosixPath(options.cwd ?? cwd);
       let commandToRun = command;
       if (typeof options.stdin === "string" && options.stdin.length > 0) {
-        commandToRun = `printf '%s' ${shellSingleQuote(options.stdin)} | {\n${commandToRun}\n}`;
+        subEnv.__MOON_BASH_STDIN =
+          options.stdinKind === "bytes"
+            ? options.stdin
+            : latin1FromBytes(encodeUtf8ToBytes(options.stdin));
+      }
+      if (options.args && options.args.length > 0) {
+        subEnv.__MOON_BASH_EXTRA_ARGS = JSON.stringify(options.args);
       }
       if (this.hasCustomCommands()) {
         commandToRun = this.buildCustomPrelude(commandToRun);
@@ -1467,7 +1640,7 @@ export class Bash {
       fs: fsApi,
       cwd,
       env: new Map(Object.entries(envObject)),
-      stdin: request.stdin ?? "",
+      stdin: unsafeBytesFromLatin1(request.stdin ?? ""),
       exec: execFn,
     };
 
@@ -2711,16 +2884,24 @@ while (true) {
     }
 
     const effectiveEnv: Record<string, string> = {
-      ...this.baseEnv,
+      ...(execOptions.replaceEnv ? {} : this.baseEnv),
       ...execOptions.env,
     };
-    if (Array.isArray(this.options.commands)) {
-      const allowed = [...this.options.commands];
-      if (this.hasCustomCommands()) {
-        allowed.push("__moon_bash_custom__");
-      }
-      effectiveEnv.__MOON_BASH_ALLOWED_COMMANDS = allowed.join(",");
+    if (execOptions.signal?.aborted) {
+      return {
+        stdout: "",
+        stderr: "",
+        exitCode: 124,
+        env: { ...effectiveEnv },
+      };
     }
+    const allowed = Array.isArray(this.options.commands)
+      ? [...this.options.commands]
+      : this.getRegisteredCommandNamesForLayout();
+    if (this.hasCustomCommands()) {
+      allowed.push("__moon_bash_custom__");
+    }
+    effectiveEnv.__MOON_BASH_ALLOWED_COMMANDS = allowed.join(",");
 
     const cwd = normalizePosixPath(execOptions.cwd ?? this.baseCwd);
     const limitsJson = this.encodeLimitsJson();
@@ -2728,7 +2909,13 @@ while (true) {
 
     let scriptToRun = script;
     if (typeof execOptions.stdin === "string" && execOptions.stdin.length > 0) {
-      scriptToRun = `printf '%s' ${shellSingleQuote(execOptions.stdin)} | {\n${scriptToRun}\n}`;
+      effectiveEnv.__MOON_BASH_STDIN =
+        execOptions.stdinKind === "bytes"
+          ? execOptions.stdin
+          : latin1FromBytes(encodeUtf8ToBytes(execOptions.stdin));
+    }
+    if (execOptions.args && execOptions.args.length > 0) {
+      effectiveEnv.__MOON_BASH_EXTRA_ARGS = JSON.stringify(execOptions.args);
     }
     if (this.hasCustomCommands()) {
       scriptToRun = this.buildCustomPrelude(scriptToRun);
@@ -2884,6 +3071,25 @@ while (true) {
   getFs(): FileSystem {
     return this.fs;
   }
+
+  registerTransformPlugin(plugin: TransformPlugin): void {
+    this.transformPlugins.push(plugin);
+  }
+
+  transform(script: string): BashTransformResult {
+    let ast = parse(script);
+    let metadata: Record<string, unknown> = {};
+    for (const plugin of this.transformPlugins) {
+      const result = plugin.transform({ ast, metadata });
+      ast = result.ast;
+      metadata = { ...metadata, ...(result.metadata ?? {}) };
+    }
+    return {
+      script: serialize(ast),
+      ast,
+      metadata,
+    };
+  }
 }
 
 /**
@@ -2915,6 +3121,10 @@ export class Sandbox {
     this.bash = new Bash(options);
   }
 
+  static async create(options: BashOptions = {}): Promise<Sandbox> {
+    return new Sandbox(options);
+  }
+
   /**
    * Execute a script in this sandbox.
    */
@@ -2927,5 +3137,15 @@ export class Sandbox {
    */
   getFs(): FileSystem {
     return this.bash.getFs();
+  }
+}
+
+export class SandboxCommand {
+  readonly cmdId = crypto.randomUUID();
+  readonly startedAt = new Date();
+  exitCode: number | undefined;
+
+  async wait(): Promise<this> {
+    throw new Error("moon-bash: SandboxCommand is not implemented yet");
   }
 }

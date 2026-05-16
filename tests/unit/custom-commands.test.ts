@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { Bash } from "./Bash.js";
+import { Bash, decodeBytesToUtf8, unsafeBytesFromLatin1 } from "./Bash.js";
 import {
   type CustomCommand,
   createLazyCustomCommand,
@@ -82,7 +82,7 @@ describe("custom-commands", () => {
         fs: {} as never,
         cwd: "/",
         env: new Map(),
-        stdin: "",
+        stdin: unsafeBytesFromLatin1(""),
       });
       expect(loadCount).toBe(1);
       expect(result1.stdout).toBe("lazy loaded\n");
@@ -92,7 +92,7 @@ describe("custom-commands", () => {
         fs: {} as never,
         cwd: "/",
         env: new Map(),
-        stdin: "",
+        stdin: unsafeBytesFromLatin1(""),
       });
       expect(loadCount).toBe(1);
       expect(result2.stdout).toBe("lazy loaded\n");
@@ -116,7 +116,7 @@ describe("custom-commands", () => {
 
     it("custom command receives stdin from pipe", async () => {
       const wordcount = defineCommand("wordcount", async (_args, ctx) => {
-        const words = ctx.stdin.trim().split(/\s+/).filter(Boolean).length;
+        const words = decodeBytesToUtf8(ctx.stdin).trim().split(/\s+/).filter(Boolean).length;
         return { stdout: `${words}\n`, stderr: "", exitCode: 0 };
       });
 
@@ -235,7 +235,7 @@ describe("custom-commands", () => {
 
     it("custom command works in pipeline with built-in commands", async () => {
       const upper = defineCommand("upper", async (_args, ctx) => ({
-        stdout: ctx.stdin.toUpperCase(),
+        stdout: decodeBytesToUtf8(ctx.stdin).toUpperCase(),
         stderr: "",
         exitCode: 0,
       }));

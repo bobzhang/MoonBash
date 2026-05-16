@@ -66,13 +66,15 @@ pub fn ExecContext::new(
     default_env[k] = v
     default_exported[k] = true
   }
+  let initial_stdin = default_env.get("__MOON_BASH_STDIN").unwrap_or("")
+  default_env.remove("__MOON_BASH_STDIN")
   {
     env: default_env,
     exported: default_exported,
     cwd,
     functions: {},
     options: @ast.ShellOptions::default(),
-    stdin_buf: "",
+    stdin_buf: initial_stdin,
     stdout_buf: StringBuilder::new(),
     stderr_buf: StringBuilder::new(),
     exit_code: 0,

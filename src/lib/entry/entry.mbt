@@ -357,6 +357,25 @@ fn parse_json_string(json : String, start : Int) -> (String, Int) {
         '"' => buf.write_char('"')
         '\\' => buf.write_char('\\')
         '/' => buf.write_char('/')
+        'u' => {
+          if i + 4 < len {
+            let d1 = json_hex_value(json[i + 1].to_int().unsafe_to_char())
+            let d2 = json_hex_value(json[i + 2].to_int().unsafe_to_char())
+            let d3 = json_hex_value(json[i + 3].to_int().unsafe_to_char())
+            let d4 = json_hex_value(json[i + 4].to_int().unsafe_to_char())
+            if d1 >= 0 && d2 >= 0 && d3 >= 0 && d4 >= 0 {
+              let code = d1 * 4096 + d2 * 256 + d3 * 16 + d4
+              buf.write_char(code.unsafe_to_char())
+              i += 4
+            } else {
+              buf.write_char('\\')
+              buf.write_char(esc)
+            }
+          } else {
+            buf.write_char('\\')
+            buf.write_char(esc)
+          }
+        }
         _ => {
           buf.write_char('\\')
           buf.write_char(esc)
@@ -368,6 +387,18 @@ fn parse_json_string(json : String, start : Int) -> (String, Int) {
     i += 1
   }
   (buf.to_string(), i)
+}
+
+fn json_hex_value(ch : Char) -> Int {
+  if ch >= '0' && ch <= '9' {
+    ch.to_int() - '0'.to_int()
+  } else if ch >= 'a' && ch <= 'f' {
+    ch.to_int() - 'a'.to_int() + 10
+  } else if ch >= 'A' && ch <= 'F' {
+    ch.to_int() - 'A'.to_int() + 10
+  } else {
+    -1
+  }
 }
 
 fn parse_decimal_int(s : String) -> Int {

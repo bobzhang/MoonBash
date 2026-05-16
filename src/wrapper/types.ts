@@ -1,3 +1,7 @@
+import type { ByteString, OutputKind } from "./encoding";
+import type { DefenseInDepthConfig } from "./security";
+import type { NetworkConfig, SecureFetch } from "./network";
+
 /**
  * MoonBash TypeScript Type Definitions
  * API-compatible with vercel-labs/just-bash
@@ -7,6 +11,8 @@ export interface ExecResult {
   stdout: string;
   stderr: string;
   exitCode: number;
+  stdoutKind?: OutputKind;
+  stdoutEncoding?: "binary";
 }
 
 export interface BashExecResult extends ExecResult {
@@ -16,9 +22,13 @@ export interface BashExecResult extends ExecResult {
 
 export interface ExecOptions {
   env?: Record<string, string>;
+  replaceEnv?: boolean;
   cwd?: string;
   rawScript?: boolean;
   stdin?: string;
+  stdinKind?: "text" | "bytes";
+  signal?: AbortSignal;
+  args?: string[];
 }
 
 export interface BashLogger {
@@ -106,6 +116,11 @@ export interface VmOptions {
   wasm?: VmWasmOptions;
 }
 
+export interface JavaScriptConfig {
+  bootstrap?: string;
+  invokeTool?: (path: string, argsJson: string) => Promise<string>;
+}
+
 export interface TimerOptions {
   /**
    * Optional sleep bridge used by sleep/timeout builtins.
@@ -147,6 +162,10 @@ export interface BashOptions {
   python?: boolean;
   /** Enable built-in SQLite runtime (defaults to WASM bridge). */
   sqlite?: boolean;
+  /** Enable js-exec/node command names. Runtime implementation is added in a later phase. */
+  javascript?: boolean | JavaScriptConfig;
+  /** Upstream secure fetch hook for network commands. */
+  fetch?: SecureFetch;
   /** Execution limits */
   limits?: Partial<ExecutionLimits>;
   /** just-bash compatible alias of `limits` */
@@ -162,9 +181,11 @@ export interface BashOptions {
   /** Optional feature coverage writer used by fuzzing instrumentation. */
   coverage?: FeatureCoverageWriter;
   /** Enable debug tracing */
-  trace?: boolean;
+  trace?: boolean | unknown;
+  /** just-bash compatible defense-in-depth option. */
+  defenseInDepth?: boolean | DefenseInDepthConfig;
   /** Network bridge options used by curl/html-to-markdown */
-  network?: NetworkOptions;
+  network?: NetworkOptions | NetworkConfig;
   /** Timer bridge options used by sleep/time/timeout */
   timers?: TimerOptions;
   /** VM bridge options used by python3/sqlite3 */
@@ -217,7 +238,7 @@ export interface CommandContext {
   fs: FileSystem;
   cwd: string;
   env: Map<string, string>;
-  stdin: string;
+  stdin: ByteString;
   exec?: (command: string, options?: ExecOptions) => Promise<ExecResult>;
 }
 
