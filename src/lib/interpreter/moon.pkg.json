@@ -6,6 +6,7 @@
     "Haoxincode/moonbash/lib/commands",
     "Haoxincode/moonbash/lib/regex",
     "Haoxincode/moonbash/lib/ffi",
+    "moonbitlang/core/json",
     "moonbitlang/x/time"
   ]
 }

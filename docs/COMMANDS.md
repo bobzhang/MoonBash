@@ -1,8 +1,8 @@
 # MoonBash Built-in Commands
 
-MoonBash targets 87 Unix commands (matching vercel-labs/just-bash API surface). Most commands run as pure in-memory MoonBit logic; commands that require host capabilities (network, timers, optional external runtimes) cross an explicit FFI boundary.
+MoonBash tracks the `just-bash@3.0.1` public command surface: 82 default command names plus optional network, Python, and JavaScript command groups. Shell builtins may add additional Bash-compatible names that are not part of `getCommandNames()`. Most command behavior runs as pure in-memory MoonBit logic; commands that require host capabilities (network, timers, optional external runtimes) cross an explicit FFI boundary.
 
-Status note (as of 2026-02-19): command coverage is complete (`87/87`), while spec/security compatibility hardening is still in progress. See `docs/ROADMAP.md` and `docs/TEST_STATUS_2026-02-19.md`.
+Status note (2026-05-16): default and optional command-name helper lists are aligned to `just-bash@3.0.1`. The TypeScript facade now provides basic `js-exec` support for inline code, script files, `--` script separation, upstream-style CLI errors/version output, bootstrap code, top-level `await`, `javascript.invokeTool` tools proxy calls, CommonJS and module-mode `fs`/`path` shims backed by the VFS, and the upstream `node` stub when `javascript` is configured. Full QuickJS isolation and the remaining Node-compatible module shims remain planned runtime work.
 
 ## Command Categories
 

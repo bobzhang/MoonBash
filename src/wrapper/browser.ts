@@ -11,14 +11,67 @@ export type {
   InitialFileEntry,
   InitialFileValue,
   InitialFiles,
+  LazyCommand,
 } from "./types";
 
 export {
   Bash,
-  Sandbox,
   createLazyCustomCommand,
   defineCommand,
   exec,
-  getCommandNames,
   isLazyCommand,
-} from "./index";
+} from "./core";
+
+export type {
+  BufferEncoding,
+  CpOptions,
+  DirectoryEntry,
+  FileContent,
+  FileEntry,
+  FileInit,
+  FileSystemFactory,
+  FsEntry,
+  FsStat,
+  IFileSystem,
+  LazyFileEntry,
+  LazyFileProvider,
+  MkdirOptions,
+  MountConfig,
+  MountableFsOptions,
+  RmOptions,
+  SymlinkEntry,
+} from "./fs";
+export {
+  InMemoryFs,
+  MountableFs,
+} from "./fs";
+export type {
+  NetworkConfig,
+} from "./network";
+export {
+  NetworkAccessDeniedError,
+  RedirectNotAllowedError,
+  TooManyRedirectsError,
+} from "./network";
+
+export type {
+  AllCommandName,
+  CommandName,
+  NetworkCommandName,
+} from "./commands/registry";
+export {
+  getCommandNames,
+  getNetworkCommandNames,
+} from "./commands/registry";
+export type { ByteString, OutputKind } from "./encoding";
+export {
+  bytesOutput,
+  decodeBytesToUtf8,
+  EMPTY_BYTES,
+  encodeUtf8ToBytes,
+  latin1FromBytes,
+  stdoutAsBytes,
+  stdoutKind,
+  textOutput,
+  unsafeBytesFromLatin1,
+} from "./encoding";

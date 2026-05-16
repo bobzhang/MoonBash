@@ -11,16 +11,30 @@
   ],
   "license": "Apache-2.0",
   "files": [
-    "dist/index.mjs",
-    "dist/index.d.mts"
+    "dist/"
   ],
   "type": "module",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "types": "./dist/index.d.mts"
+      "browser": "./dist/browser.mjs",
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
+    },
+    "./browser": {
+      "types": "./dist/browser.d.mts",
+      "import": "./dist/browser.mjs"
+    },
+    "./executor": {
+      "types": "./dist/executor.d.mts",
+      "import": "./dist/executor.mjs"
     }
   },
   "scripts": {
@@ -33,6 +47,7 @@
     "test": "moon -C src build --target js --release && vp test run",
     "test:comparison": "moon -C src build --target js --release && vp test run tests/comparison/",
     "test:comparison:record": "RECORD_FIXTURES=1 vp run test:comparison",
+    "test:compat:types": "tsc -p tsconfig.compat.json",
     "test:safe": "moon -C src build --target js --release && bash scripts/test-safe.sh",
     "test:watch": "moon -C src build --target js --release && vp test watch",
     "check": "moon -C src check",

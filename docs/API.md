@@ -2,7 +2,7 @@
 
 This document defines the public API surface of MoonBash, designed to be 100% compatible with `just-bash`.
 
-Status note (as of 2026-02-19): API surface compatibility is complete, while spec/security compatibility hardening is still in progress. For current pass/fail truth, see `docs/TEST_STATUS_2026-02-19.md` and `docs/ROADMAP.md`.
+Status note (2026-05-16): MoonBash is aligning to `just-bash@3.0.1`. The compatibility work now covers root exports, command-name helpers, ByteString helpers, compile-only public type consumers for root and browser entries, low-risk `ExecOptions` fields (`replaceEnv`, `stdinKind`, `args`, pre-aborted `signal`), deprecated top-level execution limit aliases, public `processInfo` and `trace` types, `processInfo` runtime mapping for `$$`, `$BASHPID`, `$PPID`, `$UID`, and `$EUID`, public async `InMemoryFs`, `MountableFs` routing/cross-filesystem behavior, root-confined `ReadWriteFs`, copy-on-write `OverlayFs`, the Vercel-style `Sandbox` object model, the Transform/parser facade for simple commands, pipelines, basic `if`/`for`/`while`/`until`/function AST, command substitutions, and recursive command collection, package exports for Node ESM, CommonJS, browser, and executor subpaths, a basic TypeScript `js-exec` facade for `-c`, script files, `--` script separation, upstream-style CLI errors/version output, bootstrap, top-level `await`, `javascript.invokeTool` tools proxy calls, CommonJS and module-mode `fs`/`path` shims backed by the VFS, and the upstream `node` stub, plus an executor companion for inline tools and `setup` custom sources with approval and elicitation gates. Full QuickJS isolation, the remaining Node-compatible module shims and full ESM loader support, GraphQL/OpenAPI/MCP executor SDK discovery, SDK-native elicitation, and full upstream AST coverage are planned in separate phases.
 
 ## 1. Core Classes
 
@@ -47,17 +47,19 @@ Vercel Sandbox API-compatible wrapper around `Bash`.
 
 ```typescript
 class Sandbox {
-  constructor(options?: SandboxOptions);
+  static create(options?: SandboxOptions): Promise<Sandbox>;
 
   /**
-   * Execute a command in the sandbox.
+   * Execute a command in the sandbox and return a finished command.
    */
-  exec(command: string): Promise<ExecResult>;
+  runCommand(params: RunCommandParams): Promise<CommandFinished>;
+  runCommand(command: string, args: string[]): Promise<CommandFinished>;
+  runCommand(command: string, opts?: { cwd?: string; env?: Record<string, string> }): Promise<CommandFinished>;
 
   /**
    * Get the underlying Bash instance.
    */
-  getBash(): Bash;
+  get bashEnvInstance(): Bash;
 }
 ```
 
@@ -316,11 +318,12 @@ interface DirentEntry {
 
 ```typescript
 class InMemoryFs implements IFileSystem {
-  constructor();
+  constructor(initialFiles?: InitialFiles);
 
-  // All IFileSystem methods implemented with pure in-memory storage.
-  // Data stored in Map<string, FsEntry>.
-  // No disk access whatsoever.
+  // Async just-bash-compatible memory filesystem:
+  // read/write/append, binary reads, lazy files, directories,
+  // symlinks, hard links, stat/lstat/realpath, chmod, utimes,
+  // readdirWithFileTypes, and path resolution.
 }
 ```
 
@@ -343,6 +346,9 @@ interface OverlayFsOptions {
 
   /** Max file size to read from disk. Default: 10MB */
   maxFileReadSize?: number;
+
+  /** Whether real and virtual symlinks are allowed. Default: false */
+  allowSymlinks?: boolean;
 }
 ```
 
@@ -350,8 +356,8 @@ interface OverlayFsOptions {
 
 ```typescript
 class ReadWriteFs implements IFileSystem {
-  constructor(rootDir: string);
-  // Direct read/write to real filesystem via Node.js fs module.
+  constructor(options: ReadWriteFsOptions);
+  // Direct root-confined read/write to real filesystem via Node.js fs module.
 }
 ```
 
@@ -359,7 +365,7 @@ class ReadWriteFs implements IFileSystem {
 
 ```typescript
 class MountableFs implements IFileSystem {
-  constructor(baseFs: IFileSystem);
+  constructor(options?: MountableFsOptions);
 
   /**
    * Mount a filesystem at a virtual path.
@@ -371,6 +377,9 @@ class MountableFs implements IFileSystem {
    * Unmount a filesystem.
    */
   unmount(mountPoint: string): void;
+
+  getMounts(): ReadonlyArray<{ mountPoint: string; filesystem: IFileSystem }>;
+  isMountPoint(path: string): boolean;
 }
 ```
 

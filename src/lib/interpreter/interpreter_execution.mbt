@@ -671,6 +671,9 @@ fn ExecContext::execute_simple(
   for i = 1; i < expanded.length(); i = i + 1 {
     args.push(expanded[i])
   }
+  for arg in self.consume_extra_args() {
+    args.push(arg)
+  }
   let should_restore_prefix_assignments = track_prefix_assignment_restore &&
     !(command_keeps_prefix_assignments(run_cmd_name))
   let originally_exported_prefix_assignments : Map[String, Bool] = {}

@@ -38,6 +38,23 @@ Phase 5: Multi-Platform Expansion            🔧 PARTIALLY COMPLETE
   → VM bridges: python3, sqlite3 (done)
   → Browser website demo + browser build path landed
   → Remaining: WASM target, published browser packaging hardening, standalone REPL
+
+Phase 6: just-bash 3 API Compatibility       🔧 IN PROGRESS
+  → Surface parity matrix, command-name helpers, ByteString helpers, ExecOptions compatibility
+  → Deprecated top-level execution limit aliases, processInfo special variables, and trace callback types landed
+  → TypeScript compile-only consumer check added for public facade exports
+  → InMemoryFs public async runtime API landed and is accepted by Bash({ fs })
+  → MountableFs routing, mount management, and cross-filesystem copy/move landed
+  → ReadWriteFs direct root-confined Node filesystem access landed
+  → OverlayFs copy-on-write host-directory access landed
+  → Sandbox runCommand, Command, file helpers, custom fs, and overlayRoot landed
+  → Transform/parser facade for simple commands, pipelines, basic compound AST, and recursive command collection landed
+  → Node ESM, CommonJS, and browser subpath package exports landed
+  → Basic TypeScript js-exec facade, upstream CLI option/error semantics, CommonJS/module-mode fs/path shims, and upstream node stub landed
+  → Inline-tools executor companion and executor package subpath landed
+  → Executor setup custom sources, approval gates, and elicitation gates landed
+  → Basic javascript.invokeTool tools proxy wiring landed
+  → Remaining: full QuickJS/js-exec runtime, remaining Node-compatible module shims and full ESM loader support, GraphQL/OpenAPI/MCP executor SDK discovery, SDK-native elicitation, full upstream AST coverage
 ```
 
 **Current comparison test pass rate: 523/523 (100%)**
@@ -617,10 +634,10 @@ All binary/codec work is pure MoonBit (zero JS runtime dependencies). Community 
 
 | Metric | Target | Current |
 |---|---|---|
-| API surface compatibility | 100% drop-in for just-bash | ✅ 100% (interface/entry points) |
+| API surface compatibility | 100% drop-in for `just-bash@3.0.1` | 🔧 root/browser exports, type/package checks, and executor custom-source slices landed; runtime gaps remain |
 | Bundle size (gzip) | <100 KB | TBD |
 | Cold start time | <5 ms | TBD |
-| Command coverage | 87 commands (matching just-bash) | ✅ 87 (100%) |
+| Command surface coverage | `just-bash@3.0.1` default + optional command groups | 🔧 helper lists aligned; basic JS facade landed |
 | Bash behavior accuracy | >95% (comparison tests) | ✅ 100% (523/523) |
 | Spec suite integration | Oils bash + awk + sed + grep + jq | ✅ integrated |
 | Spec compatibility pass status (2026-02-19) | Full green | 🔧 grep `54` failed, jq `170` failed, bash chunked run `683+` failed confirmed |

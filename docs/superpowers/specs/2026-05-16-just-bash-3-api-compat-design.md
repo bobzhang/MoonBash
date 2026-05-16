@@ -111,12 +111,16 @@ MoonBash should export the same security classes and types. If full monkey-patch
 - Update `BashOptions` and `ExecOptions` types to match upstream fields, preserving existing MoonBash aliases only as additions.
 - Export byte/text helper functions and update custom command types.
 
+Status (2026-05-16): landed in the `just-bash-3-surface-parity` branch. Runtime export tests, command helper tests, ByteString tests, and a compile-only public type consumer now cover this slice. FS, Sandbox, Transform, runtime bridges, executor, and packaging remain future phases.
+
 ### Phase C: Exec and Byte Semantics
 
 - Implement `replaceEnv`, `stdinKind`, `args`, and `signal` behavior.
 - Move stdin piping away from shell string prelude toward an explicit execution input channel so bytes and leading whitespace are preserved.
 - Update command bridge handling for custom commands and VM commands to carry output kind and byte-shaped stdin.
 - Import upstream UTF-8 and binary stdin tests.
+
+Status (2026-05-16): low-risk fields are implemented for the wrapper path: `replaceEnv`, UTF-8 text stdin, latin1 byte stdin, first-command `args`, and pre-aborted `AbortSignal` returning exit code 124. Mid-execution signal cancellation is still part of later Sandbox/runtime work.
 
 ### Phase D: Filesystem Classes
 
@@ -125,11 +129,19 @@ MoonBash should export the same security classes and types. If full monkey-patch
 - Bridge live FS state to the MoonBit kernel for commands that can still run as pure snapshot execution.
 - Add upstream FS security and cross-FS tests.
 
+Status (2026-05-16): `InMemoryFs` is implemented in the TypeScript facade with async file operations, binary reads, lazy files, directory entries, symlinks, hard links, metadata, `utimes`, and `Bash({ fs })` snapshot/state writeback. `MountableFs` now implements mount management, longest-prefix routing, directory mount merging, mount-point busy checks, cross-filesystem copy/move, and byte reads. `ReadWriteFs` now implements direct root-confined Node filesystem access, binary reads, directory operations, metadata operations, symlink policy, and path containment. `OverlayFs` now implements copy-on-write host-directory reads, in-memory writes/deletes, read-only mode, metadata operations, symlink policy, and path containment. Live host-FS bridges and upstream FS security tests remain open.
+
 ### Phase E: Sandbox API
 
 - Implement `src/wrapper/sandbox/Command.ts` and `src/wrapper/sandbox/Sandbox.ts`.
 - Export `Sandbox`, `SandboxCommand`, and related types from the package entry.
 - Add upstream Sandbox tests.
+
+Status (2026-05-16): `Sandbox` and `SandboxCommand` now live in the TypeScript facade with `Sandbox.create`, `runCommand` overloads, detached commands, stdout/stderr/log helpers, writable stream forwarding, file helpers, `fs` and `overlayRoot` options, pre-aborted signal handling, and lifecycle no-ops. Remaining Sandbox risk is tied to deeper runtime cancellation/timeout semantics and broader upstream test import.
+
+### Phase E.5: Execution Options and Public Runtime Types
+
+Status (2026-05-16): `ExecOptions` covers `replaceEnv`, `stdinKind`, `args`, `rawScript`, `cwd`, env merging, and pre-aborted signal behavior. `BashOptions` now includes the upstream deprecated top-level `maxCallDepth`, `maxCommandCount`, and `maxLoopIterations` aliases, public `processInfo` shape, and typed `TraceCallback`/`TraceEvent`. The top-level command-count alias is wired into the MoonBit execution limits and normalizes command-limit stdout to match upstream public behavior. `processInfo` now drives `$$`, `$BASHPID`, `$PPID`, `$UID`, and `$EUID` through private MoonBash runtime keys without exposing those keys through public `env` results.
 
 ### Phase F: Transform and Parser Facade
 
@@ -137,11 +149,15 @@ MoonBash should export the same security classes and types. If full monkey-patch
 - Implement `parse()`, `serialize()`, `BashTransformPipeline`, `CommandCollectorPlugin`, and `TeePlugin`.
 - Wire `Bash.registerTransformPlugin()` and `Bash.transform()` to the facade.
 
+Status (2026-05-16): a TypeScript compatibility facade is implemented for simple commands, assignments, redirections, pipelines, `&&`/`||`/`;`, basic `if`/`for`/`while`/`until`/function AST nodes, command substitutions, parameter default substitutions, recursive `CommandCollectorPlugin`, `parse()`, `serialize()`, `BashTransformPipeline`, `TeePlugin`, and `Bash.transform()`. Full upstream AST coverage for `case`, subshell/group edge cases, heredocs, arithmetic commands, conditionals, process substitutions, brace/glob/tilde parts, and exact serialization remains open.
+
 ### Phase G: Optional Runtime Bridges
 
 - Implement `javascript` option, `JavaScriptConfig`, `js-exec`, `node`, `invokeTool`, QuickJS worker bridge, and Node/browser exclusions.
 - Align Python and SQLite registration semantics with upstream.
 - Add worker timeout, output limit, network, and tool invocation tests.
+
+Status (2026-05-16): a basic TypeScript facade for `js-exec` now registers when `javascript` is configured and covers `js-exec -c`, virtual filesystem script files, `--` script separation, upstream-style CLI errors/version output, bootstrap code, stdin-as-code, top-level `await`, `javascript.invokeTool` tools proxy calls, CommonJS `require("fs")`/`require("path")` and module-mode `import fs/path` shims backed by the VFS, and the upstream `node` stub message. This is a compatibility bridge for public API progress, not the final QuickJS runtime: full QuickJS isolation, remaining Node-compatible module shims and full ESM loader support, worker timeout/output limits, and upstream `js-exec` test import remain open.
 
 ### Phase H: Executor Companion
 
@@ -149,11 +165,15 @@ MoonBash should export the same security classes and types. If full monkey-patch
 - Implement inline tools, SDK-driven discovery adapter hooks where available, approval/elicitation hooks, and bash command generation.
 - Add executor example and docs tests.
 
+Status (2026-05-16): `moon-bash/executor` now provides a companion compatible with the stable public pieces of `@just-bash/executor@1.0.2`: `createExecutor()`, `parseToolArgs()`, namespace command generation, kebab-case/camelCase aliases, `--json`, key-value flags, stdin JSON, help output, `exposeToolsAsCommands`, `invokeTool()` for host-side callers, inline tools, `setup` custom sources, `sdk.tools.list()`, `sdk.sources.list()`, adapter-level approval gates, and custom-source elicitation gates for direct and command tool calls. Basic end-to-end `javascript.invokeTool` calls from inside `js-exec` are wired through the tools proxy. GraphQL/OpenAPI/MCP discovery, SDK-native elicitation, and the full worker/QuickJS runtime remain open.
+
 ### Phase I: Packaging and Verification
 
 - Match package exports for root and browser entry points.
 - Verify Node ESM, CJS if supported, browser bundle, CLI if supported, and type declarations.
 - Run `moon -C src check --target js`, `vp run test:safe`, targeted upstream compatibility tests, and generated API matrix tests.
+
+Status (2026-05-16): root package exports now expose browser, require, and import conditions aligned with `just-bash@3.0.1`; the `./browser` and `./executor` subpaths are present; `vp pack` builds `index.mjs`, `index.cjs`, `browser.mjs`, `executor.mjs`, and matching declarations. Package export tests verify direct dist imports, package-name ESM import, CommonJS require, browser subpath import without Node-only exports, executor subpath import, and a NodeNext CommonJS TypeScript consumer. Full publish/package smoke tests and any future CLI packaging remain open.
 
 ## Testing Strategy
 
@@ -176,8 +196,5 @@ Passing a narrow MoonBash comparison suite is not enough to claim API compatibil
 
 ## Open Questions
 
-1. Package naming for executor compatibility: publish a separate `@moon-bash/executor` package or expose an internal `moon-bash/executor` subpath.
-2. Browser support target for optional runtime APIs: match upstream exclusions exactly or expose MoonBash-specific browser fallbacks where safe.
-3. CJS output target: upstream ships CJS; MoonBash currently focuses on ESM. Full API/package compatibility may require adding CJS packaging.
-4. Transform parser source of truth: MoonBit AST adapter preferred, TS parser facade acceptable if exact upstream AST compatibility blocks progress.
-
+1. Browser support target for optional runtime APIs: match upstream exclusions exactly or expose MoonBash-specific browser fallbacks where safe.
+2. Transform parser source of truth: MoonBit AST adapter preferred, TS parser facade acceptable if exact upstream AST compatibility blocks progress.

@@ -297,6 +297,18 @@ fn cmd_python3(ctx : CommandContext) -> @ast.ExecResult {
   vm_run("python3", ctx)
 }
 
+fn cmd_js_exec_placeholder(ctx : CommandContext) -> @ast.ExecResult {
+  let display_name = if ctx.args.length() > 0 {
+    ctx.args[0]
+  } else {
+    "js-exec"
+  }
+  @ast.ExecResult::new(
+    stderr="\{display_name}: JavaScript runtime bridge is not implemented yet\n",
+    exit_code=1,
+  )
+}
+
 fn cmd_sqlite3(ctx : CommandContext) -> @ast.ExecResult {
   vm_run("sqlite3", ctx)
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { Bash } from "./Bash.js";
-import { getCommandNames } from "./commands/registry.js";
+import { getCommandNames, getJavaScriptCommandNames, getNetworkCommandNames, getPythonCommandNames } from "./commands/registry.js";
 
 describe("Bash commands filtering", () => {
   it("registers all commands by default", async () => {
@@ -46,15 +46,58 @@ describe("Bash commands filtering", () => {
     expect(result.stderr).toContain("command not found");
   });
 
-  it("getCommandNames returns all available command names", () => {
+  it("getCommandNames returns upstream default command names without optional groups", () => {
     const names = getCommandNames();
     expect(names).toContain("echo");
     expect(names).toContain("cat");
     expect(names).toContain("ls");
     expect(names).toContain("grep");
     expect(names).toContain("find");
-    // curl is a network command, not in the default list
+    expect(names).toContain("split");
+    expect(names).toContain("strings");
+    expect(names).toContain("tar");
+    expect(names).toContain("html-to-markdown");
     expect(names).not.toContain("curl");
+    expect(names).not.toContain("python3");
+    expect(names).not.toContain("python");
+    expect(names).not.toContain("js-exec");
+    expect(names).not.toContain("node");
+  });
+
+  it("reports optional command groups separately", () => {
+    expect(getNetworkCommandNames()).toEqual(["curl"]);
+    expect(getPythonCommandNames()).toEqual(["python3", "python"]);
+    expect(getJavaScriptCommandNames()).toEqual(["js-exec", "node"]);
+  });
+
+  it("network commands are unavailable until network is configured", async () => {
+    const bash = new Bash();
+    const result = await bash.exec("curl https://example.com");
+    expect(result.exitCode).toBe(127);
+    expect(result.stderr).toContain("command not found");
+  });
+
+  it("python alias is registered when python is enabled", async () => {
+    const bash = new Bash({
+      python: true,
+      vm: {
+        run: (request) => ({
+          stdout: `${request.runtime}:${request.args.join(" ")}\n`,
+          stderr: "",
+          exitCode: 0,
+        }),
+      },
+    });
+    const result = await bash.exec("python -c 'print(1)'");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("python3:");
+  });
+
+  it("javascript commands are unavailable until javascript is configured", async () => {
+    const bash = new Bash();
+    const result = await bash.exec("js-exec -c 'console.log(1)'");
+    expect(result.exitCode).toBe(127);
+    expect(result.stderr).toContain("command not found");
   });
 
   it("empty commands array means no commands", async () => {

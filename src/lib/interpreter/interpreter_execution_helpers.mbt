@@ -67,6 +67,16 @@ fn ExecContext::load_fd_output_mapping(
   }
 }
 
+fn ExecContext::consume_extra_args(self : ExecContext) -> Array[String] {
+  match self.env.get("__MOON_BASH_EXTRA_ARGS") {
+    None => []
+    Some(raw) => {
+      self.env.remove("__MOON_BASH_EXTRA_ARGS")
+      json_bridge_string_array(raw)
+    }
+  }
+}
+
 fn ExecContext::try_store_array_assignment(
   self : ExecContext,
   name : String,

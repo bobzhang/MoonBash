@@ -20,7 +20,7 @@ run_batch() {
   shift
   echo
   echo "== [test:safe] ${name} =="
-  if vp exec vitest "${COMMON_ARGS[@]}" "$@"; then
+  if vp test "${COMMON_ARGS[@]}" "$@"; then
     echo "   ✓ ${name} passed"
   else
     echo "   ✗ ${name} FAILED (exit $?)"
