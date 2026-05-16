@@ -145,7 +145,7 @@ Status (2026-05-16): `Sandbox` and `SandboxCommand` now live in the TypeScript f
 - Implement `parse()`, `serialize()`, `BashTransformPipeline`, `CommandCollectorPlugin`, and `TeePlugin`.
 - Wire `Bash.registerTransformPlugin()` and `Bash.transform()` to the facade.
 
-Status (2026-05-16): a basic TypeScript compatibility facade is implemented for simple commands, assignments, redirections, pipelines, `&&`/`||`/`;`, `parse()`, `serialize()`, `BashTransformPipeline`, `CommandCollectorPlugin`, `TeePlugin`, and `Bash.transform()`. Full upstream AST coverage for compound commands, substitutions, heredocs, conditionals, loops, and exact serialization remains open.
+Status (2026-05-16): a TypeScript compatibility facade is implemented for simple commands, assignments, redirections, pipelines, `&&`/`||`/`;`, basic `if`/`for`/`while`/`until`/function AST nodes, command substitutions, parameter default substitutions, recursive `CommandCollectorPlugin`, `parse()`, `serialize()`, `BashTransformPipeline`, `TeePlugin`, and `Bash.transform()`. Full upstream AST coverage for `case`, subshell/group edge cases, heredocs, arithmetic commands, conditionals, process substitutions, brace/glob/tilde parts, and exact serialization remains open.
 
 ### Phase G: Optional Runtime Bridges
 

@@ -36,6 +36,47 @@ describe("Transform compatibility", () => {
     expect(result.metadata.commands).toEqual(["cat", "echo", "grep"]);
   });
 
+  it("parses and serializes basic compound commands in upstream AST shape", () => {
+    const ifAst = parse("if true; then echo yes; else cat no; fi");
+    const ifCommand = ifAst.statements[0].pipelines[0].commands[0] as any;
+
+    expect(ifCommand.type).toBe("If");
+    expect(ifCommand.clauses[0].condition[0].pipelines[0].commands[0].name.parts[0].value).toBe("true");
+    expect(ifCommand.clauses[0].body[0].pipelines[0].commands[0].name.parts[0].value).toBe("echo");
+    expect(ifCommand.elseBody[0].pipelines[0].commands[0].name.parts[0].value).toBe("cat");
+    expect(ifCommand.redirections).toEqual([]);
+    expect(serialize(ifAst)).toBe("if true; then\necho yes\nelse\ncat no\nfi");
+
+    const forAst = parse("for f in a b; do echo $f; done");
+    const forCommand = forAst.statements[0].pipelines[0].commands[0] as any;
+
+    expect(forCommand.type).toBe("For");
+    expect(forCommand.variable).toBe("f");
+    expect(forCommand.words.map((word: any) => word.parts[0].value)).toEqual(["a", "b"]);
+    expect(forCommand.body[0].pipelines[0].commands[0].args[0].parts[0]).toEqual({
+      type: "ParameterExpansion",
+      parameter: "f",
+      operation: null,
+    });
+    expect(serialize(forAst)).toBe("for f in a b; do\necho $f\ndone");
+
+    const functionAst = parse("foo() { echo hi; }");
+    const functionCommand = functionAst.statements[0].pipelines[0].commands[0] as any;
+
+    expect(functionCommand.type).toBe("FunctionDef");
+    expect(functionCommand.name).toBe("foo");
+    expect(functionCommand.body.type).toBe("Group");
+    expect(functionCommand.body.body[0].pipelines[0].commands[0].name.parts[0].value).toBe("echo");
+    expect(serialize(functionAst)).toBe("foo() { echo hi; }");
+  });
+
+  it("collects commands recursively from compound commands and substitutions", () => {
+    const ast = parse("if true; then echo $(cat file); else printf ${FOO:-$(date)}; fi");
+    const result = new CommandCollectorPlugin().transform({ ast, metadata: {} });
+
+    expect(result.metadata.commands).toEqual(["cat", "date", "echo", "printf", "true"]);
+  });
+
   it("runs pipeline plugins and merges metadata", () => {
     const result = new BashTransformPipeline()
       .use(new CommandCollectorPlugin())
