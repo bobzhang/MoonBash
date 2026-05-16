@@ -151,6 +151,7 @@ const execOptions: ExecOptions = {
 };
 
 const bash = new Bash(options);
+bash.registerCommand(command);
 void bash.exec("echo hello", execOptions);
 void bash.readFile("/data.txt");
 void bash.writeFile("/data.txt", "updated");

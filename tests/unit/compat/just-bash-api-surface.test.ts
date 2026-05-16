@@ -25,4 +25,20 @@ describe("just-bash 3 public API surface", () => {
     expect(moonBash.getPythonCommandNames()).toEqual([...JUST_BASH_3_PYTHON_COMMAND_NAMES]);
     expect(moonBash.getJavaScriptCommandNames()).toEqual([...JUST_BASH_3_JAVASCRIPT_COMMAND_NAMES]);
   });
+
+  it("supports dynamic Bash.registerCommand registration", async () => {
+    const bash = new moonBash.Bash({ commands: ["greet"] });
+    bash.registerCommand(
+      moonBash.defineCommand("greet", async (args) => ({
+        stdout: `hello ${args[0] ?? "world"}\n`,
+        stderr: "",
+        exitCode: 0,
+      })),
+    );
+
+    const result = await bash.exec("greet moon");
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("hello moon\n");
+  });
 });

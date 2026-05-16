@@ -842,6 +842,11 @@ export class Bash {
     this.fs = this.createFsApi();
   }
 
+  registerCommand(command: Command): void {
+    this.eagerCustomCommands.set(command.name, command);
+    this.lazyCustomCommands.delete(command.name);
+  }
+
   private normalizePath(inputPath: string): string {
     if (inputPath.startsWith("/")) {
       return inputPath;
