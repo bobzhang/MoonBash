@@ -42,7 +42,8 @@ Phase 5: Multi-Platform Expansion            🔧 PARTIALLY COMPLETE
 Phase 6: just-bash 3 API Compatibility       🔧 IN PROGRESS
   → Surface parity matrix, command-name helpers, ByteString helpers, ExecOptions compatibility
   → TypeScript compile-only consumer check added for public facade exports
-  → Remaining: async FS classes, Sandbox, Transform/parser behavior, js-exec/node runtime, executor companion, CJS/browser packaging parity
+  → InMemoryFs public async runtime API landed and is accepted by Bash({ fs })
+  → Remaining: MountableFs, OverlayFs, ReadWriteFs, Sandbox, Transform/parser behavior, js-exec/node runtime, executor companion, CJS/browser packaging parity
 ```
 
 **Current comparison test pass rate: 523/523 (100%)**

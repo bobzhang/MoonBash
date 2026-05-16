@@ -2,7 +2,7 @@
 
 This document defines the public API surface of MoonBash, designed to be 100% compatible with `just-bash`.
 
-Status note (2026-05-16): MoonBash is aligning to `just-bash@3.0.1`. The first compatibility slice covers root exports, command-name helpers, ByteString helpers, a compile-only public type consumer, and low-risk `ExecOptions` fields (`replaceEnv`, `stdinKind`, `args`, pre-aborted `signal`). Full async FS classes, Sandbox runtime behavior, Transform/parser behavior, JavaScript runtime commands, executor compatibility, and packaging parity are planned in separate phases.
+Status note (2026-05-16): MoonBash is aligning to `just-bash@3.0.1`. The compatibility work now covers root exports, command-name helpers, ByteString helpers, a compile-only public type consumer, low-risk `ExecOptions` fields (`replaceEnv`, `stdinKind`, `args`, pre-aborted `signal`), and the public async `InMemoryFs` runtime API. `MountableFs`, `OverlayFs`, `ReadWriteFs`, Sandbox runtime behavior, Transform/parser behavior, JavaScript runtime commands, executor compatibility, and packaging parity are planned in separate phases.
 
 ## 1. Core Classes
 
@@ -316,11 +316,12 @@ interface DirentEntry {
 
 ```typescript
 class InMemoryFs implements IFileSystem {
-  constructor();
+  constructor(initialFiles?: InitialFiles);
 
-  // All IFileSystem methods implemented with pure in-memory storage.
-  // Data stored in Map<string, FsEntry>.
-  // No disk access whatsoever.
+  // Async just-bash-compatible memory filesystem:
+  // read/write/append, binary reads, lazy files, directories,
+  // symlinks, hard links, stat/lstat/realpath, chmod, utimes,
+  // readdirWithFileTypes, and path resolution.
 }
 ```
 

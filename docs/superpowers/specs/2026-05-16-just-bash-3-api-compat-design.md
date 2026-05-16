@@ -129,6 +129,8 @@ Status (2026-05-16): low-risk fields are implemented for the wrapper path: `repl
 - Bridge live FS state to the MoonBit kernel for commands that can still run as pure snapshot execution.
 - Add upstream FS security and cross-FS tests.
 
+Status (2026-05-16): `InMemoryFs` is implemented in the TypeScript facade with async file operations, binary reads, lazy files, directory entries, symlinks, hard links, metadata, `utimes`, and `Bash({ fs })` snapshot/state writeback. `MountableFs`, `OverlayFs`, `ReadWriteFs`, live host-FS bridges, and upstream FS security/cross-FS tests remain open.
+
 ### Phase E: Sandbox API
 
 - Implement `src/wrapper/sandbox/Command.ts` and `src/wrapper/sandbox/Sandbox.ts`.

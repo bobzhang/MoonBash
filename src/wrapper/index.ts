@@ -79,6 +79,7 @@ export type {
   BufferEncoding,
   CpOptions,
   DirectoryEntry,
+  DirentEntry,
   FileContent,
   FileEntry,
   FileInit,
@@ -89,8 +90,13 @@ export type {
   LazyFileEntry,
   LazyFileProvider,
   MkdirOptions,
+  MountableFsOptions,
+  OverlayFsOptions,
+  ReadFileOptions,
+  ReadWriteFsOptions,
   RmOptions,
   SymlinkEntry,
+  WriteFileOptions,
 } from "./fs";
 export {
   InMemoryFs,
@@ -670,6 +676,12 @@ export class Bash {
   private sqlJsRuntime: SqlJsRuntimeLike | null;
   private sqlJsRuntimePromise: Promise<SqlJsRuntimeLike> | null;
   private pyodideTrackedFiles: Set<string>;
+  private externalFsApplyState: ((
+    files: Record<string, string>,
+    dirs?: Record<string, string>,
+    links?: Record<string, string>,
+    modes?: Record<string, string>,
+  ) => void) | null;
   private nodeExecWorker: NodeWorkerLike | null;
   private nodeExecWorkerInitPromise: Promise<NodeWorkerLike> | null;
   private nodeExecWorkerPendingExec: Map<number, NodeWorkerPendingExec>;
@@ -715,6 +727,7 @@ export class Bash {
     this.sqlJsRuntime = null;
     this.sqlJsRuntimePromise = null;
     this.pyodideTrackedFiles = new Set();
+    this.externalFsApplyState = this.extractFsApplyState((options as { fs?: unknown }).fs);
     this.nodeExecWorker = null;
     this.nodeExecWorkerInitPromise = null;
     this.nodeExecWorkerPendingExec = new Map();
@@ -1011,6 +1024,31 @@ export class Bash {
     return out;
   }
 
+  private extractFsApplyState(
+    fsLike: unknown,
+  ): ((
+    files: Record<string, string>,
+    dirs?: Record<string, string>,
+    links?: Record<string, string>,
+    modes?: Record<string, string>,
+  ) => void) | null {
+    if (!fsLike || typeof fsLike !== "object") {
+      return null;
+    }
+    const maybeStateful = fsLike as {
+      __moon_bash_apply_state?: (
+        files: Record<string, string>,
+        dirs?: Record<string, string>,
+        links?: Record<string, string>,
+        modes?: Record<string, string>,
+      ) => void;
+    };
+    if (typeof maybeStateful.__moon_bash_apply_state !== "function") {
+      return null;
+    }
+    return maybeStateful.__moon_bash_apply_state.bind(fsLike);
+  }
+
   private normalizeInitialFiles(files?: InitialFiles): {
     files: Record<string, string>;
     modes: Record<string, string>;
@@ -1128,6 +1166,7 @@ export class Bash {
     if (result.modes && typeof result.modes === "object") {
       this.modes = result.modes;
     }
+    this.externalFsApplyState?.(this.files, this.dirs, this.links, this.modes);
   }
 
   private normalizeFetchResponse(response: MoonBashFetchResponse): MoonBashFetchResponse {

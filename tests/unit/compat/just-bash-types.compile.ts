@@ -23,11 +23,17 @@ import {
   type BashOptions,
   type ByteString,
   type CommandContext,
+  type DirentEntry,
   type ExecOptions,
   type IFileSystem,
   type JavaScriptConfig,
+  type MountableFsOptions,
   type NetworkConfig,
+  type OverlayFsOptions,
+  type ReadFileOptions,
+  type ReadWriteFsOptions,
   type SecureFetch,
+  type WriteFileOptions,
 } from "../../../src/wrapper/index";
 
 const bytes: ByteString = encodeUtf8ToBytes("hello");
@@ -88,9 +94,26 @@ getPythonCommandNames();
 getJavaScriptCommandNames();
 
 const fs: IFileSystem = new InMemoryFs();
+const readOptions: ReadFileOptions = { encoding: "utf8" };
+const writeOptions: WriteFileOptions = { encoding: "utf8" };
+const dirent: DirentEntry = {
+  name: "file.txt",
+  isFile: true,
+  isDirectory: false,
+  isSymbolicLink: false,
+};
+const mountableOptions: MountableFsOptions = { base: fs };
+const overlayOptions: OverlayFsOptions = { root: process.cwd() };
+const readWriteOptions: ReadWriteFsOptions = { root: process.cwd() };
 new MountableFs({ base: fs });
 new OverlayFs({ root: process.cwd() });
 new ReadWriteFs({ root: process.cwd() });
+void readOptions;
+void writeOptions;
+void dirent;
+void mountableOptions;
+void overlayOptions;
+void readWriteOptions;
 
 const ast = parse("echo hello");
 serialize(ast);
