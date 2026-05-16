@@ -141,7 +141,7 @@ Status (2026-05-16): `Sandbox` and `SandboxCommand` now live in the TypeScript f
 
 ### Phase E.5: Execution Options and Public Runtime Types
 
-Status (2026-05-16): `ExecOptions` covers `replaceEnv`, `stdinKind`, `args`, `rawScript`, `cwd`, env merging, and pre-aborted signal behavior. `BashOptions` now includes the upstream deprecated top-level `maxCallDepth`, `maxCommandCount`, and `maxLoopIterations` aliases, public `processInfo` shape, and typed `TraceCallback`/`TraceEvent`. The top-level command-count alias is wired into the MoonBit execution limits and normalizes command-limit stdout to match upstream public behavior.
+Status (2026-05-16): `ExecOptions` covers `replaceEnv`, `stdinKind`, `args`, `rawScript`, `cwd`, env merging, and pre-aborted signal behavior. `BashOptions` now includes the upstream deprecated top-level `maxCallDepth`, `maxCommandCount`, and `maxLoopIterations` aliases, public `processInfo` shape, and typed `TraceCallback`/`TraceEvent`. The top-level command-count alias is wired into the MoonBit execution limits and normalizes command-limit stdout to match upstream public behavior. `processInfo` now drives `$$`, `$BASHPID`, `$PPID`, `$UID`, and `$EUID` through private MoonBash runtime keys without exposing those keys through public `env` results.
 
 ### Phase F: Transform and Parser Facade
 

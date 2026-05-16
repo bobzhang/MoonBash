@@ -789,7 +789,10 @@ export class Bash {
         : normalizedOptions.files
           ? "/"
           : "/home/user";
-    this.baseEnv = { ...normalizedOptions.env };
+    this.baseEnv = {
+      ...normalizedOptions.env,
+      ...this.createVirtualProcessEnv(normalizedOptions.processInfo),
+    };
     this.useDefaultLayout = normalizedOptions.files === undefined && !normalizedOptions.cwd;
     const initialFs = this.normalizeInitialFiles(normalizedOptions.files);
     this.files = initialFs.files;
@@ -1640,6 +1643,46 @@ export class Bash {
       ...(this.options.maxCommandCount !== undefined ? { maxCommandCount: this.options.maxCommandCount } : {}),
       ...(this.options.maxLoopIterations !== undefined ? { maxLoopIterations: this.options.maxLoopIterations } : {}),
     };
+  }
+
+  private createVirtualProcessEnv(processInfo: BashOptions["processInfo"]): Record<string, string> {
+    const env: Record<string, string> = {
+      __MOON_BASH_PID: "1",
+      __MOON_BASH_PPID: "0",
+      __MOON_BASH_UID: "1000",
+      __MOON_BASH_EUID: "1000",
+    };
+    const pid = this.normalizeProcessInfoNumber(processInfo?.pid);
+    const ppid = this.normalizeProcessInfoNumber(processInfo?.ppid);
+    const uid = this.normalizeProcessInfoNumber(processInfo?.uid);
+    if (pid !== undefined) {
+      env.__MOON_BASH_PID = pid;
+    }
+    if (ppid !== undefined) {
+      env.__MOON_BASH_PPID = ppid;
+    }
+    if (uid !== undefined) {
+      env.__MOON_BASH_UID = uid;
+      env.__MOON_BASH_EUID = uid;
+    }
+    return env;
+  }
+
+  private normalizeProcessInfoNumber(value: unknown): string | undefined {
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+      return undefined;
+    }
+    return Math.floor(value).toString();
+  }
+
+  private stripInternalEnv(env: Record<string, string>): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(env)) {
+      if (!key.startsWith("__MOON_BASH_")) {
+        out[key] = value;
+      }
+    }
+    return out;
   }
 
   private encodeLimitsJson(): string {
@@ -3170,6 +3213,7 @@ while (true) {
     const effectiveEnv: Record<string, string> = {
       ...(execOptions.replaceEnv ? {} : this.baseEnv),
       ...execOptions.env,
+      ...this.createVirtualProcessEnv(this.options.processInfo),
     };
     if (execOptions.signal?.aborted) {
       return {
@@ -3228,7 +3272,7 @@ while (true) {
         stdout: parsed.stdout ?? "",
         stderr: parsed.stderr ?? "",
         exitCode: Number.isFinite(parsed.exitCode) ? parsed.exitCode : 1,
-        env: parsed.env && typeof parsed.env === "object" ? parsed.env : { ...effectiveEnv },
+        env: this.stripInternalEnv(parsed.env && typeof parsed.env === "object" ? parsed.env : effectiveEnv),
       };
       const normalizedResult = this.normalizeExecResult(result);
       if (!isEmptyScript && logger) {
@@ -3280,7 +3324,7 @@ while (true) {
         stdout: parsed.stdout ?? "",
         stderr: parsed.stderr ?? "",
         exitCode: Number.isFinite(parsed.exitCode) ? parsed.exitCode : 1,
-        env: parsed.env && typeof parsed.env === "object" ? parsed.env : { ...effectiveEnv },
+        env: this.stripInternalEnv(parsed.env && typeof parsed.env === "object" ? parsed.env : effectiveEnv),
       };
       const normalizedResult = this.normalizeExecResult(result);
       if (!isEmptyScript && logger) {
@@ -3347,7 +3391,7 @@ while (true) {
   }
 
   getEnv(): Record<string, string> {
-    return { ...this.baseEnv };
+    return this.stripInternalEnv(this.baseEnv);
   }
 
   /**

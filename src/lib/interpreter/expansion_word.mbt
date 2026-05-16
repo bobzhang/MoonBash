@@ -763,7 +763,7 @@ fn ExecContext::expand_word_part(
 fn ExecContext::expand_variable(self : ExecContext, name : String) -> String {
   match name {
     "?" => self.exit_code.to_string()
-    "$" => "1" // Simulated PID
+    "$" => self.env.get("__MOON_BASH_PID").unwrap_or("1")
     "#" => self.env.get("#").unwrap_or("0")
     "!" => "0"
     "@" | "*" => self.env.get("@").unwrap_or("")
@@ -779,6 +779,13 @@ fn ExecContext::expand_variable(self : ExecContext, name : String) -> String {
 }
 
 fn ExecContext::expand_named_variable(self : ExecContext, name : String) -> String {
+  match name {
+    "BASHPID" => return self.env.get("__MOON_BASH_PID").unwrap_or("1")
+    "PPID" => return self.env.get("__MOON_BASH_PPID").unwrap_or("0")
+    "UID" => return self.env.get("__MOON_BASH_UID").unwrap_or("1000")
+    "EUID" => return self.env.get("__MOON_BASH_EUID").unwrap_or("1000")
+    _ => ()
+  }
   match parse_array_reference_name(name) {
     Some((base, index_expr)) => self.expand_array_element_reference(base, index_expr)
     None => {

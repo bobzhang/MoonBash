@@ -51,4 +51,36 @@ describe("just-bash 3 ExecOptions compatibility", () => {
     expect(result.stderr).toContain("too many commands executed");
     expect(result.stdout).toBe("");
   });
+
+  it("uses processInfo for virtual process special variables", async () => {
+    const bash = new Bash({
+      processInfo: { pid: 101, ppid: 100, uid: 1000, gid: 1001 },
+    });
+
+    const result = await bash.exec("echo $$,$BASHPID,$PPID,$UID,$EUID");
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("101,101,100,1000,1000\n");
+    expect(result.stderr).toBe("");
+    expect(result.env).not.toHaveProperty("__MOON_BASH_PID");
+    expect(bash.getEnv()).not.toHaveProperty("__MOON_BASH_PID");
+  });
+
+  it("keeps processInfo special variables available with replaceEnv", async () => {
+    const bash = new Bash({
+      processInfo: { pid: 101, ppid: 100, uid: 1000, gid: 1001 },
+    });
+
+    const result = await bash.exec("echo $$,$BASHPID,$PPID,$UID,$EUID", {
+      replaceEnv: true,
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("101,101,100,1000,1000\n");
+    expect(result.env).not.toHaveProperty("BASHPID");
+    expect(result.env).not.toHaveProperty("PPID");
+    expect(result.env).not.toHaveProperty("UID");
+    expect(result.env).not.toHaveProperty("EUID");
+    expect(result.env).not.toHaveProperty("__MOON_BASH_PID");
+  });
 });

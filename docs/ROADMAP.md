@@ -41,7 +41,7 @@ Phase 5: Multi-Platform Expansion            🔧 PARTIALLY COMPLETE
 
 Phase 6: just-bash 3 API Compatibility       🔧 IN PROGRESS
   → Surface parity matrix, command-name helpers, ByteString helpers, ExecOptions compatibility
-  → Deprecated top-level execution limit aliases, processInfo types, and trace callback types landed
+  → Deprecated top-level execution limit aliases, processInfo special variables, and trace callback types landed
   → TypeScript compile-only consumer check added for public facade exports
   → InMemoryFs public async runtime API landed and is accepted by Bash({ fs })
   → MountableFs routing, mount management, and cross-filesystem copy/move landed
