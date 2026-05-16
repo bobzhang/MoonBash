@@ -6,6 +6,7 @@
   },
   "include": [
     "src/wrapper/**/*.ts",
-    "tests/unit/compat/just-bash-types.compile.ts"
+    "tests/unit/compat/just-bash-types.compile.ts",
+    "tests/unit/compat/just-bash-browser-types.compile.ts"
   ]
 }

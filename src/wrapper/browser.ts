@@ -11,6 +11,7 @@ export type {
   InitialFileEntry,
   InitialFileValue,
   InitialFiles,
+  LazyCommand,
 } from "./types";
 
 export {
@@ -36,6 +37,7 @@ export type {
   LazyFileProvider,
   MkdirOptions,
   MountConfig,
+  MountableFsOptions,
   RmOptions,
   SymlinkEntry,
 } from "./fs";
