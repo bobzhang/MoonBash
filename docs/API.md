@@ -2,7 +2,7 @@
 
 This document defines the public API surface of MoonBash, designed to be 100% compatible with `just-bash`.
 
-Status note (as of 2026-02-19): API surface compatibility is complete, while spec/security compatibility hardening is still in progress. For current pass/fail truth, see `docs/TEST_STATUS_2026-02-19.md` and `docs/ROADMAP.md`.
+Status note (2026-05-16): MoonBash is aligning to `just-bash@3.0.1`. The first compatibility slice covers root exports, command-name helpers, ByteString helpers, a compile-only public type consumer, and low-risk `ExecOptions` fields (`replaceEnv`, `stdinKind`, `args`, pre-aborted `signal`). Full async FS classes, Sandbox runtime behavior, Transform/parser behavior, JavaScript runtime commands, executor compatibility, and packaging parity are planned in separate phases.
 
 ## 1. Core Classes
 

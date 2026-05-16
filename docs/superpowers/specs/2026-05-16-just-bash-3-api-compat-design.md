@@ -111,12 +111,16 @@ MoonBash should export the same security classes and types. If full monkey-patch
 - Update `BashOptions` and `ExecOptions` types to match upstream fields, preserving existing MoonBash aliases only as additions.
 - Export byte/text helper functions and update custom command types.
 
+Status (2026-05-16): landed in the `just-bash-3-surface-parity` branch. Runtime export tests, command helper tests, ByteString tests, and a compile-only public type consumer now cover this slice. FS, Sandbox, Transform, runtime bridges, executor, and packaging remain future phases.
+
 ### Phase C: Exec and Byte Semantics
 
 - Implement `replaceEnv`, `stdinKind`, `args`, and `signal` behavior.
 - Move stdin piping away from shell string prelude toward an explicit execution input channel so bytes and leading whitespace are preserved.
 - Update command bridge handling for custom commands and VM commands to carry output kind and byte-shaped stdin.
 - Import upstream UTF-8 and binary stdin tests.
+
+Status (2026-05-16): low-risk fields are implemented for the wrapper path: `replaceEnv`, UTF-8 text stdin, latin1 byte stdin, first-command `args`, and pre-aborted `AbortSignal` returning exit code 124. Mid-execution signal cancellation is still part of later Sandbox/runtime work.
 
 ### Phase D: Filesystem Classes
 
@@ -180,4 +184,3 @@ Passing a narrow MoonBash comparison suite is not enough to claim API compatibil
 2. Browser support target for optional runtime APIs: match upstream exclusions exactly or expose MoonBash-specific browser fallbacks where safe.
 3. CJS output target: upstream ships CJS; MoonBash currently focuses on ESM. Full API/package compatibility may require adding CJS packaging.
 4. Transform parser source of truth: MoonBit AST adapter preferred, TS parser facade acceptable if exact upstream AST compatibility blocks progress.
-
