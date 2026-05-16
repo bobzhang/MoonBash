@@ -1287,14 +1287,3 @@ export class MountableFs implements IFileSystem {
     }
   }
 }
-
-export interface OverlayFsOptions {
-  root: string;
-  readOnly?: boolean;
-}
-
-export class OverlayFs extends InMemoryFs {
-  constructor(readonly options: OverlayFsOptions) {
-    super();
-  }
-}

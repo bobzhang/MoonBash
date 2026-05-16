@@ -45,7 +45,8 @@ Phase 6: just-bash 3 API Compatibility       🔧 IN PROGRESS
   → InMemoryFs public async runtime API landed and is accepted by Bash({ fs })
   → MountableFs routing, mount management, and cross-filesystem copy/move landed
   → ReadWriteFs direct root-confined Node filesystem access landed
-  → Remaining: OverlayFs, Sandbox, Transform/parser behavior, js-exec/node runtime, executor companion, CJS/browser packaging parity
+  → OverlayFs copy-on-write host-directory access landed
+  → Remaining: Sandbox, Transform/parser behavior, js-exec/node runtime, executor companion, CJS/browser packaging parity
 ```
 
 **Current comparison test pass rate: 523/523 (100%)**

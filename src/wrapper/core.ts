@@ -91,7 +91,6 @@ export type {
   LazyFileProvider,
   MkdirOptions,
   MountableFsOptions,
-  OverlayFsOptions,
   ReadFileOptions,
   RmOptions,
   SymlinkEntry,
@@ -100,7 +99,6 @@ export type {
 export {
   InMemoryFs,
   MountableFs,
-  OverlayFs,
 } from "./fs";
 export type {
   AllowedUrl,
