@@ -41,6 +41,26 @@ describe("just-bash JavaScript runtime compatibility", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("routes tools proxy calls through javascript.invokeTool", async () => {
+    const calls: Array<{ path: string; argsJson: string }> = [];
+    const bash = new Bash({
+      javascript: {
+        invokeTool: async (path, argsJson) => {
+          calls.push({ path, argsJson });
+          const args = JSON.parse(argsJson);
+          return JSON.stringify({ sum: args.a + args.b });
+        },
+      },
+    });
+
+    const result = await bash.exec("js-exec -c 'const r = await tools.math.add({a:3,b:4}); console.log(r.sum)'");
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe("7\n");
+    expect(result.stderr).toBe("");
+    expect(calls).toEqual([{ path: "math.add", argsJson: '{"a":3,"b":4}' }]);
+  });
+
   it("reports node as a js-exec compatibility stub", async () => {
     const bash = new Bash({ javascript: true });
 

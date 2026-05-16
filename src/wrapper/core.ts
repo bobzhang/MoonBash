@@ -629,6 +629,34 @@ function formatJavaScriptConsoleValue(value: unknown): string {
   }
 }
 
+function createJavaScriptToolsProxy(
+  invokeTool: NonNullable<JavaScriptConfig["invokeTool"]>,
+  segments: string[] = [],
+): unknown {
+  return new Proxy(() => undefined, {
+    get(_target, property) {
+      if (property === "then" || property === "catch" || property === "finally") {
+        return undefined;
+      }
+      if (typeof property === "symbol") {
+        return undefined;
+      }
+      return createJavaScriptToolsProxy(invokeTool, [...segments, property]);
+    },
+    async apply(_target, _thisArg, args) {
+      if (segments.length === 0) {
+        throw new Error("tools proxy requires a tool path");
+      }
+      const argsJsonValue = args.length > 0 ? JSON.stringify(args[0]) : "";
+      const resultJson = await invokeTool(
+        segments.join("."),
+        argsJsonValue === undefined ? "" : argsJsonValue,
+      );
+      return resultJson.length === 0 ? undefined : JSON.parse(resultJson);
+    },
+  });
+}
+
 function normalizePosixPath(inputPath: string, cwd = "/"): string {
   const base = inputPath.startsWith("/")
     ? inputPath
@@ -884,15 +912,24 @@ export class Bash {
     sandbox.Buffer = globalThis.Buffer;
     sandbox.URL = globalThis.URL;
     sandbox.URLSearchParams = globalThis.URLSearchParams;
+    if (config.invokeTool) {
+      sandbox.tools = createJavaScriptToolsProxy(config.invokeTool);
+    }
     try {
       const vm = await this.importNodeVm();
       const context = vm.createContext(sandbox);
       if (config.bootstrap) {
         const bootstrapScript = new vm.Script(config.bootstrap, { filename: "bootstrap.js" });
-        await bootstrapScript.runInContext(context);
+        const bootstrapResult = bootstrapScript.runInContext(context);
+        if (isPromiseLike<void>(bootstrapResult)) {
+          await bootstrapResult;
+        }
       }
-      const script = new vm.Script(parsed.code, { filename: parsed.filename });
-      await script.runInContext(context);
+      const script = new vm.Script(`(async () => {\n${parsed.code}\n})()`, { filename: parsed.filename });
+      const result = script.runInContext(context);
+      if (isPromiseLike<void>(result)) {
+        await result;
+      }
     } catch (error) {
       if (!(error instanceof JavaScriptProcessExit)) {
         return {

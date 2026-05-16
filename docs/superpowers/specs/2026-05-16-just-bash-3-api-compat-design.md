@@ -153,7 +153,7 @@ Status (2026-05-16): a basic TypeScript compatibility facade is implemented for 
 - Align Python and SQLite registration semantics with upstream.
 - Add worker timeout, output limit, network, and tool invocation tests.
 
-Status (2026-05-16): a basic TypeScript facade for `js-exec` now registers when `javascript` is configured and covers `js-exec -c`, virtual filesystem script files, bootstrap code, stdin-as-code, and the upstream `node` stub message. This is a compatibility bridge for public API progress, not the final QuickJS runtime: full QuickJS isolation, Node-compatible module shims, worker timeout/output limits, `javascript.invokeTool`, and upstream `js-exec` test import remain open.
+Status (2026-05-16): a basic TypeScript facade for `js-exec` now registers when `javascript` is configured and covers `js-exec -c`, virtual filesystem script files, bootstrap code, stdin-as-code, top-level `await`, `javascript.invokeTool` tools proxy calls, and the upstream `node` stub message. This is a compatibility bridge for public API progress, not the final QuickJS runtime: full QuickJS isolation, Node-compatible module shims, worker timeout/output limits, and upstream `js-exec` test import remain open.
 
 ### Phase H: Executor Companion
 
@@ -161,7 +161,7 @@ Status (2026-05-16): a basic TypeScript facade for `js-exec` now registers when 
 - Implement inline tools, SDK-driven discovery adapter hooks where available, approval/elicitation hooks, and bash command generation.
 - Add executor example and docs tests.
 
-Status (2026-05-16): `moon-bash/executor` now provides an inline-tools companion compatible with the stable public pieces of `@just-bash/executor@1.0.2`: `createExecutor()`, `parseToolArgs()`, namespace command generation, kebab-case/camelCase aliases, `--json`, key-value flags, stdin JSON, help output, `exposeToolsAsCommands`, and `invokeTool()` for host-side callers. SDK-driven discovery, approval/elicitation pipelines, and end-to-end `javascript.invokeTool` calls from inside `js-exec` remain open until the full worker/QuickJS runtime is implemented.
+Status (2026-05-16): `moon-bash/executor` now provides an inline-tools companion compatible with the stable public pieces of `@just-bash/executor@1.0.2`: `createExecutor()`, `parseToolArgs()`, namespace command generation, kebab-case/camelCase aliases, `--json`, key-value flags, stdin JSON, help output, `exposeToolsAsCommands`, and `invokeTool()` for host-side callers. Basic end-to-end `javascript.invokeTool` calls from inside `js-exec` are wired through the tools proxy. SDK-driven discovery and approval/elicitation pipelines remain open until the full worker/QuickJS runtime is implemented.
 
 ### Phase I: Packaging and Verification
 

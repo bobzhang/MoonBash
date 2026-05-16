@@ -51,7 +51,8 @@ Phase 6: just-bash 3 API Compatibility       🔧 IN PROGRESS
   → Node ESM, CommonJS, and browser subpath package exports landed
   → Basic TypeScript js-exec facade and upstream node stub landed
   → Inline-tools executor companion and executor package subpath landed
-  → Remaining: full QuickJS/js-exec runtime, javascript.invokeTool runtime wiring, executor SDK discovery, full upstream AST coverage
+  → Basic javascript.invokeTool tools proxy wiring landed
+  → Remaining: full QuickJS/js-exec runtime, Node-compatible module shims, executor SDK discovery, full upstream AST coverage
 ```
 
 **Current comparison test pass rate: 523/523 (100%)**
