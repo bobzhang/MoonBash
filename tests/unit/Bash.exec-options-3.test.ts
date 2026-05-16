@@ -41,4 +41,14 @@ describe("just-bash 3 ExecOptions compatibility", () => {
     expect(result.exitCode).toBe(124);
     expect(result.stdout).toBe("");
   });
+
+  it("supports upstream deprecated top-level execution limit aliases", async () => {
+    const bash = new Bash({ maxCommandCount: 1 });
+
+    const result = await bash.exec("echo one; echo two");
+
+    expect(result.exitCode).toBe(126);
+    expect(result.stderr).toContain("too many commands executed");
+    expect(result.stdout).toBe("");
+  });
 });

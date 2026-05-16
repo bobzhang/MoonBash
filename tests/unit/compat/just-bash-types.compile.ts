@@ -65,12 +65,26 @@ const options: BashOptions = {
   files: { "/data.txt": "hello" },
   env: { A: "1" },
   cwd: "/home/user",
+  maxCallDepth: 10,
+  maxCommandCount: 20,
+  maxLoopIterations: 30,
+  processInfo: {
+    pid: 101,
+    ppid: 100,
+    uid: 1000,
+    gid: 1000,
+  },
   python: true,
   javascript,
   network,
   fetch: secureFetch,
   customCommands: [command],
   defenseInDepth: true,
+  trace: (event) => {
+    event.category.toUpperCase();
+    event.name.toUpperCase();
+    event.durationMs.toFixed();
+  },
 };
 
 const execOptions: ExecOptions = {

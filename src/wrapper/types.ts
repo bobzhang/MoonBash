@@ -40,6 +40,15 @@ export interface FeatureCoverageWriter {
   hit(feature: string): void;
 }
 
+export interface TraceEvent {
+  category: string;
+  name: string;
+  durationMs: number;
+  details?: Record<string, unknown>;
+}
+
+export type TraceCallback = (event: TraceEvent) => void;
+
 export interface MoonBashFetchRequest {
   url: string;
   method: string;
@@ -170,6 +179,12 @@ export interface BashOptions {
   limits?: Partial<ExecutionLimits>;
   /** just-bash compatible alias of `limits` */
   executionLimits?: Partial<ExecutionLimits>;
+  /** @deprecated Use executionLimits.maxCallDepth instead. */
+  maxCallDepth?: number;
+  /** @deprecated Use executionLimits.maxCommandCount instead. */
+  maxCommandCount?: number;
+  /** @deprecated Use executionLimits.maxLoopIterations instead. */
+  maxLoopIterations?: number;
   /** Restrict available command names. */
   commands?: string[];
   /** Register custom commands. */
@@ -180,10 +195,17 @@ export interface BashOptions {
   logger?: BashLogger;
   /** Optional feature coverage writer used by fuzzing instrumentation. */
   coverage?: FeatureCoverageWriter;
-  /** Enable debug tracing */
-  trace?: boolean | unknown;
+  /** Optional performance trace callback. */
+  trace?: TraceCallback;
   /** just-bash compatible defense-in-depth option. */
   defenseInDepth?: boolean | DefenseInDepthConfig;
+  /** Virtual process information exposed by Bash special variables and /proc stubs. */
+  processInfo?: {
+    pid?: number;
+    ppid?: number;
+    uid?: number;
+    gid?: number;
+  };
   /** Network bridge options used by curl/html-to-markdown */
   network?: NetworkOptions | NetworkConfig;
   /** Timer bridge options used by sleep/time/timeout */

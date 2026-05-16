@@ -66,6 +66,8 @@ export type {
   MoonBashVmResponse,
   TimerOptions,
   JavaScriptConfig,
+  TraceCallback,
+  TraceEvent,
   VmOptions,
 } from "./types";
 export type {
@@ -1634,6 +1636,9 @@ export class Bash {
     return {
       ...this.options.limits,
       ...this.options.executionLimits,
+      ...(this.options.maxCallDepth !== undefined ? { maxCallDepth: this.options.maxCallDepth } : {}),
+      ...(this.options.maxCommandCount !== undefined ? { maxCommandCount: this.options.maxCommandCount } : {}),
+      ...(this.options.maxLoopIterations !== undefined ? { maxLoopIterations: this.options.maxLoopIterations } : {}),
     };
   }
 
@@ -1658,6 +1663,13 @@ export class Bash {
     set("max_sed_iterations", limits.maxSedIterations);
     set("max_jq_iterations", limits.maxJqIterations);
     return JSON.stringify(out);
+  }
+
+  private normalizeExecResult(result: BashExecResult): BashExecResult {
+    if (result.exitCode === 126 && result.stderr.includes("too many commands executed")) {
+      return { ...result, stdout: "" };
+    }
+    return result;
   }
 
   private hasCustomCommands(): boolean {
@@ -3218,16 +3230,17 @@ while (true) {
         exitCode: Number.isFinite(parsed.exitCode) ? parsed.exitCode : 1,
         env: parsed.env && typeof parsed.env === "object" ? parsed.env : { ...effectiveEnv },
       };
+      const normalizedResult = this.normalizeExecResult(result);
       if (!isEmptyScript && logger) {
-        if (result.stdout.length > 0) {
-          logger.debug("stdout", { output: result.stdout });
+        if (normalizedResult.stdout.length > 0) {
+          logger.debug("stdout", { output: normalizedResult.stdout });
         }
-        if (result.stderr.length > 0) {
-          logger.info("stderr", { output: result.stderr });
+        if (normalizedResult.stderr.length > 0) {
+          logger.info("stderr", { output: normalizedResult.stderr });
         }
-        logger.info("exit", { exitCode: result.exitCode });
+        logger.info("exit", { exitCode: normalizedResult.exitCode });
       }
-      return result;
+      return normalizedResult;
     }
 
     const fetchBridge = this.createFetchBridge();
@@ -3269,16 +3282,17 @@ while (true) {
         exitCode: Number.isFinite(parsed.exitCode) ? parsed.exitCode : 1,
         env: parsed.env && typeof parsed.env === "object" ? parsed.env : { ...effectiveEnv },
       };
+      const normalizedResult = this.normalizeExecResult(result);
       if (!isEmptyScript && logger) {
-        if (result.stdout.length > 0) {
-          logger.debug("stdout", { output: result.stdout });
+        if (normalizedResult.stdout.length > 0) {
+          logger.debug("stdout", { output: normalizedResult.stdout });
         }
-        if (result.stderr.length > 0) {
-          logger.info("stderr", { output: result.stderr });
+        if (normalizedResult.stderr.length > 0) {
+          logger.info("stderr", { output: normalizedResult.stderr });
         }
-        logger.info("exit", { exitCode: result.exitCode });
+        logger.info("exit", { exitCode: normalizedResult.exitCode });
       }
-      return result;
+      return normalizedResult;
     } finally {
       if (previousFetchBridge === undefined) {
         delete globalThis.__moon_bash_fetch;
