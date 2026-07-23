@@ -5,6 +5,7 @@
 // If Statement
 // ============================================================================
 
+///|
 /// Parse: if condition; then body [elif cond; then body]* [else body] fi
 fn Parser::parse_if(self : Parser) -> @ast.IfClause raise @ast.BashError {
   self.expect(@ast.Token::If)
@@ -48,9 +49,12 @@ fn Parser::parse_if(self : Parser) -> @ast.IfClause raise @ast.BashError {
 // For Statement
 // ============================================================================
 
+///|
 /// Parse: for var [in words]; do body; done
 ///   or: for (( init; cond; update )); do body; done
-fn Parser::parse_for(self : Parser) -> @ast.CompoundCommand raise @ast.BashError {
+fn Parser::parse_for(
+  self : Parser,
+) -> @ast.CompoundCommand raise @ast.BashError {
   self.expect(@ast.Token::For)
 
   if self.check(@ast.Token::LeftParen) &&
@@ -63,7 +67,8 @@ fn Parser::parse_for(self : Parser) -> @ast.CompoundCommand raise @ast.BashError
       raise @ast.BashError("invalid C-style for expression")
     }
 
-    while self.match_token(@ast.Token::Semi) || self.match_token(@ast.Token::Newline) {
+    while self.match_token(@ast.Token::Semi) ||
+          self.match_token(@ast.Token::Newline) {
       // skip separators
     }
     self.expect(@ast.Token::Do)
@@ -82,7 +87,8 @@ fn Parser::parse_for(self : Parser) -> @ast.CompoundCommand raise @ast.BashError
 
   let var_name = match self.advance() {
     @ast.Token::Word(s) => s
-    tok => raise @ast.BashError("expected variable name after 'for', got \{tok}")
+    tok =>
+      raise @ast.BashError("expected variable name after 'for', got \{tok}")
   }
 
   let mut words : Array[@ast.Word]? = None
@@ -108,7 +114,8 @@ fn Parser::parse_for(self : Parser) -> @ast.CompoundCommand raise @ast.BashError
   }
 
   // Consume separator
-  while self.match_token(@ast.Token::Semi) || self.match_token(@ast.Token::Newline) {
+  while self.match_token(@ast.Token::Semi) ||
+        self.match_token(@ast.Token::Newline) {
     // skip
   }
 
@@ -120,6 +127,7 @@ fn Parser::parse_for(self : Parser) -> @ast.CompoundCommand raise @ast.BashError
   @ast.CompoundCommand::For({ var_name, words, body })
 }
 
+///|
 fn split_cstyle_for_expressions(raw : String) -> Array[String] {
   let parts : Array[String] = []
   let buf = StringBuilder::new()
@@ -150,6 +158,7 @@ fn split_cstyle_for_expressions(raw : String) -> Array[String] {
   parts
 }
 
+///|
 fn trim_cstyle_expr(s : String) -> String {
   let mut start = 0
   let mut end_ = s.length()
@@ -169,13 +178,14 @@ fn trim_cstyle_expr(s : String) -> String {
       break
     }
   }
-  s.view(start_offset=start, end_offset=end_).to_string()
+  s.view(start_offset=start, end_offset=end_).to_owned()
 }
 
 // ============================================================================
 // While Statement
 // ============================================================================
 
+///|
 /// Parse: while condition; do body; done
 fn Parser::parse_while(self : Parser) -> @ast.WhileClause raise @ast.BashError {
   self.expect(@ast.Token::While)
@@ -194,6 +204,7 @@ fn Parser::parse_while(self : Parser) -> @ast.WhileClause raise @ast.BashError {
 // Until Statement
 // ============================================================================
 
+///|
 /// Parse: until condition; do body; done
 fn Parser::parse_until(self : Parser) -> @ast.UntilClause raise @ast.BashError {
   self.expect(@ast.Token::Until)
@@ -212,6 +223,7 @@ fn Parser::parse_until(self : Parser) -> @ast.UntilClause raise @ast.BashError {
 // Case Statement
 // ============================================================================
 
+///|
 /// Parse: case word in [pattern) body ;;]* esac
 fn Parser::parse_case(self : Parser) -> @ast.CaseClause raise @ast.BashError {
   self.expect(@ast.Token::Case)
@@ -228,7 +240,7 @@ fn Parser::parse_case(self : Parser) -> @ast.CaseClause raise @ast.BashError {
 
   let items : Array[@ast.CaseItem] = []
 
-  while !(self.check(@ast.Token::Esac)) && !(self.at_end()) {
+  while !self.check(@ast.Token::Esac) && !self.at_end() {
     // Parse optional (
     let _ = self.match_token(@ast.Token::LeftParen)
 

@@ -4,6 +4,7 @@
 // awk
 // ============================================================================
 
+///|
 priv struct AwkProgram {
   begin_actions : Array[String]
   pattern_ast : AwkExprAst?
@@ -14,28 +15,47 @@ priv struct AwkProgram {
   range_end_ast : AwkExprAst?
 }
 
+///|
 priv struct AwkFunction {
   params : Array[String]
   body : String
 }
 
+///|
 let awk_ctrl_next_key = "__moon_bash_awk_ctrl_next"
+
+///|
 let awk_ctrl_exit_key = "__moon_bash_awk_ctrl_exit"
+
+///|
 let awk_ctrl_error_key = "__moon_bash_awk_ctrl_error"
+
+///|
 let awk_ctrl_return_key = "__moon_bash_awk_ctrl_return"
+
+///|
 let awk_ctrl_return_value_key = "__moon_bash_awk_ctrl_return_value"
+
+///|
 let awk_fn_body_prefix = "__moon_bash_awk_fn_body#"
+
+///|
 let awk_fn_params_prefix = "__moon_bash_awk_fn_params#"
+
+///|
 let awk_regex_delim_prefix = "__moon_bash_awk_regex_delim__:"
 
+///|
 fn awk_is_space(ch : Char) -> Bool {
   ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }
 
+///|
 fn awk_current_fs(default_fs : String, vars : Map[String, String]) -> String {
   vars.get("FS").unwrap_or(default_fs)
 }
 
+///|
 fn awk_is_identifier_char(ch : Char) -> Bool {
   (ch >= 'a' && ch <= 'z') ||
   (ch >= 'A' && ch <= 'Z') ||
@@ -43,22 +63,26 @@ fn awk_is_identifier_char(ch : Char) -> Bool {
   ch == '_'
 }
 
+///|
 fn awk_is_identifier(name : String) -> Bool {
   if name.length() == 0 {
     return false
   }
   let first = name[0].to_int().unsafe_to_char()
-  if !((first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z') || first == '_') {
+  if !((first >= 'a' && first <= 'z') ||
+    (first >= 'A' && first <= 'Z') ||
+    first == '_') {
     return false
   }
   for i = 1; i < name.length(); i = i + 1 {
-    if !(awk_is_identifier_char(name[i].to_int().unsafe_to_char())) {
+    if !awk_is_identifier_char(name[i].to_int().unsafe_to_char()) {
       return false
     }
   }
   true
 }
 
+///|
 fn awk_parse_function_params(param_text : String) -> Array[String] {
   let params : Array[String] = []
   let pieces = awk_split_csv_args(param_text)
@@ -71,7 +95,10 @@ fn awk_parse_function_params(param_text : String) -> Array[String] {
   params
 }
 
-fn awk_take_function_definition(src : String) -> (String?, AwkFunction?, String) {
+///|
+fn awk_take_function_definition(
+  src : String,
+) -> (String?, AwkFunction?, String) {
   let keyword = "function"
   let mut start = -1
   let mut i = 0
@@ -80,7 +107,7 @@ fn awk_take_function_definition(src : String) -> (String?, AwkFunction?, String)
       let left_ok = if i == 0 {
         true
       } else {
-        !(awk_is_identifier_char(src[i - 1].to_int().unsafe_to_char()))
+        !awk_is_identifier_char(src[i - 1].to_int().unsafe_to_char())
       }
       if left_ok {
         start = i
@@ -94,26 +121,30 @@ fn awk_take_function_definition(src : String) -> (String?, AwkFunction?, String)
   }
 
   let mut name_start = start + keyword.length()
-  while name_start < src.length() && awk_is_space(src[name_start].to_int().unsafe_to_char()) {
+  while name_start < src.length() &&
+        awk_is_space(src[name_start].to_int().unsafe_to_char()) {
     name_start += 1
   }
   if name_start >= src.length() {
     return (None, None, src)
   }
   let mut name_end = name_start
-  while name_end < src.length() && awk_is_identifier_char(src[name_end].to_int().unsafe_to_char()) {
+  while name_end < src.length() &&
+        awk_is_identifier_char(src[name_end].to_int().unsafe_to_char()) {
     name_end += 1
   }
   let name = aj_trim(aj_substr(src, name_start, name_end))
-  if !(awk_is_identifier(name)) {
+  if !awk_is_identifier(name) {
     return (None, None, src)
   }
 
   let mut open_paren = name_end
-  while open_paren < src.length() && awk_is_space(src[open_paren].to_int().unsafe_to_char()) {
+  while open_paren < src.length() &&
+        awk_is_space(src[open_paren].to_int().unsafe_to_char()) {
     open_paren += 1
   }
-  if open_paren >= src.length() || src[open_paren].to_int().unsafe_to_char() != '(' {
+  if open_paren >= src.length() ||
+    src[open_paren].to_int().unsafe_to_char() != '(' {
     return (None, None, src)
   }
 
@@ -132,7 +163,7 @@ fn awk_take_function_definition(src : String) -> (String?, AwkFunction?, String)
           quote = None
         }
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
         } else if ch == '(' {
@@ -140,7 +171,6 @@ fn awk_take_function_definition(src : String) -> (String?, AwkFunction?, String)
         } else if ch == ')' {
           paren_depth -= 1
         }
-      }
     }
     if paren_depth > 0 {
       close_paren += 1
@@ -154,10 +184,12 @@ fn awk_take_function_definition(src : String) -> (String?, AwkFunction?, String)
   let params = awk_parse_function_params(params_text)
 
   let mut open_brace = close_paren + 1
-  while open_brace < src.length() && awk_is_space(src[open_brace].to_int().unsafe_to_char()) {
+  while open_brace < src.length() &&
+        awk_is_space(src[open_brace].to_int().unsafe_to_char()) {
     open_brace += 1
   }
-  if open_brace >= src.length() || src[open_brace].to_int().unsafe_to_char() != '{' {
+  if open_brace >= src.length() ||
+    src[open_brace].to_int().unsafe_to_char() != '{' {
     return (None, None, src)
   }
 
@@ -176,7 +208,7 @@ fn awk_take_function_definition(src : String) -> (String?, AwkFunction?, String)
           quote = None
         }
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
         } else if ch == '{' {
@@ -184,7 +216,6 @@ fn awk_take_function_definition(src : String) -> (String?, AwkFunction?, String)
         } else if ch == '}' {
           brace_depth -= 1
         }
-      }
     }
     if brace_depth > 0 {
       close_brace += 1
@@ -195,19 +226,14 @@ fn awk_take_function_definition(src : String) -> (String?, AwkFunction?, String)
   }
 
   let body = aj_substr(src, open_brace + 1, close_brace)
-  let remaining = aj_substr(src, 0, start) + aj_substr(src, close_brace + 1, src.length())
-  (
-    Some(name),
-    Some({
-      params,
-      body,
-    }),
-    remaining,
-  )
+  let remaining = aj_substr(src, 0, start) +
+    aj_substr(src, close_brace + 1, src.length())
+  (Some(name), Some({ params, body }), remaining)
 }
 
+///|
 fn awk_extract_functions(src : String) -> (String, Map[String, AwkFunction]) {
-  let functions : Map[String, AwkFunction] = {}
+  let functions : Map[String, AwkFunction] = Map([])
   let mut remaining = src
   while true {
     match awk_take_function_definition(remaining) {
@@ -221,21 +247,28 @@ fn awk_extract_functions(src : String) -> (String, Map[String, AwkFunction]) {
   (remaining, functions)
 }
 
+///|
 fn awk_fn_body_key(name : String) -> String {
   awk_fn_body_prefix + name
 }
 
+///|
 fn awk_fn_params_key(name : String) -> String {
   awk_fn_params_prefix + name
 }
 
-fn awk_install_functions(vars : Map[String, String], functions : Map[String, AwkFunction]) -> Unit {
+///|
+fn awk_install_functions(
+  vars : Map[String, String],
+  functions : Map[String, AwkFunction],
+) -> Unit {
   for name, def in functions {
     vars[awk_fn_body_key(name)] = def.body
     vars[awk_fn_params_key(name)] = def.params.join(",")
   }
 }
 
+///|
 fn awk_get_function(vars : Map[String, String], name : String) -> AwkFunction? {
   match (vars.get(awk_fn_body_key(name)), vars.get(awk_fn_params_key(name))) {
     (Some(body), Some(raw_params)) => {
@@ -255,6 +288,7 @@ fn awk_get_function(vars : Map[String, String], name : String) -> AwkFunction? {
   }
 }
 
+///|
 fn awk_parse_call_expr(expr : String) -> (String, Array[String])? {
   let t = aj_trim(expr)
   if t.length() < 3 {
@@ -265,7 +299,7 @@ fn awk_parse_call_expr(expr : String) -> (String, Array[String])? {
     return None
   }
   let name = aj_trim(aj_substr(t, 0, open_paren))
-  if !(awk_is_identifier(name)) {
+  if !awk_is_identifier(name) {
     return None
   }
   let mut depth = 1
@@ -283,7 +317,7 @@ fn awk_parse_call_expr(expr : String) -> (String, Array[String])? {
           quote = None
         }
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
         } else if ch == '(' {
@@ -291,7 +325,6 @@ fn awk_parse_call_expr(expr : String) -> (String, Array[String])? {
         } else if ch == ')' {
           depth -= 1
         }
-      }
     }
     if depth > 0 {
       i += 1
@@ -304,10 +337,8 @@ fn awk_parse_call_expr(expr : String) -> (String, Array[String])? {
   Some((name, args))
 }
 
-fn awk_take_named_block(
-  src : String,
-  name : String
-) -> (String?, String) {
+///|
+fn awk_take_named_block(src : String, name : String) -> (String?, String) {
   let mut pos = -1
   let mut brace_pos = -1
   let mut i = 0
@@ -316,7 +347,7 @@ fn awk_take_named_block(
       let left_ok = if i == 0 {
         true
       } else {
-        !(awk_is_identifier_char(src[i - 1].to_int().unsafe_to_char()))
+        !awk_is_identifier_char(src[i - 1].to_int().unsafe_to_char())
       }
       if left_ok {
         let mut j = i + name.length()
@@ -359,6 +390,7 @@ fn awk_take_named_block(
   (Some(block), remaining)
 }
 
+///|
 fn awk_split_range_pattern(pattern : String) -> (String?, String?) {
   let p = aj_trim(pattern)
   let mut quote : Char? = None
@@ -375,7 +407,7 @@ fn awk_split_range_pattern(pattern : String) -> (String?, String?) {
           quote = None
         }
       }
-      None => {
+      None =>
         if in_regex {
           if escaped {
             escaped = false
@@ -384,27 +416,25 @@ fn awk_split_range_pattern(pattern : String) -> (String?, String?) {
           } else if ch == '/' {
             in_regex = false
           }
-        } else {
-          if ch == '"' || ch == '\'' {
-            quote = Some(ch)
-          } else if ch == '/' {
-            in_regex = true
-            escaped = false
-          } else if ch == ',' {
-            let left = aj_trim(aj_substr(p, 0, i))
-            let right = aj_trim(aj_substr(p, i + 1, p.length()))
-            if left.length() == 0 || right.length() == 0 {
-              return (None, None)
-            }
-            return (Some(left), Some(right))
+        } else if ch == '"' || ch == '\'' {
+          quote = Some(ch)
+        } else if ch == '/' {
+          in_regex = true
+          escaped = false
+        } else if ch == ',' {
+          let left = aj_trim(aj_substr(p, 0, i))
+          let right = aj_trim(aj_substr(p, i + 1, p.length()))
+          if left.length() == 0 || right.length() == 0 {
+            return (None, None)
           }
+          return (Some(left), Some(right))
         }
-      }
     }
   }
   (None, None)
 }
 
+///|
 fn awk_strip_comments(src : String) -> String {
   let out = StringBuilder::new()
   let mut quote : Char? = None
@@ -423,7 +453,7 @@ fn awk_strip_comments(src : String) -> String {
           quote = None
         }
       }
-      None => {
+      None =>
         if in_regex {
           out.write_char(ch)
           if escaped {
@@ -450,13 +480,13 @@ fn awk_strip_comments(src : String) -> String {
         } else {
           out.write_char(ch)
         }
-      }
     }
     i += 1
   }
   out.to_string()
 }
 
+///|
 fn awk_parse_optional_expr_ast(expr : String?) -> AwkExprAst? {
   match expr {
     Some(text) => {
@@ -471,6 +501,7 @@ fn awk_parse_optional_expr_ast(expr : String?) -> AwkExprAst? {
   }
 }
 
+///|
 fn awk_parse_program(src : String) -> AwkProgram {
   let src = awk_strip_comments(src)
   let begin_actions : Array[String] = []
@@ -559,7 +590,7 @@ fn awk_parse_program(src : String) -> AwkProgram {
         }
         i += 1
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
           i += 1
@@ -574,10 +605,13 @@ fn awk_parse_program(src : String) -> AwkProgram {
         } else {
           i += 1
         }
-      }
     }
   }
-  let action = if i <= rest.length() { aj_substr(rest, brace_pos + 1, i) } else { "" }
+  let action = if i <= rest.length() {
+    aj_substr(rest, brace_pos + 1, i)
+  } else {
+    ""
+  }
   {
     begin_actions,
     pattern_ast,

@@ -1,5 +1,6 @@
 // moon_bash Filesystem Path Utilities
 
+///|
 /// Check for null bytes in path
 fn validate_path(path : String) -> Unit raise FsError {
   for i = 0; i < path.length(); i = i + 1 {
@@ -9,6 +10,7 @@ fn validate_path(path : String) -> Unit raise FsError {
   }
 }
 
+///|
 /// Extract substring from start (inclusive) to end (exclusive) using StringBuilder.
 fn substr(s : String, start : Int, end : Int) -> String {
   let buf = StringBuilder::new()
@@ -18,6 +20,7 @@ fn substr(s : String, start : Int, end : Int) -> String {
   buf.to_string()
 }
 
+///|
 /// Normalize an absolute path: resolve `.`/`..`, collapse slashes, strip trailing slash.
 pub fn normalize_path(path : String) -> String raise FsError {
   validate_path(path)
@@ -59,6 +62,7 @@ pub fn normalize_path(path : String) -> String raise FsError {
   buf.to_string()
 }
 
+///|
 /// Resolve a path relative to a cwd. If path is absolute, normalize it;
 /// otherwise join cwd + "/" + path then normalize.
 pub fn resolve_path(cwd : String, path : String) -> String raise FsError {
@@ -73,6 +77,7 @@ pub fn resolve_path(cwd : String, path : String) -> String raise FsError {
   }
 }
 
+///|
 /// Get the parent directory of a path.
 pub fn parent_path(path : String) -> String {
   if path == "/" {
@@ -92,6 +97,7 @@ pub fn parent_path(path : String) -> String {
   }
 }
 
+///|
 /// Get the filename component of a path.
 pub fn basename(path : String) -> String {
   if path == "/" {

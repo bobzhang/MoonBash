@@ -1,5 +1,6 @@
 // moon_bash Entry Point - Exported functions for JS consumption
 
+///|
 /// Execute a bash script with default settings.
 /// Returns a JSON string: {"stdout":"...","stderr":"...","exitCode":N}
 pub fn execute(script : String) -> String {
@@ -9,6 +10,7 @@ pub fn execute(script : String) -> String {
   result_to_json(result)
 }
 
+///|
 /// Execute a bash script with initial filesystem files and environment.
 /// env_json: JSON object of env vars, e.g. {"USER":"agent","HOME":"/home/agent"}
 /// files_json: JSON object of path->content, e.g. {"/tmp/a.txt":"hello"}
@@ -17,21 +19,14 @@ pub fn execute_with_fs(
   script : String,
   env_json : String,
   files_json : String,
-  cwd : String
+  cwd : String,
 ) -> String {
   execute_with_state(
-    script,
-    env_json,
-    files_json,
-    "{}",
-    "{}",
-    "{}",
-    cwd,
-    "{}",
-    "default",
+    script, env_json, files_json, "{}", "{}", "{}", cwd, "{}", "default",
   )
 }
 
+///|
 /// Execute a bash script and return result plus filesystem snapshot.
 /// dirs_json: JSON object with directory paths as keys.
 /// links_json: JSON object of symlink path->target.
@@ -45,7 +40,7 @@ pub fn execute_with_state(
   modes_json : String,
   cwd : String,
   limits_json : String,
-  layout_mode : String
+  layout_mode : String,
 ) -> String {
   let fs = @fs.InMemoryFs::new()
 
@@ -53,7 +48,9 @@ pub fn execute_with_state(
   let dir_entries = parse_json_object(dirs_json)
   for i = 0; i < dir_entries.length(); i = i + 1 {
     let (path, _value) = dir_entries[i]
-    try { fs.mkdir(path, recursive=true) } catch { _ => () }
+    fs.mkdir(path, recursive=true) catch {
+      _ => ()
+    }
   }
 
   // Parse and apply files
@@ -62,14 +59,18 @@ pub fn execute_with_state(
     let (path, content) = file_entries[i]
     // Ensure parent directories exist
     ensure_parents(fs, path)
-    try { fs.write_file(path, content) } catch { _ => () }
+    fs.write_file(path, content) catch {
+      _ => ()
+    }
   }
 
   // Parse and apply symlinks
   let link_entries = parse_json_object(links_json)
   for i = 0; i < link_entries.length(); i = i + 1 {
     let (path, target) = link_entries[i]
-    try { fs.symlink(target, path) } catch { _ => () }
+    fs.symlink(target, path) catch {
+      _ => ()
+    }
   }
 
   // Parse and apply modes
@@ -77,23 +78,23 @@ pub fn execute_with_state(
   for i = 0; i < mode_entries.length(); i = i + 1 {
     let (path, mode_str) = mode_entries[i]
     let mode = parse_decimal_int(mode_str)
-    try { fs.chmod(path, mode) } catch { _ => () }
+    fs.chmod(path, mode) catch {
+      _ => ()
+    }
   }
 
   let actual_cwd = if cwd.length() > 0 { cwd } else { "/home/user" }
 
   // Optionally strip default /home/user layout for explicit-layout mode.
-  if layout_mode == "minimal" && !(needs_home_user_layout(
-    file_entries,
-    dir_entries,
-    link_entries,
-    actual_cwd,
-  )) {
-    try { fs.rm("/home/user", recursive=true) } catch { _ => () }
+  if layout_mode == "minimal" &&
+    !needs_home_user_layout(file_entries, dir_entries, link_entries, actual_cwd) {
+    fs.rm("/home/user", recursive=true) catch {
+      _ => ()
+    }
   }
 
   // Parse env vars
-  let env : Map[String, String] = {}
+  let env : Map[String, String] = Map([])
   let env_entries = parse_json_object(env_json)
   for i = 0; i < env_entries.length(); i = i + 1 {
     let (key, value) = env_entries[i]
@@ -103,13 +104,10 @@ pub fn execute_with_state(
   // Parse and apply execution limits
   let limits = parse_limits(limits_json)
   // Ensure cwd exists for relative-path commands in empty fixtures.
-  try { fs.mkdir(actual_cwd, recursive=true) } catch { _ => () }
-  let ctx = @interpreter.ExecContext::new(
-    fs,
-    env=env,
-    cwd=actual_cwd,
-    limits=limits,
-  )
+  fs.mkdir(actual_cwd, recursive=true) catch {
+    _ => ()
+  }
+  let ctx = @interpreter.ExecContext::new(fs, env~, cwd=actual_cwd, limits~)
   let result = ctx.execute(script)
 
   let files_out : Array[(String, String)] = []
@@ -141,12 +139,7 @@ pub fn execute_with_state(
     }
   })
   result_with_state_to_json(
-    result,
-    files_out,
-    dirs_out,
-    links_out,
-    modes_out,
-    env_out,
+    result, files_out, dirs_out, links_out, modes_out, env_out,
   )
 }
 
@@ -154,6 +147,7 @@ pub fn execute_with_state(
 // JSON helpers (no dependencies - hand-rolled)
 // ============================================================================
 
+///|
 /// Convert ExecResult to JSON string
 fn result_to_json(result : @ast.ExecResult) -> String {
   let buf = StringBuilder::new()
@@ -167,6 +161,7 @@ fn result_to_json(result : @ast.ExecResult) -> String {
   buf.to_string()
 }
 
+///|
 /// Convert ExecResult + filesystem snapshot to JSON string.
 fn result_with_state_to_json(
   result : @ast.ExecResult,
@@ -174,7 +169,7 @@ fn result_with_state_to_json(
   dirs : Array[(String, String)],
   links : Array[(String, String)],
   modes : Array[(String, String)],
-  env : Array[(String, String)]
+  env : Array[(String, String)],
 ) -> String {
   let buf = StringBuilder::new()
   buf.write_string("{\"stdout\":")
@@ -197,6 +192,7 @@ fn result_with_state_to_json(
   buf.to_string()
 }
 
+///|
 /// Convert string pairs into a JSON object.
 fn json_object_from_pairs(pairs : Array[(String, String)]) -> String {
   let buf = StringBuilder::new()
@@ -214,6 +210,7 @@ fn json_object_from_pairs(pairs : Array[(String, String)]) -> String {
   buf.to_string()
 }
 
+///|
 /// Escape a string for JSON output
 fn json_escape_string(s : String) -> String {
   let buf = StringBuilder::new()
@@ -244,6 +241,7 @@ fn json_escape_string(s : String) -> String {
   buf.to_string()
 }
 
+///|
 fn hex_digit(n : Int) -> Char {
   if n < 10 {
     (n + 48).unsafe_to_char() // '0' = 48
@@ -252,6 +250,7 @@ fn hex_digit(n : Int) -> Char {
   }
 }
 
+///|
 /// Parse a simple JSON object {"key":"value",...} into array of (key, value) pairs.
 /// Only supports string values. No nesting.
 fn parse_json_object(json : String) -> Array[(String, String)] {
@@ -336,6 +335,7 @@ fn parse_json_object(json : String) -> Array[(String, String)] {
   result
 }
 
+///|
 /// Parse a JSON string starting at position i (must be at opening quote).
 /// Returns (unescaped string, position after closing quote).
 fn parse_json_string(json : String, start : Int) -> (String, Int) {
@@ -357,7 +357,7 @@ fn parse_json_string(json : String, start : Int) -> (String, Int) {
         '"' => buf.write_char('"')
         '\\' => buf.write_char('\\')
         '/' => buf.write_char('/')
-        'u' => {
+        'u' =>
           if i + 4 < len {
             let d1 = json_hex_value(json[i + 1].to_int().unsafe_to_char())
             let d2 = json_hex_value(json[i + 2].to_int().unsafe_to_char())
@@ -375,7 +375,6 @@ fn parse_json_string(json : String, start : Int) -> (String, Int) {
             buf.write_char('\\')
             buf.write_char(esc)
           }
-        }
         _ => {
           buf.write_char('\\')
           buf.write_char(esc)
@@ -389,6 +388,7 @@ fn parse_json_string(json : String, start : Int) -> (String, Int) {
   (buf.to_string(), i)
 }
 
+///|
 fn json_hex_value(ch : Char) -> Int {
   if ch >= '0' && ch <= '9' {
     ch.to_int() - '0'.to_int()
@@ -401,6 +401,7 @@ fn json_hex_value(ch : Char) -> Int {
   }
 }
 
+///|
 fn parse_decimal_int(s : String) -> Int {
   let mut value = 0
   let mut sign = 1
@@ -420,6 +421,7 @@ fn parse_decimal_int(s : String) -> Int {
   value * sign
 }
 
+///|
 fn starts_with(prefix_target : String, prefix : String) -> Bool {
   if prefix.length() > prefix_target.length() {
     return false
@@ -432,11 +434,12 @@ fn starts_with(prefix_target : String, prefix : String) -> Bool {
   true
 }
 
+///|
 fn needs_home_user_layout(
   file_entries : Array[(String, String)],
   dir_entries : Array[(String, String)],
   link_entries : Array[(String, String)],
-  cwd : String
+  cwd : String,
 ) -> Bool {
   if starts_with(cwd, "/home/user") {
     return true
@@ -463,6 +466,7 @@ fn needs_home_user_layout(
   false
 }
 
+///|
 fn parse_limits(limits_json : String) -> @ast.ExecutionLimits {
   let defaults = @ast.ExecutionLimits::default()
   let mut max_call_depth = defaults.max_call_depth
@@ -514,6 +518,7 @@ fn parse_limits(limits_json : String) -> @ast.ExecutionLimits {
   }
 }
 
+///|
 /// Ensure parent directories exist for a file path
 fn ensure_parents(fs : @fs.InMemoryFs, path : String) -> Unit {
   let parts : Array[String] = []
@@ -537,8 +542,10 @@ fn ensure_parents(fs : @fs.InMemoryFs, path : String) -> Unit {
     dir_buf.write_char('/')
     dir_buf.write_string(parts[i])
     let dir_path = dir_buf.to_string()
-    if !(fs.exists(dir_path)) {
-      try { fs.mkdir(dir_path) } catch { _ => () }
+    if !fs.exists(dir_path) {
+      fs.mkdir(dir_path) catch {
+        _ => ()
+      }
     }
   }
 }

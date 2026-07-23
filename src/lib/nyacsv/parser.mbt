@@ -1,9 +1,11 @@
 // NyaCSV-compatible parser, adapted for current MoonBit compiler.
 
+///|
 fn nyacsv_is_trim_char(ch : Char) -> Bool {
   ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }
 
+///|
 fn nyacsv_trim_field(s : String) -> String {
   if s.length() == 0 {
     return ""
@@ -11,7 +13,7 @@ fn nyacsv_trim_field(s : String) -> String {
   let mut start = 0
   while start < s.length() {
     let ch = s[start].to_int().unsafe_to_char()
-    if !(nyacsv_is_trim_char(ch)) {
+    if !nyacsv_is_trim_char(ch) {
       break
     }
     start += 1
@@ -22,7 +24,7 @@ fn nyacsv_trim_field(s : String) -> String {
   let mut end_exclusive = s.length()
   while end_exclusive > start {
     let ch = s[end_exclusive - 1].to_int().unsafe_to_char()
-    if !(nyacsv_is_trim_char(ch)) {
+    if !nyacsv_is_trim_char(ch) {
       break
     }
     end_exclusive -= 1
@@ -34,6 +36,7 @@ fn nyacsv_trim_field(s : String) -> String {
   out.to_string()
 }
 
+///|
 fn nyacsv_finalize_field(field : StringBuilder, trim_spaces : Bool) -> String {
   let raw = field.to_string()
   if trim_spaces {
@@ -43,22 +46,23 @@ fn nyacsv_finalize_field(field : StringBuilder, trim_spaces : Bool) -> String {
   }
 }
 
+///|
 fn[T : CSVReader] parse(
   reader : T,
-  options~ : CSVOptions = {
+  options? : CSVOptions = {
     delimiter: ',',
     allow_newlines_in_quotes: true,
     quote_char: '"',
     skip_empty_lines: true,
     trim_spaces: false,
-  }
+  },
 ) -> Array[Array[String]] {
   let rows : Array[Array[String]] = Array::new()
   let mut row : Array[String] = Array::new()
   let mut field = StringBuilder::new()
   let mut in_quotes = false
 
-  while !(reader.is_eof()) {
+  while !reader.is_eof() {
     let mut ch = reader.read_char().unwrap()
 
     if ch == '\r' {
@@ -81,17 +85,16 @@ fn[T : CSVReader] parse(
 
     if in_quotes {
       if ch == options.quote_char {
-        if !(reader.is_eof()) &&
-          reader.peek_char() == Some(options.quote_char) {
+        if !reader.is_eof() && reader.peek_char() == Some(options.quote_char) {
           field.write_char(options.quote_char)
           reader.read_char() |> ignore
         } else {
           in_quotes = false
         }
-      } else if ch == '\n' && !(options.allow_newlines_in_quotes) {
+      } else if ch == '\n' && !options.allow_newlines_in_quotes {
         in_quotes = false
         row.push(nyacsv_finalize_field(field, options.trim_spaces))
-        if !(row.is_empty()) || !(options.skip_empty_lines) {
+        if !row.is_empty() || !options.skip_empty_lines {
           rows.push(row)
         }
         row = Array::new()
@@ -110,7 +113,7 @@ fn[T : CSVReader] parse(
       field = StringBuilder::new()
     } else if ch == '\n' {
       row.push(nyacsv_finalize_field(field, options.trim_spaces))
-      if !(row.is_empty()) || !(options.skip_empty_lines) {
+      if !row.is_empty() || !options.skip_empty_lines {
         rows.push(row)
       }
       row = Array::new()
@@ -120,9 +123,9 @@ fn[T : CSVReader] parse(
     }
   }
 
-  if !(field.is_empty()) || row.length() > 0 {
+  if !field.is_empty() || row.length() > 0 {
     row.push(nyacsv_finalize_field(field, options.trim_spaces))
-    if !(row.is_empty()) || !(options.skip_empty_lines) {
+    if !row.is_empty() || !options.skip_empty_lines {
       rows.push(row)
     }
   }

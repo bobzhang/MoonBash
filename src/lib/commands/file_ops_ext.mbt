@@ -1,6 +1,7 @@
 // moon_bash Commands - Extended File Operations
 // rmdir, stat, file, tree, du, chmod, ln, readlink
 
+///|
 /// rmdir: remove empty directories
 fn cmd_rmdir(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
@@ -9,9 +10,7 @@ fn cmd_rmdir(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut exit_code = 0
   for arg in ctx.args {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, arg)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, arg) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("rmdir: \{msg}\n")
         exit_code = 1
@@ -20,11 +19,15 @@ fn cmd_rmdir(ctx : CommandContext) -> @ast.ExecResult {
     }
     match ctx.fs.entries.get(resolved) {
       None => {
-        errbuf.write_string("rmdir: failed to remove '\{arg}': No such file or directory\n")
+        errbuf.write_string(
+          "rmdir: failed to remove '\{arg}': No such file or directory\n",
+        )
         exit_code = 1
       }
       Some(@fs.FsEntry::File(_)) | Some(@fs.FsEntry::Symlink(_)) => {
-        errbuf.write_string("rmdir: failed to remove '\{arg}': Not a directory\n")
+        errbuf.write_string(
+          "rmdir: failed to remove '\{arg}': Not a directory\n",
+        )
         exit_code = 1
       }
       Some(@fs.FsEntry::Directory(_)) => {
@@ -37,7 +40,9 @@ fn cmd_rmdir(ctx : CommandContext) -> @ast.ExecResult {
           }
         })
         if has_children {
-          errbuf.write_string("rmdir: failed to remove '\{arg}': Directory not empty\n")
+          errbuf.write_string(
+            "rmdir: failed to remove '\{arg}': Directory not empty\n",
+          )
           exit_code = 1
         } else {
           ctx.fs.entries.remove(resolved)
@@ -45,9 +50,10 @@ fn cmd_rmdir(ctx : CommandContext) -> @ast.ExecResult {
       }
     }
   }
-  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code=exit_code)
+  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code~)
 }
 
+///|
 /// Format octal mode as permission string like -rw-r--r--
 fn format_mode_string(mode : Int, is_dir : Bool, is_link : Bool) -> String {
   let buf = StringBuilder::new()
@@ -73,17 +79,19 @@ fn format_mode_string(mode : Int, is_dir : Bool, is_link : Bool) -> String {
   buf.to_string()
 }
 
+///|
 /// Format an octal mode as a 4-digit zero-padded string
 fn format_octal(mode : Int) -> String {
   let d3 = mode / 512 // 0o1000
   let rem3 = mode % 512
-  let d2 = rem3 / 64  // 0o100
+  let d2 = rem3 / 64 // 0o100
   let rem2 = rem3 % 64
-  let d1 = rem2 / 8   // 0o10
+  let d1 = rem2 / 8 // 0o10
   let d0 = rem2 % 8
   d3.to_string() + d2.to_string() + d1.to_string() + d0.to_string()
 }
 
+///|
 /// stat: display file status
 fn cmd_stat(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
@@ -93,20 +101,18 @@ fn cmd_stat(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut exit_code = 0
   for arg in ctx.args {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, arg)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, arg) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("stat: \{msg}\n")
         exit_code = 1
         continue
       }
     }
-    let stat = try {
-      ctx.fs.stat(resolved)
-    } catch {
+    let stat = ctx.fs.stat(resolved) catch {
       @fs.FsError(_msg) => {
-        errbuf.write_string("stat: cannot stat '\{arg}': No such file or directory\n")
+        errbuf.write_string(
+          "stat: cannot stat '\{arg}': No such file or directory\n",
+        )
         exit_code = 1
         continue
       }
@@ -119,7 +125,11 @@ fn cmd_stat(ctx : CommandContext) -> @ast.ExecResult {
       "regular file"
     }
     let size = if stat.is_directory { 4096 } else { stat.size }
-    let mode_str = format_mode_string(stat.mode, stat.is_directory, stat.is_symlink)
+    let mode_str = format_mode_string(
+      stat.mode,
+      stat.is_directory,
+      stat.is_symlink,
+    )
     let octal_str = format_octal(stat.mode)
     out.write_string("  File: \{arg}\n")
     out.write_string("  Size: \{size}\tType: \{type_str}\n")
@@ -129,10 +139,11 @@ fn cmd_stat(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(
     stdout=out.to_string(),
     stderr=errbuf.to_string(),
-    exit_code=exit_code,
+    exit_code~,
   )
 }
 
+///|
 /// file: determine file type
 fn cmd_file(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
@@ -142,9 +153,7 @@ fn cmd_file(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut exit_code = 0
   for arg in ctx.args {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, arg)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, arg) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("file: \{msg}\n")
         exit_code = 1
@@ -156,17 +165,16 @@ fn cmd_file(ctx : CommandContext) -> @ast.ExecResult {
         errbuf.write_string("file: \{arg}: No such file or directory\n")
         exit_code = 1
       }
-      Some(@fs.FsEntry::Directory(_)) => {
-        out.write_string("\{arg}: directory\n")
-      }
-      Some(@fs.FsEntry::Symlink(data)) => {
+      Some(@fs.FsEntry::Directory(_)) => out.write_string("\{arg}: directory\n")
+      Some(@fs.FsEntry::Symlink(data)) =>
         out.write_string("\{arg}: symbolic link to \{data.target}\n")
-      }
       Some(@fs.FsEntry::File(data)) => {
         let content = data.content
         let ftype = if content.length() == 0 {
           "empty"
-        } else if content.length() >= 2 && content[0] == '#' && content[1] == '!' {
+        } else if content.length() >= 2 &&
+          content[0] == '#' &&
+          content[1] == '!' {
           "script"
         } else if content[0] == '{' || content[0] == '[' {
           "JSON data"
@@ -180,20 +188,22 @@ fn cmd_file(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(
     stdout=out.to_string(),
     stderr=errbuf.to_string(),
-    exit_code=exit_code,
+    exit_code~,
   )
 }
 
+///|
 /// tree: recursive directory listing with box-drawing characters
 fn cmd_tree(ctx : CommandContext) -> @ast.ExecResult {
   let path = if ctx.args.length() > 0 { ctx.args[0] } else { "." }
-  let resolved = try {
-    @fs.resolve_path(ctx.cwd, path)
-  } catch {
+  let resolved = @fs.resolve_path(ctx.cwd, path) catch {
     @fs.FsError(msg) => return @ast.ExecResult::err("tree: \{msg}\n")
   }
   match ctx.fs.entries.get(resolved) {
-    None => return @ast.ExecResult::err("tree: '\{path}': No such file or directory\n")
+    None =>
+      return @ast.ExecResult::err(
+        "tree: '\{path}': No such file or directory\n",
+      )
     Some(@fs.FsEntry::File(_)) | Some(@fs.FsEntry::Symlink(_)) =>
       return @ast.ExecResult::err("tree: '\{path}': Not a directory\n")
     _ => ()
@@ -213,19 +223,16 @@ fn cmd_tree(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::ok(out.to_string())
 }
 
+///|
 /// Recursive helper for tree command
 fn cmd_tree_walk(
   fs : @fs.InMemoryFs,
   abs_path : String,
   prefix : String,
   out : StringBuilder,
-  counter : (Bool) -> Unit
+  counter : (Bool) -> Unit,
 ) -> Unit {
-  let entries = try {
-    fs.readdir(abs_path)
-  } catch {
-    @fs.FsError(_msg) => return
-  }
+  let entries = fs.readdir(abs_path) catch { @fs.FsError(_msg) => return }
   // Collect and sort names
   let items : Array[(String, Bool)] = []
   for entry in entries {
@@ -235,13 +242,15 @@ fn cmd_tree_walk(
     }
     items.push((entry.name, is_dir))
   }
-  items.sort_by(fn(a, b) {
-    cmd_find_compare_ascii(a.0, b.0)
-  })
+  items.sort_by(fn(a, b) { cmd_find_compare_ascii(a.0, b.0) })
   for i = 0; i < items.length(); i = i + 1 {
     let (name, is_dir) = items[i]
     let is_last = i == items.length() - 1
-    let connector = if is_last { "\u{2514}\u{2500}\u{2500} " } else { "\u{251C}\u{2500}\u{2500} " }
+    let connector = if is_last {
+      "\u{2514}\u{2500}\u{2500} "
+    } else {
+      "\u{251C}\u{2500}\u{2500} "
+    }
     out.write_string(prefix + connector + name + "\n")
     counter(is_dir)
     if is_dir {
@@ -260,6 +269,7 @@ fn cmd_tree_walk(
   }
 }
 
+///|
 /// Format size in human-readable format (K, M, G)
 fn format_human_size(size : Int) -> String {
   if size >= 1073741824 {
@@ -276,6 +286,7 @@ fn format_human_size(size : Int) -> String {
   }
 }
 
+///|
 /// du: disk usage
 fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
   let mut summary_only = false
@@ -305,7 +316,7 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
       continue
     }
     if arg.has_prefix("--max-depth=") {
-      max_depth = Some(cmd_find_parse_int(arg.view(start_offset=12).to_string()))
+      max_depth = Some(cmd_find_parse_int(arg.view(start_offset=12).to_owned()))
       i += 1
       continue
     }
@@ -340,17 +351,17 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut exit_code = 0
   for path in paths {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, path)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, path) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("du: \{msg}\n")
         exit_code = 1
         continue
       }
     }
-    if !(ctx.fs.entries.contains(resolved)) {
-      errbuf.write_string("du: cannot access '\{path}': No such file or directory\n")
+    if !ctx.fs.entries.contains(resolved) {
+      errbuf.write_string(
+        "du: cannot access '\{path}': No such file or directory\n",
+      )
       exit_code = 1
       continue
     }
@@ -368,7 +379,9 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
         let rel_depth = if key == resolved {
           0
         } else {
-          cmd_du_relative_depth(key.view(start_offset=resolved.length()).to_string())
+          cmd_du_relative_depth(
+            key.view(start_offset=resolved.length()).to_owned(),
+          )
         }
         let include_entry = match max_depth {
           Some(limit) => rel_depth <= limit
@@ -380,7 +393,7 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
           let display = if key == resolved {
             path
           } else {
-            let rel = key.view(start_offset=resolved.length()).to_string()
+            let rel = key.view(start_offset=resolved.length()).to_owned()
             if path == "." {
               "." + rel
             } else {
@@ -392,15 +405,21 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
       }
     })
     if summary_only {
-      let size_str = if human_readable { format_human_size(total) } else { total.to_string() }
+      let size_str = if human_readable {
+        format_human_size(total)
+      } else {
+        total.to_string()
+      }
       out.write_string(size_str + "\t" + path + "\n")
     } else {
       // Sort entries for deterministic output
-      sub_entries.sort_by(fn(a, b) {
-        cmd_find_compare_ascii(a.0, b.0)
-      })
+      sub_entries.sort_by(fn(a, b) { cmd_find_compare_ascii(a.0, b.0) })
       for entry in sub_entries {
-        let size_str = if human_readable { format_human_size(entry.1) } else { entry.1.to_string() }
+        let size_str = if human_readable {
+          format_human_size(entry.1)
+        } else {
+          entry.1.to_string()
+        }
         out.write_string(size_str + "\t" + entry.0 + "\n")
       }
     }
@@ -408,10 +427,11 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(
     stdout=out.to_string(),
     stderr=errbuf.to_string(),
-    exit_code=exit_code,
+    exit_code~,
   )
 }
 
+///|
 fn cmd_du_relative_depth(rel : String) -> Int {
   let mut depth = 0
   let mut in_segment = false
@@ -432,6 +452,7 @@ fn cmd_du_relative_depth(rel : String) -> Int {
   depth
 }
 
+///|
 /// Parse an octal string to integer.
 fn parse_octal_strict(s : String) -> Int? {
   if s.length() == 0 {
@@ -448,6 +469,7 @@ fn parse_octal_strict(s : String) -> Int? {
   Some(result)
 }
 
+///|
 fn chmod_entry_mode(entry : @fs.FsEntry) -> Int {
   match entry {
     @fs.FsEntry::File(data) => data.mode
@@ -456,6 +478,7 @@ fn chmod_entry_mode(entry : @fs.FsEntry) -> Int {
   }
 }
 
+///|
 fn chmod_apply_mode_string(current : Int, mode_str : String) -> Int? {
   match mode_str {
     "+x" | "a+x" | "u+x" | "go+x" | "ug+x" | "ugo+x" => Some(current | 0o111)
@@ -468,6 +491,7 @@ fn chmod_apply_mode_string(current : Int, mode_str : String) -> Int? {
   }
 }
 
+///|
 /// chmod: change file mode
 fn cmd_chmod(ctx : CommandContext) -> @ast.ExecResult {
   let mut recursive = false
@@ -492,17 +516,17 @@ fn cmd_chmod(ctx : CommandContext) -> @ast.ExecResult {
   let mut exit_code = 0
   for i = 1; i < args.length(); i = i + 1 {
     let path = args[i]
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, path)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, path) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("chmod: \{msg}\n")
         exit_code = 1
         continue
       }
     }
-    if !(ctx.fs.entries.contains(resolved)) {
-      errbuf.write_string("chmod: cannot access '\{path}': No such file or directory\n")
+    if !ctx.fs.entries.contains(resolved) {
+      errbuf.write_string(
+        "chmod: cannot access '\{path}': No such file or directory\n",
+      )
       exit_code = 1
       continue
     }
@@ -514,9 +538,7 @@ fn cmd_chmod(ctx : CommandContext) -> @ast.ExecResult {
         }
       None => 0
     }
-    try {
-      ctx.fs.chmod(resolved, target_mode)
-    } catch {
+    ctx.fs.chmod(resolved, target_mode) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("chmod: \{msg}\n")
         exit_code = 1
@@ -540,9 +562,7 @@ fn cmd_chmod(ctx : CommandContext) -> @ast.ExecResult {
             }
           None => 0
         }
-        try {
-          ctx.fs.chmod(child_path, child_mode)
-        } catch {
+        ctx.fs.chmod(child_path, child_mode) catch {
           @fs.FsError(msg) => {
             errbuf.write_string("chmod: \{msg}\n")
             exit_code = 1
@@ -551,9 +571,10 @@ fn cmd_chmod(ctx : CommandContext) -> @ast.ExecResult {
       }
     }
   }
-  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code=exit_code)
+  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code~)
 }
 
+///|
 /// ln: create links
 fn cmd_ln(ctx : CommandContext) -> @ast.ExecResult {
   let mut symbolic = false
@@ -571,7 +592,7 @@ fn cmd_ln(ctx : CommandContext) -> @ast.ExecResult {
     }
   }
   // VFS only supports symlinks
-  if !(symbolic) {
+  if !symbolic {
     return @ast.ExecResult::err("ln: hard links not supported in sandbox\n")
   }
   if args.length() < 2 {
@@ -579,26 +600,21 @@ fn cmd_ln(ctx : CommandContext) -> @ast.ExecResult {
   }
   let target = args[0]
   let link_name = args[1]
-  let link_resolved = try {
-    @fs.resolve_path(ctx.cwd, link_name)
-  } catch {
+  let link_resolved = @fs.resolve_path(ctx.cwd, link_name) catch {
     @fs.FsError(msg) => return @ast.ExecResult::err("ln: \{msg}\n")
   }
   if force {
-    try {
-      ctx.fs.rm(link_resolved, force=true)
-    } catch {
+    ctx.fs.rm(link_resolved, force=true) catch {
       _ => ()
     }
   }
-  try {
-    ctx.fs.symlink(target, link_resolved)
-  } catch {
+  ctx.fs.symlink(target, link_resolved) catch {
     @fs.FsError(msg) => return @ast.ExecResult::err("ln: \{msg}\n")
   }
   @ast.ExecResult::new()
 }
 
+///|
 /// readlink: read symbolic link target
 fn cmd_readlink(ctx : CommandContext) -> @ast.ExecResult {
   let mut canonicalize = false
@@ -616,9 +632,7 @@ fn cmd_readlink(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut exit_code = 0
   for path in paths {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, path)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, path) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("readlink: \{msg}\n")
         exit_code = 1
@@ -632,9 +646,7 @@ fn cmd_readlink(ctx : CommandContext) -> @ast.ExecResult {
       let max_depth = 40
       let mut err_found = false
       while depth < max_depth {
-        let stat = try {
-          ctx.fs.stat(current)
-        } catch {
+        let stat = ctx.fs.stat(current) catch {
           @fs.FsError(msg) => {
             errbuf.write_string("readlink: \{msg}\n")
             exit_code = 1
@@ -643,9 +655,7 @@ fn cmd_readlink(ctx : CommandContext) -> @ast.ExecResult {
           }
         }
         if stat.is_symlink {
-          let link_target = try {
-            ctx.fs.readlink(current)
-          } catch {
+          let link_target = ctx.fs.readlink(current) catch {
             @fs.FsError(msg) => {
               errbuf.write_string("readlink: \{msg}\n")
               exit_code = 1
@@ -672,13 +682,11 @@ fn cmd_readlink(ctx : CommandContext) -> @ast.ExecResult {
           break
         }
       }
-      if !(err_found) {
+      if !err_found {
         out.write_string(current + "\n")
       }
     } else {
-      let target = try {
-        ctx.fs.readlink(resolved)
-      } catch {
+      let target = ctx.fs.readlink(resolved) catch {
         @fs.FsError(msg) => {
           errbuf.write_string("readlink: \{msg}\n")
           exit_code = 1
@@ -691,6 +699,6 @@ fn cmd_readlink(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(
     stdout=out.to_string(),
     stderr=errbuf.to_string(),
-    exit_code=exit_code,
+    exit_code~,
   )
 }

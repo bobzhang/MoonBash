@@ -1,0 +1,48 @@
+name = "Haoxincode/moonbash"
+
+version = "0.1.0"
+
+import {
+  "moonbitlang/regexp@0.3.5",
+  "gmlewis/md5@0.19.26",
+  "shu-kitamura/sha256@0.1.1",
+  "gmlewis/sha1@0.12.4",
+  "gmlewis/io@0.23.4",
+  "moonbit-community/yaml@0.0.6",
+  "gmlewis/gzip@0.34.4",
+  "gmlewis/flate@0.36.4",
+  "gmlewis/base64@0.16.3",
+  "moonbit-community/piediff@0.1.1",
+  "justjavac/glob@0.1.5",
+  "bobzhang/moonjq@0.1.0",
+  "tiye/dom-ffi@0.2.3",
+  "moonbitlang/async@0.20.2",
+  "peter-jerry-ye/parse_args@0.1.1",
+  "tonyfettes/url@0.3.1",
+  "moonbitlang/x@0.4.43",
+}
+
+readme = "README.md"
+
+repository = "https://github.com/Haoxincode/MoonBash"
+
+license = "Apache-2.0"
+
+keywords = [ "bash", "shell", "sandbox" ]
+
+description = "Zero-dependency pure-memory POSIX Shell sandbox"
+
+preferred_target = "js"
+
+supported_targets = "js"
+
+options(
+  exclude: [
+    "website",
+    "wrapper",
+    "**/pkg.generated.mbti",
+    "**/*_test.mbt",
+    "**/*_wbtest.mbt",
+    "**/*.mbt.md",
+  ],
+)

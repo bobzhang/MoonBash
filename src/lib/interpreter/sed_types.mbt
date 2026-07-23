@@ -1,5 +1,6 @@
 // moon_bash Interpreter - Sed Types
 
+///|
 priv enum SedAddress {
   Line(Int)
   LastLine
@@ -8,17 +9,20 @@ priv enum SedAddress {
   Relative(Int)
 }
 
+///|
 priv struct SedAddressRange {
   start : SedAddress
   end : SedAddress?
 }
 
+///|
 priv struct SedRangeState {
   in_range : Bool
   relative_end_line : Int
   pending_single_line : Bool
 }
 
+///|
 priv struct SedSubstSpec {
   matcher : @regex.GrepMatcher?
   replacement : String
@@ -29,11 +33,13 @@ priv struct SedSubstSpec {
   write_file : String?
 }
 
+///|
 priv struct SedTranslitSpec {
   source : String
   target : String
 }
 
+///|
 priv enum SedCommandKind {
   GroupStart
   GroupEnd
@@ -63,12 +69,14 @@ priv enum SedCommandKind {
   Quit
 }
 
+///|
 priv struct SedCommand {
   address : SedAddressRange?
   kind : SedCommandKind
   negated : Bool
 }
 
+///|
 priv enum CycleAction {
   Next
   RestartCycle
@@ -77,6 +85,7 @@ priv enum CycleAction {
   Quit
 }
 
+///|
 priv struct SedState {
   mut hold_space : String
   mut last_regex : @regex.GrepMatcher?
@@ -85,6 +94,7 @@ priv struct SedState {
   mut executed_steps : Int
 }
 
+///|
 priv struct SedCycle {
   mut line_no : Int
   mut line : String
@@ -96,7 +106,7 @@ priv struct SedCycle {
   mut append_queue : Array[String]
 }
 
+///|
 fn sed_empty_range_state() -> SedRangeState {
   { in_range: false, relative_end_line: -1, pending_single_line: false }
 }
-

@@ -1,31 +1,39 @@
 // moon_bash regex helpers used by grep/sed-style commands.
 
+///|
 pub(all) enum GrepMatcher {
   Fixed(String, Bool)
   Regex(@regexp.Regexp, Bool)
 }
 
+///|
 pub fn compile_grep_matcher(
   pattern : String,
-  extended~ : Bool = false,
-  fixed~ : Bool = false,
-  ignore_case~ : Bool = false
+  extended? : Bool = false,
+  fixed? : Bool = false,
+  ignore_case? : Bool = false,
 ) -> GrepMatcher raise @regexp.RegexpError {
   if fixed {
-    let fixed_pattern = if ignore_case { to_lower_ascii(pattern) } else { pattern }
+    let fixed_pattern = if ignore_case {
+      to_lower_ascii(pattern)
+    } else {
+      pattern
+    }
     return Fixed(fixed_pattern, ignore_case)
   }
 
   let decoded_pattern = decode_regex_escapes(
-    if extended { pattern } else { normalize_basic_regex(pattern) },
+    if extended {
+      pattern
+    } else {
+      normalize_basic_regex(pattern)
+    },
   )
   if has_invalid_posix_char_class_syntax(decoded_pattern) {
     raise_invalid_regex()
   }
   let normalized = normalize_regex_compat(
-    normalize_posix_char_classes(
-      decoded_pattern,
-    ),
+    normalize_posix_char_classes(decoded_pattern),
     extended~,
   )
   let has_bol_anchor = regex_has_bol_anchor(normalized)
@@ -34,17 +42,22 @@ pub fn compile_grep_matcher(
   Regex(compiled, has_bol_anchor)
 }
 
+///|
 pub fn GrepMatcher::find_first(
   self : GrepMatcher,
   line : String,
-  start~ : Int = 0
+  start? : Int = 0,
 ) -> (Int, Int)? {
   match self {
     Fixed(pattern, ignore_case) => {
       if start < 0 || start > line.length() {
         return None
       }
-      let line_for_search = if ignore_case { to_lower_ascii(line) } else { line }
+      let line_for_search = if ignore_case {
+        to_lower_ascii(line)
+      } else {
+        line
+      }
       let idx = find_substring_from(line_for_search, pattern, start)
       if idx < 0 {
         None
@@ -58,18 +71,18 @@ pub fn GrepMatcher::find_first(
       }
       let mut cursor = start
       while cursor <= line.length() {
-        let segment = line.view(start_offset=cursor).to_string()
+        let segment = line.view(start_offset=cursor).to_owned()
         let result = re.execute(segment[:])
-        if !(result.matched()) {
+        if !result.matched() {
           return None
         }
         let before_len = result.before().length()
         if before_len == 0 &&
           cursor > 0 &&
           has_bol_anchor &&
-          !(accept_shifted_bol_start(re, segment)) {
-            cursor += 1
-            continue
+          !accept_shifted_bol_start(re, segment) {
+          cursor += 1
+          continue
         }
         match result.get(0) {
           Some(matched) => {
@@ -84,17 +97,22 @@ pub fn GrepMatcher::find_first(
   }
 }
 
+///|
 pub fn GrepMatcher::find_first_with_groups(
   self : GrepMatcher,
   line : String,
-  start~ : Int = 0
+  start? : Int = 0,
 ) -> (Int, Int, Array[String])? {
   match self {
     Fixed(pattern, ignore_case) => {
       if start < 0 || start > line.length() {
         return None
       }
-      let line_for_search = if ignore_case { to_lower_ascii(line) } else { line }
+      let line_for_search = if ignore_case {
+        to_lower_ascii(line)
+      } else {
+        line
+      }
       let idx = find_substring_from(line_for_search, pattern, start)
       if idx < 0 {
         None
@@ -108,28 +126,28 @@ pub fn GrepMatcher::find_first_with_groups(
       }
       let mut cursor = start
       while cursor <= line.length() {
-        let segment = line.view(start_offset=cursor).to_string()
+        let segment = line.view(start_offset=cursor).to_owned()
         let result = re.execute(segment[:])
-        if !(result.matched()) {
+        if !result.matched() {
           return None
         }
         let before_len = result.before().length()
         if before_len == 0 &&
           cursor > 0 &&
           has_bol_anchor &&
-          !(accept_shifted_bol_start(re, segment)) {
-            cursor += 1
-            continue
+          !accept_shifted_bol_start(re, segment) {
+          cursor += 1
+          continue
         }
         match result.get(0) {
           Some(matched) => {
             let groups : Array[String] = []
             let mut group_idx = 1
             let mut done = false
-            while !(done) {
+            while !done {
               match result.get(group_idx) {
                 Some(group_text) => {
-                  groups.push(group_text.to_string())
+                  groups.push(group_text.to_owned())
                   group_idx += 1
                 }
                 None => done = true
@@ -146,7 +164,11 @@ pub fn GrepMatcher::find_first_with_groups(
   }
 }
 
-pub fn GrepMatcher::find_all(self : GrepMatcher, line : String) -> Array[(Int, Int)] {
+///|
+pub fn GrepMatcher::find_all(
+  self : GrepMatcher,
+  line : String,
+) -> Array[(Int, Int)] {
   let ranges : Array[(Int, Int)] = []
   let mut start = 0
   while start <= line.length() {
@@ -165,6 +187,7 @@ pub fn GrepMatcher::find_all(self : GrepMatcher, line : String) -> Array[(Int, I
   ranges
 }
 
+///|
 pub fn normalize_basic_regex(pattern : String) -> String {
   // Translate BRE to the ERE-like parser form:
   // unescaped + ? | ( ) { } are literals in BRE, escaped forms are operators.
@@ -238,10 +261,10 @@ pub fn normalize_basic_regex(pattern : String) -> String {
 
       if is_bre_literal_regex_char(ch) {
         buf.write_char('\\')
-      } else if ch == '^' && !(bre_caret_is_anchor(pattern, i)) {
+      } else if ch == '^' && !bre_caret_is_anchor(pattern, i) {
         // In BRE, unescaped ^ is special at regex start or after \( / \|.
         buf.write_char('\\')
-      } else if ch == '$' && !(bre_dollar_is_anchor(pattern, i)) {
+      } else if ch == '$' && !bre_dollar_is_anchor(pattern, i) {
         // In BRE, unescaped $ is special at regex end or before \) / \|.
         buf.write_char('\\')
       }
@@ -252,6 +275,7 @@ pub fn normalize_basic_regex(pattern : String) -> String {
   buf.to_string()
 }
 
+///|
 fn normalize_posix_char_classes(pattern : String) -> String {
   let mut out = pattern
   // GNU word-boundary bracket classes used by grep tests.
@@ -276,24 +300,31 @@ fn normalize_posix_char_classes(pattern : String) -> String {
   out
 }
 
-fn normalize_regex_compat(pattern : String, extended~ : Bool = false) -> String {
+///|
+fn normalize_regex_compat(pattern : String, extended? : Bool = false) -> String {
   // Map GNU-style {,n} quantifier to engines that require {0,n}.
   let with_lower_bound = replace_all_literal(pattern, "{,", "{0,")
   // Help JS-like engines parse classes where ] is the first class member.
-  let with_normalized_classes = normalize_char_class_initial_close(with_lower_bound)
+  let with_normalized_classes = normalize_char_class_initial_close(
+    with_lower_bound,
+  )
   if extended {
     // In ERE, malformed interval forms like "{abc" are literals, but true intervals
     // (including BADRPT cases like "{1}" with no target) must stay intact.
     normalize_ere_malformed_intervals(with_normalized_classes)
   } else {
     // BRE keeps compatibility for leading '*' forms, but bad \{...\} should stay errors.
-    normalize_invalid_quantifiers(with_normalized_classes, literalize_interval_errors=false)
+    normalize_invalid_quantifiers(
+      with_normalized_classes,
+      literalize_interval_errors=false,
+    )
   }
 }
 
+///|
 fn normalize_invalid_quantifiers(
   pattern : String,
-  literalize_interval_errors~ : Bool = true
+  literalize_interval_errors? : Bool = true,
 ) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -310,7 +341,11 @@ fn normalize_invalid_quantifiers(
         out.write_char(next)
         if in_char_class {
           last_repeatable = true
-        } else if next == 'b' || next == 'B' || next == 'A' || next == 'Z' || next == 'z' {
+        } else if next == 'b' ||
+          next == 'B' ||
+          next == 'A' ||
+          next == 'Z' ||
+          next == 'z' {
           // Zero-width assertions should not become quantifier targets.
           last_repeatable = false
         } else {
@@ -414,21 +449,25 @@ fn normalize_invalid_quantifiers(
   out.to_string()
 }
 
+///|
 fn parse_interval_quantifier(
   pattern : String,
   start : Int,
-  has_target : Bool
+  has_target : Bool,
 ) -> Int? {
-  if !(has_target) {
+  if !has_target {
     return None
   }
-  if start < 0 || start >= pattern.length() || pattern[start].to_int().unsafe_to_char() != '{' {
+  if start < 0 ||
+    start >= pattern.length() ||
+    pattern[start].to_int().unsafe_to_char() != '{' {
     return None
   }
 
   let mut i = start + 1
   let mut lower_digits = 0
-  while i < pattern.length() && is_digit_char(pattern[i].to_int().unsafe_to_char()) {
+  while i < pattern.length() &&
+        is_digit_char(pattern[i].to_int().unsafe_to_char()) {
     lower_digits += 1
     i += 1
   }
@@ -445,7 +484,8 @@ fn parse_interval_quantifier(
   }
   i += 1
 
-  while i < pattern.length() && is_digit_char(pattern[i].to_int().unsafe_to_char()) {
+  while i < pattern.length() &&
+        is_digit_char(pattern[i].to_int().unsafe_to_char()) {
     i += 1
   }
 
@@ -455,10 +495,12 @@ fn parse_interval_quantifier(
   None
 }
 
+///|
 fn is_digit_char(ch : Char) -> Bool {
   ch >= '0' && ch <= '9'
 }
 
+///|
 fn normalize_ere_malformed_intervals(pattern : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -518,12 +560,14 @@ fn normalize_ere_malformed_intervals(pattern : String) -> String {
   out.to_string()
 }
 
+///|
 fn raise_invalid_regex() -> Unit raise @regexp.RegexpError {
   // Force the regexp backend to emit a standard compile error.
   let _ = @regexp.compile("["[:])
   ()
 }
 
+///|
 fn has_invalid_posix_char_class_syntax(pattern : String) -> Bool {
   let mut i = 0
   let mut in_char_class = false
@@ -554,28 +598,28 @@ fn has_invalid_posix_char_class_syntax(pattern : String) -> Bool {
       if ch == '[' &&
         i + 1 < pattern.length() &&
         pattern[i + 1].to_int().unsafe_to_char() == ':' {
-          let mut j = i + 2
-          let mut found_close = false
-          while j + 1 < pattern.length() {
-            if pattern[j].to_int().unsafe_to_char() == ':' &&
-              pattern[j + 1].to_int().unsafe_to_char() == ']' {
-                found_close = true
-                let name = pattern.view(start_offset=i + 2, end_offset=j).to_string()
-                if !(is_valid_posix_char_class_name(name)) {
-                  return true
-                }
-                class_has_member = true
-                class_allow_negation = false
-                i = j + 2
-                break
-              }
-            j += 1
+        let mut j = i + 2
+        let mut found_close = false
+        while j + 1 < pattern.length() {
+          if pattern[j].to_int().unsafe_to_char() == ':' &&
+            pattern[j + 1].to_int().unsafe_to_char() == ']' {
+            found_close = true
+            let name = pattern.view(start_offset=i + 2, end_offset=j).to_owned()
+            if !is_valid_posix_char_class_name(name) {
+              return true
+            }
+            class_has_member = true
+            class_allow_negation = false
+            i = j + 2
+            break
           }
-          if !(found_close) {
-            return true
-          }
-          continue
+          j += 1
         }
+        if !found_close {
+          return true
+        }
+        continue
+      }
 
       if ch == ']' {
         if class_has_member {
@@ -610,6 +654,7 @@ fn has_invalid_posix_char_class_syntax(pattern : String) -> Bool {
   in_char_class
 }
 
+///|
 fn is_valid_posix_char_class_name(name : String) -> Bool {
   name == "alnum" ||
   name == "alpha" ||
@@ -626,17 +671,21 @@ fn is_valid_posix_char_class_name(name : String) -> Bool {
   name == "word" ||
   name == "xdigit" ||
   name == "<" ||
-  name == ">" 
+  name == ">"
 }
 
+///|
 fn parse_interval_syntax(pattern : String, start : Int) -> Int? {
-  if start < 0 || start >= pattern.length() || pattern[start].to_int().unsafe_to_char() != '{' {
+  if start < 0 ||
+    start >= pattern.length() ||
+    pattern[start].to_int().unsafe_to_char() != '{' {
     return None
   }
 
   let mut i = start + 1
   let mut lower_digits = 0
-  while i < pattern.length() && is_digit_char(pattern[i].to_int().unsafe_to_char()) {
+  while i < pattern.length() &&
+        is_digit_char(pattern[i].to_int().unsafe_to_char()) {
     lower_digits += 1
     i += 1
   }
@@ -653,7 +702,8 @@ fn parse_interval_syntax(pattern : String, start : Int) -> Int? {
   }
   i += 1
 
-  while i < pattern.length() && is_digit_char(pattern[i].to_int().unsafe_to_char()) {
+  while i < pattern.length() &&
+        is_digit_char(pattern[i].to_int().unsafe_to_char()) {
     i += 1
   }
 
@@ -663,9 +713,10 @@ fn parse_interval_syntax(pattern : String, start : Int) -> Int? {
   None
 }
 
+///|
 fn accept_shifted_bol_start(re : @regexp.Regexp, segment : String) -> Bool {
   let probe_one = re.execute(("/" + segment)[:])
-  if !(probe_one.matched()) {
+  if !probe_one.matched() {
     return false
   }
   let before_one = probe_one.before().length()
@@ -679,6 +730,7 @@ fn accept_shifted_bol_start(re : @regexp.Regexp, segment : String) -> Bool {
   probe_two.matched() && probe_two.before().length() > 0
 }
 
+///|
 fn regex_has_bol_anchor(pattern : String) -> Bool {
   let mut i = 0
   let mut in_char_class = false
@@ -712,6 +764,7 @@ fn regex_has_bol_anchor(pattern : String) -> Bool {
   false
 }
 
+///|
 fn ere_caret_is_anchor(pattern : String, idx : Int) -> Bool {
   if idx == 0 {
     return true
@@ -720,6 +773,7 @@ fn ere_caret_is_anchor(pattern : String, idx : Int) -> Bool {
   prev == '(' || prev == '|'
 }
 
+///|
 fn normalize_char_class_initial_close(pattern : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -785,6 +839,7 @@ fn normalize_char_class_initial_close(pattern : String) -> String {
   out.to_string()
 }
 
+///|
 fn decode_regex_escapes(pattern : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -810,6 +865,7 @@ fn decode_regex_escapes(pattern : String) -> String {
   out.to_string()
 }
 
+///|
 fn starts_with_at(text : String, token : String, idx : Int) -> Bool {
   if idx < 0 || idx + token.length() > text.length() {
     return false
@@ -822,7 +878,12 @@ fn starts_with_at(text : String, token : String, idx : Int) -> Bool {
   true
 }
 
-fn replace_all_literal(input : String, needle : String, replacement : String) -> String {
+///|
+fn replace_all_literal(
+  input : String,
+  needle : String,
+  replacement : String,
+) -> String {
   if needle.length() == 0 {
     return input
   }
@@ -840,14 +901,29 @@ fn replace_all_literal(input : String, needle : String, replacement : String) ->
   out.to_string()
 }
 
+///|
 fn is_bre_special_when_escaped(ch : Char) -> Bool {
-  ch == '+' || ch == '?' || ch == '|' || ch == '(' || ch == ')' || ch == '{' || ch == '}'
+  ch == '+' ||
+  ch == '?' ||
+  ch == '|' ||
+  ch == '(' ||
+  ch == ')' ||
+  ch == '{' ||
+  ch == '}'
 }
 
+///|
 fn is_bre_literal_regex_char(ch : Char) -> Bool {
-  ch == '+' || ch == '?' || ch == '|' || ch == '(' || ch == ')' || ch == '{' || ch == '}'
+  ch == '+' ||
+  ch == '?' ||
+  ch == '|' ||
+  ch == '(' ||
+  ch == ')' ||
+  ch == '{' ||
+  ch == '}'
 }
 
+///|
 fn bre_caret_is_anchor(pattern : String, idx : Int) -> Bool {
   if idx == 0 {
     return true
@@ -861,11 +937,13 @@ fn bre_caret_is_anchor(pattern : String, idx : Int) -> Bool {
   false
 }
 
+///|
 fn bre_dollar_is_anchor(pattern : String, idx : Int) -> Bool {
   if idx == pattern.length() - 1 {
     return true
   }
-  if idx + 2 < pattern.length() && pattern[idx + 1].to_int().unsafe_to_char() == '\\' {
+  if idx + 2 < pattern.length() &&
+    pattern[idx + 1].to_int().unsafe_to_char() == '\\' {
     let next = pattern[idx + 2].to_int().unsafe_to_char()
     if next == ')' || next == '|' {
       return true
@@ -874,6 +952,7 @@ fn bre_dollar_is_anchor(pattern : String, idx : Int) -> Bool {
   false
 }
 
+///|
 fn to_lower_ascii(s : String) -> String {
   let buf = StringBuilder::new()
   for i = 0; i < s.length(); i = i + 1 {
@@ -887,11 +966,14 @@ fn to_lower_ascii(s : String) -> String {
   buf.to_string()
 }
 
+///|
 fn find_substring_from(haystack : String, needle : String, start : Int) -> Int {
   if needle.length() == 0 {
     return start
   }
-  if start < 0 || needle.length() > haystack.length() || start > haystack.length() - needle.length() {
+  if start < 0 ||
+    needle.length() > haystack.length() ||
+    start > haystack.length() - needle.length() {
     return -1
   }
   let mut i = start

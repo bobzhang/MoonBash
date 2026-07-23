@@ -1,10 +1,8 @@
 // moon_bash Interpreter - Text Builtins (Transform and Streams)
 // Split from builtins_text.mbt for maintainability.
 
-fn ExecContext::builtin_tr(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_tr(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     self.stderr_buf.write_string("tr: missing operand\n")
     self.exit_code = 1
@@ -16,7 +14,9 @@ fn ExecContext::builtin_tr(
   let mut squeeze_mode = false
   let mut complement_mode = false
   let mut arg_idx = 0
-  while arg_idx < args.length() && args[arg_idx].length() > 1 && args[arg_idx][0] == '-' {
+  while arg_idx < args.length() &&
+        args[arg_idx].length() > 1 &&
+        args[arg_idx][0] == '-' {
     for i = 1; i < args[arg_idx].length(); i = i + 1 {
       let flag = args[arg_idx][i].to_int().unsafe_to_char()
       match flag {
@@ -39,20 +39,20 @@ fn ExecContext::builtin_tr(
   arg_idx += 1
   let mut has_set2 = false
   let mut set2 : Array[Char] = []
-  if !(delete_mode) && arg_idx < args.length() {
+  if !delete_mode && arg_idx < args.length() {
     set2 = expand_tr_set(args[arg_idx])
     has_set2 = true
   }
 
-  if !(delete_mode) && !(has_set2) && !(squeeze_mode) {
+  if !delete_mode && !has_set2 && !squeeze_mode {
     self.stderr_buf.write_string("tr: missing operand after set1\n")
     self.exit_code = 1
     return
   }
 
-  let squeeze_set = if delete_mode || !(has_set2) { set1 } else { set2 }
+  let squeeze_set = if delete_mode || !has_set2 { set1 } else { set2 }
   let squeeze_complement = if has_set2 { false } else { complement_mode }
-  if squeeze_mode && !(tr_set_matches(squeeze_set, ' ', squeeze_complement)) {
+  if squeeze_mode && !tr_set_matches(squeeze_set, ' ', squeeze_complement) {
     // Keep compatibility with quoted sets that include a trailing space.
     squeeze_set.push(' ')
   }
@@ -84,10 +84,8 @@ fn ExecContext::builtin_tr(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_sort(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_sort(self : ExecContext, args : Array[String]) -> Unit {
   let mut reverse = false
   let mut numeric = false
   let mut unique = false
@@ -108,7 +106,7 @@ fn ExecContext::builtin_sort(
       continue
     }
     if arg.has_prefix("-k") && arg.length() > 2 {
-      key_field = Some(parse_int32_str(arg.view(start_offset=2).to_string()))
+      key_field = Some(parse_int32_str(arg.view(start_offset=2).to_owned()))
       i += 1
       continue
     }
@@ -118,7 +116,7 @@ fn ExecContext::builtin_sort(
       continue
     }
     if arg.has_prefix("-t") && arg.length() > 2 {
-      delimiter = Some(arg.view(start_offset=2).to_string())
+      delimiter = Some(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -144,14 +142,8 @@ fn ExecContext::builtin_sort(
 
   let input = match input_file {
     Some(path) => {
-      let resolved = try {
-        @fs.resolve_path(self.cwd, path)
-      } catch {
-        _ => path
-      }
-      try {
-        self.fs.read_file(resolved)
-      } catch {
+      let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+      self.fs.read_file(resolved) catch {
         @fs.FsError(msg) => {
           self.stderr_buf.write_string("sort: \{msg}\n")
           self.exit_code = 1
@@ -181,7 +173,11 @@ fn ExecContext::builtin_sort(
     if cmp == 0 {
       cmp = compare_sort_text(a, b)
     }
-    if reverse { -cmp } else { cmp }
+    if reverse {
+      -cmp
+    } else {
+      cmp
+    }
   }
 
   if check_only {
@@ -216,10 +212,8 @@ fn ExecContext::builtin_sort(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_uniq(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_uniq(self : ExecContext, args : Array[String]) -> Unit {
   let mut count_mode = false
   let mut duplicates_only = false
   let mut unique_only = false
@@ -242,14 +236,8 @@ fn ExecContext::builtin_uniq(
 
   let input = match input_file {
     Some(path) => {
-      let resolved = try {
-        @fs.resolve_path(self.cwd, path)
-      } catch {
-        _ => path
-      }
-      try {
-        self.fs.read_file(resolved)
-      } catch {
+      let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+      self.fs.read_file(resolved) catch {
         @fs.FsError(msg) => {
           self.stderr_buf.write_string("uniq: \{msg}\n")
           self.exit_code = 1
@@ -293,7 +281,9 @@ fn ExecContext::builtin_uniq(
       if i > 0 {
         if should_emit(count) {
           if count_mode {
-            self.stdout_buf.write_string(format_count(count) + " " + prev + "\n")
+            self.stdout_buf.write_string(
+              format_count(count) + " " + prev + "\n",
+            )
           } else {
             self.stdout_buf.write_string(prev + "\n")
           }
@@ -317,10 +307,8 @@ fn ExecContext::builtin_uniq(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_cut(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_cut(self : ExecContext, args : Array[String]) -> Unit {
   let mut delimiter = "\t"
   let mut fields : Array[Int] = []
   let mut char_mode = false
@@ -339,14 +327,14 @@ fn ExecContext::builtin_cut(
       char_ranges = parse_cut_char_spec(args[i + 1])
       i += 2
     } else if args[i].has_prefix("-d") {
-      delimiter = args[i].view(start_offset=2).to_string()
+      delimiter = args[i].view(start_offset=2).to_owned()
       i += 1
     } else if args[i].has_prefix("-f") {
-      fields = parse_field_spec(args[i].view(start_offset=2).to_string())
+      fields = parse_field_spec(args[i].view(start_offset=2).to_owned())
       i += 1
     } else if args[i].has_prefix("-c") {
       char_mode = true
-      char_ranges = parse_cut_char_spec(args[i].view(start_offset=2).to_string())
+      char_ranges = parse_cut_char_spec(args[i].view(start_offset=2).to_owned())
       i += 1
     } else {
       input_file = Some(args[i])
@@ -356,14 +344,8 @@ fn ExecContext::builtin_cut(
 
   let input = match input_file {
     Some(path) => {
-      let resolved = try {
-        @fs.resolve_path(self.cwd, path)
-      } catch {
-        _ => path
-      }
-      try {
-        self.fs.read_file(resolved)
-      } catch {
+      let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+      self.fs.read_file(resolved) catch {
         @fs.FsError(msg) => {
           self.stderr_buf.write_string("cut: \{msg}\n")
           self.exit_code = 1
@@ -384,7 +366,7 @@ fn ExecContext::builtin_cut(
       let mut first = true
       for field_num in fields {
         if field_num > 0 && field_num <= parts.length() {
-          if !(first) {
+          if !first {
             out_buf.write_string(delimiter)
           }
           out_buf.write_string(parts[field_num - 1])
@@ -397,6 +379,7 @@ fn ExecContext::builtin_cut(
   self.exit_code = 0
 }
 
+///|
 fn parse_cut_char_spec(spec : String) -> Array[(Int, Int)] {
   let ranges : Array[(Int, Int)] = []
   for raw in split_string_by_delimiter(spec, ",") {
@@ -424,6 +407,7 @@ fn parse_cut_char_spec(spec : String) -> Array[(Int, Int)] {
   ranges
 }
 
+///|
 fn cut_by_char_ranges(line : String, ranges : Array[(Int, Int)]) -> String {
   if line.length() == 0 || ranges.length() == 0 {
     return ""
@@ -458,10 +442,8 @@ fn cut_by_char_ranges(line : String, ranges : Array[(Int, Int)]) -> String {
   out.to_string()
 }
 
-fn ExecContext::builtin_tee(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_tee(self : ExecContext, args : Array[String]) -> Unit {
   let mut append = false
   let files : Array[String] = []
   for arg in args {
@@ -477,11 +459,7 @@ fn ExecContext::builtin_tee(
   self.stdout_buf.write_string(input)
   // Write to files
   for file in files {
-    let resolved = try {
-      @fs.resolve_path(self.cwd, file)
-    } catch {
-      _ => file
-    }
+    let resolved = @fs.resolve_path(self.cwd, file) catch { _ => file }
     try {
       if append {
         self.fs.append_file(resolved, input)
@@ -489,18 +467,14 @@ fn ExecContext::builtin_tee(
         self.fs.write_file(resolved, input)
       }
     } catch {
-      @fs.FsError(msg) =>
-        self.stderr_buf.write_string("tee: \{msg}\n")
+      @fs.FsError(msg) => self.stderr_buf.write_string("tee: \{msg}\n")
     }
   }
   self.exit_code = 0
 }
 
-
-fn ExecContext::builtin_xargs(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_xargs(self : ExecContext, args : Array[String]) -> Unit {
   let cmd_name = if args.length() > 0 { args[0] } else { "echo" }
   let cmd_args : Array[String] = []
   for i = 1; i < args.length(); i = i + 1 {

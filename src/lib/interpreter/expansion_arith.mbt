@@ -1,23 +1,28 @@
 // Shell arithmetic expansion - types, helpers, and tokenizer
 
+///|
 priv struct ArithValue {
   value : Int64
   target : ArithTarget
 }
 
+///|
 priv struct ArithParser {
   tokens : Array[String]
   mut pos : Int
 }
 
+///|
 fn arith_plain(value : Int64) -> ArithValue {
   { value, target: NoTarget }
 }
 
+///|
 fn arith_with_target(value : Int64, target : ArithTarget) -> ArithValue {
   { value, target }
 }
 
+///|
 fn ArithParser::peek(self : ArithParser) -> String? {
   if self.pos < self.tokens.length() {
     Some(self.tokens[self.pos])
@@ -26,6 +31,7 @@ fn ArithParser::peek(self : ArithParser) -> String? {
   }
 }
 
+///|
 fn ArithParser::advance(self : ArithParser) -> String? {
   if self.pos < self.tokens.length() {
     let tok = self.tokens[self.pos]
@@ -36,42 +42,48 @@ fn ArithParser::advance(self : ArithParser) -> String? {
   }
 }
 
+///|
 fn ArithParser::match_tok(self : ArithParser, tok : String) -> Bool {
   match self.peek() {
-    Some(cur) => {
+    Some(cur) =>
       if cur == tok {
         self.pos += 1
         true
       } else {
         false
       }
-    }
     None => false
   }
 }
 
+///|
 fn arith_is_space(ch : Char) -> Bool {
   ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }
 
+///|
 fn arith_is_digit(ch : Char) -> Bool {
   ch >= '0' && ch <= '9'
 }
 
+///|
 fn arith_is_ident_start(ch : Char) -> Bool {
   (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
 }
 
+///|
 fn arith_is_ident_char(ch : Char) -> Bool {
   arith_is_ident_start(ch) || arith_is_digit(ch)
 }
 
+///|
 fn arith_is_hex_digit(ch : Char) -> Bool {
   (ch >= '0' && ch <= '9') ||
   (ch >= 'a' && ch <= 'f') ||
   (ch >= 'A' && ch <= 'F')
 }
 
+///|
 fn arith_is_base_digit_char(ch : Char) -> Bool {
   arith_is_digit(ch) ||
   (ch >= 'a' && ch <= 'z') ||
@@ -80,6 +92,7 @@ fn arith_is_base_digit_char(ch : Char) -> Bool {
   ch == '_'
 }
 
+///|
 fn arith_trim(s : String) -> String {
   let mut start = 0
   let mut end_ = s.length()
@@ -102,25 +115,27 @@ fn arith_trim(s : String) -> String {
     }
   }
 
-  s.view(start_offset=start, end_offset=end_).to_string()
+  s.view(start_offset=start, end_offset=end_).to_owned()
 }
 
+///|
 fn arith_is_identifier_text(s : String) -> Bool {
   if s.length() == 0 {
     return false
   }
   let first = s[0].to_int().unsafe_to_char()
-  if !(arith_is_ident_start(first)) {
+  if !arith_is_ident_start(first) {
     return false
   }
   for i = 1; i < s.length(); i = i + 1 {
-    if !(arith_is_ident_char(s[i].to_int().unsafe_to_char())) {
+    if !arith_is_ident_char(s[i].to_int().unsafe_to_char()) {
       return false
     }
   }
   true
 }
 
+///|
 fn arith_parse_decimal_str(s : String) -> Int64? {
   if s.length() == 0 {
     return None
@@ -128,7 +143,7 @@ fn arith_parse_decimal_str(s : String) -> Int64? {
   let mut value = 0L
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
-    if !(arith_is_digit(ch)) {
+    if !arith_is_digit(ch) {
       return None
     }
     value = value * 10L + (ch.to_int() - 48).to_int64()
@@ -136,6 +151,7 @@ fn arith_parse_decimal_str(s : String) -> Int64? {
   Some(value)
 }
 
+///|
 fn arith_digit_value(ch : Char) -> Int? {
   if ch >= '0' && ch <= '9' {
     Some(ch.to_int() - 48)
@@ -152,6 +168,7 @@ fn arith_digit_value(ch : Char) -> Int? {
   }
 }
 
+///|
 fn arith_parse_base_digits(digits : String, base : Int) -> Int64? {
   if digits.length() == 0 {
     return None
@@ -177,6 +194,7 @@ fn arith_parse_base_digits(digits : String, base : Int) -> Int64? {
   Some(value)
 }
 
+///|
 fn arith_parse_number_literal(token : String) -> Int64? {
   if token.length() == 0 {
     return None
@@ -194,12 +212,10 @@ fn arith_parse_number_literal(token : String) -> Int64? {
     return None
   }
 
-  let body = token.view(start_offset=start).to_string()
+  let body = token.view(start_offset=start).to_owned()
 
-  if body.length() >= 3 &&
-    body[0] == '0' &&
-    (body[1] == 'x' || body[1] == 'X') {
-    let digits = body.view(start_offset=2).to_string()
+  if body.length() >= 3 && body[0] == '0' && (body[1] == 'x' || body[1] == 'X') {
+    let digits = body.view(start_offset=2).to_owned()
     match arith_parse_base_digits(digits, 16) {
       Some(v) => return Some(v * sign)
       None => return None
@@ -214,8 +230,8 @@ fn arith_parse_number_literal(token : String) -> Int64? {
     }
   }
   if hash_pos > 0 {
-    let base_text = body.view(start_offset=0, end_offset=hash_pos).to_string()
-    let digits = body.view(start_offset=hash_pos + 1).to_string()
+    let base_text = body.view(start_offset=0, end_offset=hash_pos).to_owned()
+    let digits = body.view(start_offset=hash_pos + 1).to_owned()
     match arith_parse_decimal_str(base_text) {
       Some(base) => {
         if base < 2L || base > 64L {
@@ -231,7 +247,7 @@ fn arith_parse_number_literal(token : String) -> Int64? {
   }
 
   if body.length() > 1 && body[0] == '0' {
-    let digits = body.view(start_offset=1).to_string()
+    let digits = body.view(start_offset=1).to_owned()
     for i = 0; i < digits.length(); i = i + 1 {
       let ch = digits[i].to_int().unsafe_to_char()
       if ch < '0' || ch > '9' {
@@ -253,6 +269,7 @@ fn arith_parse_number_literal(token : String) -> Int64? {
   }
 }
 
+///|
 fn arith_tokenize(expr : String) -> Array[String] {
   let tokens : Array[String] = []
   let mut i = 0
@@ -268,10 +285,11 @@ fn arith_tokenize(expr : String) -> Array[String] {
     if arith_is_ident_start(ch) {
       let start = i
       i += 1
-      while i < expr.length() && arith_is_ident_char(expr[i].to_int().unsafe_to_char()) {
+      while i < expr.length() &&
+            arith_is_ident_char(expr[i].to_int().unsafe_to_char()) {
         i += 1
       }
-      tokens.push(expr.view(start_offset=start, end_offset=i).to_string())
+      tokens.push(expr.view(start_offset=start, end_offset=i).to_owned())
       continue
     }
 
@@ -281,30 +299,34 @@ fn arith_tokenize(expr : String) -> Array[String] {
         ch == '0' &&
         (expr[i + 1] == 'x' || expr[i + 1] == 'X') {
         i += 2
-        while i < expr.length() && arith_is_hex_digit(expr[i].to_int().unsafe_to_char()) {
+        while i < expr.length() &&
+              arith_is_hex_digit(expr[i].to_int().unsafe_to_char()) {
           i += 1
         }
-        tokens.push(expr.view(start_offset=start, end_offset=i).to_string())
+        tokens.push(expr.view(start_offset=start, end_offset=i).to_owned())
         continue
       }
 
-      while i < expr.length() && arith_is_digit(expr[i].to_int().unsafe_to_char()) {
+      while i < expr.length() &&
+            arith_is_digit(expr[i].to_int().unsafe_to_char()) {
         i += 1
       }
 
       if i < expr.length() && expr[i] == '#' {
         i += 1
-        while i < expr.length() && arith_is_base_digit_char(expr[i].to_int().unsafe_to_char()) {
+        while i < expr.length() &&
+              arith_is_base_digit_char(expr[i].to_int().unsafe_to_char()) {
           i += 1
         }
-        tokens.push(expr.view(start_offset=start, end_offset=i).to_string())
+        tokens.push(expr.view(start_offset=start, end_offset=i).to_owned())
         continue
       }
 
-      while i < expr.length() && arith_is_ident_char(expr[i].to_int().unsafe_to_char()) {
+      while i < expr.length() &&
+            arith_is_ident_char(expr[i].to_int().unsafe_to_char()) {
         i += 1
       }
-      tokens.push(expr.view(start_offset=start, end_offset=i).to_string())
+      tokens.push(expr.view(start_offset=start, end_offset=i).to_owned())
       continue
     }
 
@@ -346,21 +368,42 @@ fn arith_tokenize(expr : String) -> Array[String] {
         (a == '^' && b == '=') ||
         (a == '<' && b == '<') ||
         (a == '>' && b == '>') {
-        tokens.push(expr.view(start_offset=i, end_offset=i + 2).to_string())
+        tokens.push(expr.view(start_offset=i, end_offset=i + 2).to_owned())
         i += 2
         continue
       }
     }
 
     match ch {
-      '+' | '-' | '*' | '/' | '%' | '=' | '!' | '~' | '<' | '>' | '&' | '|'
-      | '^' | '?' | ':' | ',' | '(' | ')' | '[' | ']' => {
-        tokens.push(expr.view(start_offset=i, end_offset=i + 1).to_string())
+      '+'
+      | '-'
+      | '*'
+      | '/'
+      | '%'
+      | '='
+      | '!'
+      | '~'
+      | '<'
+      | '>'
+      | '&'
+      | '|'
+      | '^'
+      | '?'
+      | ':'
+      | ','
+      | '('
+      | ')'
+      | '['
+      | ']' => {
+        tokens.push(expr.view(start_offset=i, end_offset=i + 1).to_owned())
         i += 1
       }
       _ => {
         // Keep an explicit invalid marker so caller can report an error.
-        tokens.push("__MOON_BASH_ARITH_INVALID__" + expr.view(start_offset=i, end_offset=i + 1).to_string())
+        tokens.push(
+          "__MOON_BASH_ARITH_INVALID__" +
+          expr.view(start_offset=i, end_offset=i + 1).to_owned(),
+        )
         return tokens
       }
     }
@@ -369,6 +412,7 @@ fn arith_tokenize(expr : String) -> Array[String] {
   tokens
 }
 
+///|
 fn arith_is_assignment_op(op : String) -> Bool {
   op == "=" ||
   op == "+=" ||
@@ -383,6 +427,7 @@ fn arith_is_assignment_op(op : String) -> Bool {
   op == ">>="
 }
 
+///|
 fn arith_shift_left(v : Int64, amount : Int64) -> Int64 {
   if amount < 0L {
     v
@@ -393,11 +438,16 @@ fn arith_shift_left(v : Int64, amount : Int64) -> Int64 {
   }
 }
 
+///|
 fn arith_shift_right(v : Int64, amount : Int64) -> Int64 {
   if amount < 0L {
     v
   } else if amount >= 64L {
-    if v < 0L { -1L } else { 0L }
+    if v < 0L {
+      -1L
+    } else {
+      0L
+    }
   } else {
     v >> amount.to_int()
   }

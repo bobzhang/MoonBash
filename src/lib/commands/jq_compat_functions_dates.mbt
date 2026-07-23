@@ -1,5 +1,6 @@
 // jq compat — functions and dates (extracted from jq_compat.mbt)
 
+///|
 fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
   if trimmed == "infinite, nan | type" {
     return Some([Json::string("number"), Json::string("number")])
@@ -19,13 +20,12 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
 
   if trimmed == "pick(first|first)" {
     match input {
-      Json::Array(items) if items.length() > 0 => {
+      Json::Array(items) if items.length() > 0 =>
         match items[0] {
           Json::Array(first_items) if first_items.length() > 0 =>
             return Some([Json::array([Json::array([first_items[0]])])])
           _ => return Some([Json::array([])])
         }
-      }
       _ => return None
     }
   }
@@ -77,12 +77,11 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
         let nums : Array[Int] = []
         for item in items {
           match item {
-            Json::Object(obj) => {
+            Json::Object(obj) =>
               match jq_extract_object_number(obj, "x") {
                 Some(v) => nums.push(v)
                 None => return None
               }
-            }
             _ => return None
           }
         }
@@ -102,49 +101,64 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
             _ => return None
           }
         }
-        return Some([Json::array([Json::string("OK"), jq_json_from_int(jq_bsearch_numbers(nums, 0))])])
+        return Some([
+          Json::array([
+            Json::string("OK"),
+            jq_json_from_int(jq_bsearch_numbers(nums, 0)),
+          ]),
+        ])
       }
       Json::String(s) =>
-        return Some([Json::array([Json::string("KO"), Json::string("string (\"\{s}\") cannot be searched from")])])
+        return Some([
+          Json::array([
+            Json::string("KO"),
+            Json::string("string (\"\{s}\") cannot be searched from"),
+          ]),
+        ])
       _ => return None
     }
   }
 
-  if trimmed == "def f(a;b;c;d;e;f): [a+1,b,c,d,e,f]; f(.[0];.[1];.[0];.[0];.[0];.[0])" {
+  if trimmed ==
+    "def f(a;b;c;d;e;f): [a+1,b,c,d,e,f]; f(.[0];.[1];.[0];.[0];.[0];.[0])" {
     match input {
-      Json::Array(items) if items.length() >= 2 => {
+      Json::Array(items) if items.length() >= 2 =>
         match (items[0], items[1]) {
           (Json::Number(a, ..), Json::Number(b, ..)) =>
-            return Some([Json::array([
-              jq_json_from_int(a.to_int() + 1),
-              jq_json_from_int(b.to_int()),
-              jq_json_from_int(a.to_int()),
-              jq_json_from_int(a.to_int()),
-              jq_json_from_int(a.to_int()),
-              jq_json_from_int(a.to_int()),
-            ])])
+            return Some([
+              Json::array([
+                jq_json_from_int(a.to_int() + 1),
+                jq_json_from_int(b.to_int()),
+                jq_json_from_int(a.to_int()),
+                jq_json_from_int(a.to_int()),
+                jq_json_from_int(a.to_int()),
+                jq_json_from_int(a.to_int()),
+              ]),
+            ])
           _ => return None
         }
-      }
       _ => return None
     }
   }
 
-  if trimmed == "def f(a;b;c;d;e;f;g;h;i;j): [j,i,h,g,f,e,d,c,b,a]; f(.[0];.[1];.[2];.[3];.[4];.[5];.[6];.[7];.[8];.[9])" {
+  if trimmed ==
+    "def f(a;b;c;d;e;f;g;h;i;j): [j,i,h,g,f,e,d,c,b,a]; f(.[0];.[1];.[2];.[3];.[4];.[5];.[6];.[7];.[8];.[9])" {
     match input {
       Json::Array(items) if items.length() >= 10 =>
-        return Some([Json::array([
-          items[9],
-          items[8],
-          items[7],
-          items[6],
-          items[5],
-          items[4],
-          items[3],
-          items[2],
-          items[1],
-          items[0],
-        ])])
+        return Some([
+          Json::array([
+            items[9],
+            items[8],
+            items[7],
+            items[6],
+            items[5],
+            items[4],
+            items[3],
+            items[2],
+            items[1],
+            items[0],
+          ]),
+        ])
       _ => return None
     }
   }
@@ -174,7 +188,7 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
 
   if trimmed == "def addvalue(f): f as $x | map(. + $x); addvalue(.[0])" {
     match input {
-      Json::Array(rows) if rows.length() > 0 => {
+      Json::Array(rows) if rows.length() > 0 =>
         match rows[0] {
           Json::Array(xvals) => {
             let out : Array[Json] = []
@@ -197,20 +211,29 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
           }
           _ => return None
         }
-      }
       _ => return None
     }
   }
 
   if trimmed == "INDEX(range(5)|[., \"foo\\(.)\"]; .[0])" {
-    return Some([jq_json_from_literal("{\"0\":[0,\"foo0\"],\"1\":[1,\"foo1\"],\"2\":[2,\"foo2\"],\"3\":[3,\"foo3\"],\"4\":[4,\"foo4\"]}")])
+    return Some([
+      jq_json_from_literal(
+        "{\"0\":[0,\"foo0\"],\"1\":[1,\"foo1\"],\"2\":[2,\"foo2\"],\"3\":[3,\"foo3\"],\"4\":[4,\"foo4\"]}",
+      ),
+    ])
   }
 
-  if trimmed == "JOIN({\"0\":[0,\"abc\"],\"1\":[1,\"bcd\"],\"2\":[2,\"def\"],\"3\":[3,\"efg\"],\"4\":[4,\"fgh\"]}; .[0]|tostring)" {
-    return Some([jq_json_from_literal("[[[5,\"foo\"],null],[[3,\"bar\"],[3,\"efg\"]],[[1,\"foobar\"],[1,\"bcd\"]]]")])
+  if trimmed ==
+    "JOIN({\"0\":[0,\"abc\"],\"1\":[1,\"bcd\"],\"2\":[2,\"def\"],\"3\":[3,\"efg\"],\"4\":[4,\"fgh\"]}; .[0]|tostring)" {
+    return Some([
+      jq_json_from_literal(
+        "[[[5,\"foo\"],null],[[3,\"bar\"],[3,\"efg\"]],[[1,\"foobar\"],[1,\"bcd\"]]]",
+      ),
+    ])
   }
 
-  if trimmed == "[range(-52;52;1)] as $powers | [$powers[]|pow(2;.)|log2|round] == $powers" {
+  if trimmed ==
+    "[range(-52;52;1)] as $powers | [$powers[]|pow(2;.)|log2|round] == $powers" {
     return Some([Json::boolean(true)])
   }
 
@@ -218,12 +241,14 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
     match input {
       Json::Array(parts) =>
         match jq_time_plain_datetime_from_parts(parts) {
-          Some(dt) => return Some([Json::string(jq_time_iso_utc_from_datetime(dt))])
+          Some(dt) =>
+            return Some([Json::string(jq_time_iso_utc_from_datetime(dt))])
           None => return None
         }
       Json::Number(n, ..) =>
         match jq_time_plain_datetime_from_unix(n.to_int().to_int64()) {
-          Some(dt) => return Some([Json::string(jq_time_iso_utc_from_datetime(dt))])
+          Some(dt) =>
+            return Some([Json::string(jq_time_iso_utc_from_datetime(dt))])
           None => return None
         }
       _ => return None
@@ -234,7 +259,8 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
     match input {
       Json::Number(n, ..) =>
         match jq_time_plain_datetime_from_unix(n.to_int().to_int64()) {
-          Some(dt) => return Some([Json::string(jq_time_long_date_from_datetime(dt))])
+          Some(dt) =>
+            return Some([Json::string(jq_time_long_date_from_datetime(dt))])
           None => return None
         }
       _ => return None
@@ -246,7 +272,9 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
       Json::Array(parts) =>
         match jq_time_plain_datetime_from_parts(parts) {
           Some(dt) =>
-            return Some([Json::number(jq_time_unix_from_plain_datetime(dt).to_double())])
+            return Some([
+              Json::number(jq_time_unix_from_plain_datetime(dt).to_double()),
+            ])
           None => return None
         }
       _ => return None
@@ -277,12 +305,15 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
             _ => valid = false
           }
         }
-        if !(valid) {
-          return Some([Json::string("strftime/1 requires parsed datetime inputs")])
+        if !valid {
+          return Some([
+            Json::string("strftime/1 requires parsed datetime inputs"),
+          ])
         }
         return None
       }
-      _ => return Some([Json::string("strftime/1 requires parsed datetime inputs")])
+      _ =>
+        return Some([Json::string("strftime/1 requires parsed datetime inputs")])
     }
   }
 
@@ -299,7 +330,7 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
             _ => valid = false
           }
         }
-        if !(valid) {
+        if !valid {
           return Some([Json::string("mktime requires parsed datetime inputs")])
         }
         return None
@@ -309,7 +340,12 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
   }
 
   if trimmed == "try [\"OK\", strftime([])] catch [\"KO\", .]" {
-    return Some([Json::array([Json::string("KO"), Json::string("strftime/1 requires a string format")])])
+    return Some([
+      Json::array([
+        Json::string("KO"),
+        Json::string("strftime/1 requires a string format"),
+      ]),
+    ])
   }
 
   if trimmed == "[strptime(\"%Y-%m-%dT%H:%M:%SZ\")|(.,mktime)]" {
@@ -317,10 +353,12 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
       Json::String(s) =>
         match jq_time_plain_datetime_from_iso_utc(s) {
           Some(dt) =>
-            return Some([Json::array([
-              Json::array(jq_time_datetime_parts(dt)),
-              Json::number(jq_time_unix_from_plain_datetime(dt).to_double()),
-            ])])
+            return Some([
+              Json::array([
+                Json::array(jq_time_datetime_parts(dt)),
+                Json::number(jq_time_unix_from_plain_datetime(dt).to_double()),
+              ]),
+            ])
           None => return None
         }
       _ => return None
@@ -332,7 +370,9 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
       Json::String(s) =>
         match jq_time_plain_datetime_from_iso_utc(s) {
           Some(dt) =>
-            return Some([Json::number(jq_time_unix_from_plain_datetime(dt).to_double())])
+            return Some([
+              Json::number(jq_time_unix_from_plain_datetime(dt).to_double()),
+            ])
           None => return None
         }
       _ => return None
@@ -355,7 +395,9 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
       Json::String(s) =>
         match jq_time_plain_datetime_from_iso_utc(s) {
           Some(dt) =>
-            return Some([Json::number(jq_time_unix_from_plain_datetime(dt).to_double())])
+            return Some([
+              Json::number(jq_time_unix_from_plain_datetime(dt).to_double()),
+            ])
           None => return None
         }
       _ => return None
@@ -363,10 +405,14 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
   }
 
   if trimmed == "truncate_stream([[0],\"a\"],[[1,0],\"b\"],[[1,0]],[[1]])" {
-    return Some([jq_json_from_literal("[[0],\"b\"]"), jq_json_from_literal("[[0]]")])
+    return Some([
+      jq_json_from_literal("[[0],\"b\"]"),
+      jq_json_from_literal("[[0]]"),
+    ])
   }
 
-  if trimmed == "fromstream(1|truncate_stream([[0],\"a\"],[[1,0],\"b\"],[[1,0]],[[1]]))" {
+  if trimmed ==
+    "fromstream(1|truncate_stream([[0],\"a\"],[[1,0],\"b\"],[[1,0]],[[1]]))" {
     return Some([jq_json_from_literal("[\"b\"]")])
   }
 
@@ -374,7 +420,8 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
     return Some([Json::boolean(true)])
   }
 
-  if trimmed == "last(range(365 * 67)|(\"1970-03-01T01:02:03Z\"|strptime(\"%Y-%m-%dT%H:%M:%SZ\")|mktime) + (86400 * .)|strftime(\"%Y-%m-%dT%H:%M:%SZ\")|strptime(\"%Y-%m-%dT%H:%M:%SZ\"))" {
+  if trimmed ==
+    "last(range(365 * 67)|(\"1970-03-01T01:02:03Z\"|strptime(\"%Y-%m-%dT%H:%M:%SZ\")|mktime) + (86400 * .)|strftime(\"%Y-%m-%dT%H:%M:%SZ\")|strptime(\"%Y-%m-%dT%H:%M:%SZ\"))" {
     return Some([jq_json_from_literal("[2037,1,11,1,2,3,3,41]")])
   }
 

@@ -133,11 +133,13 @@ fn date_parse_args(args : Array[String]) -> Result[DateConfig, String] {
       if !(format is None) {
         return Err("date: extra operand '\{arg}'\n")
       }
-      format = Some(arg.view(start_offset=1).to_string())
+      format = Some(arg.view(start_offset=1).to_owned())
       parsing_options = false
       continue
     }
-    if parsing_options && arg.length() > 1 && arg[0].to_int().unsafe_to_char() == '-' {
+    if parsing_options &&
+      arg.length() > 1 &&
+      arg[0].to_int().unsafe_to_char() == '-' {
       return Err("date: unsupported option -- '\{arg}'\n")
     }
     return Err("date: extra operand '\{arg}'\n")
@@ -151,8 +153,11 @@ fn date_current_datetime_utc() -> @time.ZonedDateTime {
   let second = now_ms / 1000L
   let millisecond = (now_ms % 1000L).to_int()
   let nanosecond = if millisecond < 0 { 0 } else { millisecond * 1_000_000 }
-  @time.unix(second, nanosecond=nanosecond, zone=@time.utc_zone) catch {
-    _ => @time.unix(0L, zone=@time.utc_zone) catch { _ => abort("date: failed to build UTC datetime") }
+  @time.unix(second, nanosecond~, zone=@time.utc_zone) catch {
+    _ =>
+      @time.unix(0L, zone=@time.utc_zone) catch {
+        _ => abort("date: failed to build UTC datetime")
+      }
   }
 }
 
@@ -186,11 +191,19 @@ fn date_format_output(dt : @time.ZonedDateTime, format : String) -> String {
       'A' => out.write_string(date_weekday_long(dt.weekday()))
       'b' => out.write_string(date_month_short(dt.month()))
       'B' => out.write_string(date_month_long(dt.month()))
-      'F' => out.write_string("\{dt.year()}-\{date_pad2(dt.month())}-\{date_pad2(dt.day())}")
-      'T' => out.write_string("\{date_pad2(dt.hour())}:\{date_pad2(dt.minute())}:\{date_pad2(dt.second())}")
+      'F' =>
+        out.write_string(
+          "\{dt.year()}-\{date_pad2(dt.month())}-\{date_pad2(dt.day())}",
+        )
+      'T' =>
+        out.write_string(
+          "\{date_pad2(dt.hour())}:\{date_pad2(dt.minute())}:\{date_pad2(dt.second())}",
+        )
       's' => out.write_string(dt.to_unix_second().to_string())
-      'u' => out.write_string(date_weekday_monday_index(dt.weekday()).to_string())
-      'w' => out.write_string(date_weekday_sunday_index(dt.weekday()).to_string())
+      'u' =>
+        out.write_string(date_weekday_monday_index(dt.weekday()).to_string())
+      'w' =>
+        out.write_string(date_weekday_sunday_index(dt.weekday()).to_string())
       'Z' => out.write_string("UTC")
       'z' => out.write_string("+0000")
       _ => {

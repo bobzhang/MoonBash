@@ -1,10 +1,8 @@
 // moon_bash Interpreter - Builtins (I/O and Meta)
 // Split from builtins_core.mbt for maintainability.
 
-fn ExecContext::builtin_read(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_read(self : ExecContext, args : Array[String]) -> Unit {
   let input = self.stdin_buf
   // Find first line
   let mut line_end = input.length()
@@ -14,7 +12,7 @@ fn ExecContext::builtin_read(
       break
     }
   }
-  let line = input.view(start_offset=0, end_offset=line_end).to_string()
+  let line = input.view(start_offset=0, end_offset=line_end).to_owned()
 
   // Parse flags
   let var_names : Array[String] = []
@@ -54,34 +52,31 @@ fn ExecContext::builtin_read(
       }
       self.store_array_assignment(name, words)
     }
-    None => {
+    None =>
       for j = 0; j < var_names.length(); j = j + 1 {
         if j < var_names.length() - 1 {
           // Not the last variable - assign one word
           let value = if j < words.length() { words[j] } else { "" }
           self.env[var_names[j]] = value
-        } else {
           // Last variable - assign rest of line
-          if j < words.length() {
-            let buf = StringBuilder::new()
-            for k = j; k < words.length(); k = k + 1 {
-              if k > j {
-                buf.write_string(" ")
-              }
-              buf.write_string(words[k])
+        } else if j < words.length() {
+          let buf = StringBuilder::new()
+          for k = j; k < words.length(); k = k + 1 {
+            if k > j {
+              buf.write_string(" ")
             }
-            self.env[var_names[j]] = buf.to_string()
-          } else {
-            self.env[var_names[j]] = ""
+            buf.write_string(words[k])
           }
+          self.env[var_names[j]] = buf.to_string()
+        } else {
+          self.env[var_names[j]] = ""
         }
       }
-    }
   }
 
   // Consume the line from stdin
   if line_end < input.length() {
-    self.stdin_buf = input.view(start_offset=line_end + 1).to_string()
+    self.stdin_buf = input.view(start_offset=line_end + 1).to_owned()
   } else {
     self.stdin_buf = ""
   }
@@ -89,9 +84,10 @@ fn ExecContext::builtin_read(
   self.exit_code = if input.length() == 0 { 1 } else { 0 }
 }
 
+///|
 fn ExecContext::builtin_mapfile(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let mut strip_newline = false
   let mut array_name = "MAPFILE"
@@ -148,13 +144,18 @@ fn ExecContext::builtin_mapfile(
   self.exit_code = 0
 }
 
+///|
 fn mapfile_split_lines(input : String, strip_newline : Bool) -> Array[String] {
   let lines : Array[String] = []
   let buf = StringBuilder::new()
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
     if ch == '\n' {
-      let line = if strip_newline { buf.to_string() } else { buf.to_string() + "\n" }
+      let line = if strip_newline {
+        buf.to_string()
+      } else {
+        buf.to_string() + "\n"
+      }
       lines.push(line)
       buf.reset()
     } else {
@@ -168,6 +169,7 @@ fn mapfile_split_lines(input : String, strip_newline : Bool) -> Array[String] {
   lines
 }
 
+///|
 fn mapfile_starts_with(s : String, prefix : String) -> Bool {
   if prefix.length() > s.length() {
     return false
@@ -180,14 +182,13 @@ fn mapfile_starts_with(s : String, prefix : String) -> Bool {
   true
 }
 
+///|
 fn array_count_storage_key(name : String) -> String {
   "__MOON_BASH_ARRAY_COUNT__" + name
 }
 
-fn ExecContext::builtin_test(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_test(self : ExecContext, args : Array[String]) -> Unit {
   let result = self.evaluate_test_with_status(args, TestEvalMode::TestBuiltin)
   if result.status == 0 {
     self.exit_code = if result.value { 0 } else { 1 }
@@ -196,9 +197,10 @@ fn ExecContext::builtin_test(
   }
 }
 
+///|
 fn ExecContext::builtin_bracket(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() == 0 || args[args.length() - 1] != "]" {
     self.exit_code = 2
@@ -208,7 +210,10 @@ fn ExecContext::builtin_bracket(
   for i = 0; i < args.length() - 1; i = i + 1 {
     test_args.push(args[i])
   }
-  let result = self.evaluate_test_with_status(test_args, TestEvalMode::BracketBuiltin)
+  let result = self.evaluate_test_with_status(
+    test_args,
+    TestEvalMode::BracketBuiltin,
+  )
   if result.status == 0 {
     self.exit_code = if result.value { 0 } else { 1 }
   } else {
@@ -216,9 +221,10 @@ fn ExecContext::builtin_bracket(
   }
 }
 
+///|
 fn ExecContext::builtin_double_bracket(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() == 0 || args[args.length() - 1] != "]]" {
     self.exit_code = 2
@@ -228,7 +234,10 @@ fn ExecContext::builtin_double_bracket(
   for i = 0; i < args.length() - 1; i = i + 1 {
     test_args.push(args[i])
   }
-  let result = self.evaluate_test_with_status(test_args, TestEvalMode::DoubleBracketBuiltin)
+  let result = self.evaluate_test_with_status(
+    test_args,
+    TestEvalMode::DoubleBracketBuiltin,
+  )
   if result.status == 0 {
     self.exit_code = if result.value { 0 } else { 1 }
   } else {
@@ -239,9 +248,10 @@ fn ExecContext::builtin_double_bracket(
   }
 }
 
+///|
 fn ExecContext::builtin_printf(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() == 0 {
     self.stderr_buf.write_string("printf: usage: printf format [arguments]\n")
@@ -268,7 +278,7 @@ fn ExecContext::builtin_printf(
   }
   let result = format_printf(format, fmt_args)
   match value_target {
-    Some(name) => {
+    Some(name) =>
       match self.resolve_array_assignment_target(name) {
         Some((base, index)) => {
           if self.should_exit {
@@ -281,22 +291,15 @@ fn ExecContext::builtin_printf(
             return
           }
         }
-        None => {
-          if !(self.store_scalar_assignment(name, result)) {
-            return
-          }
-        }
+        None => if !self.store_scalar_assignment(name, result) { return }
       }
-    }
     None => self.stdout_buf.write_string(result)
   }
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_eval(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_eval(self : ExecContext, args : Array[String]) -> Unit {
   let mut start = 0
   if args.length() > 0 && args[0] == "--" {
     start = 1
@@ -309,13 +312,16 @@ fn ExecContext::builtin_eval(
   for i = start; i < args.length(); i = i + 1 {
     eval_args.push(args[i])
   }
-  let script = eval_args.iter().fold(
-    init="",
-    fn(acc, a) { if acc.length() == 0 { a } else { acc + " " + a } },
-  )
-  let parsed = try {
-    @parser.parse(script)
-  } catch {
+  let script = eval_args
+    .iter()
+    .fold(init="", fn(acc, a) {
+      if acc.length() == 0 {
+        a
+      } else {
+        acc + " " + a
+      }
+    })
+  let parsed = @parser.parse(script) catch {
     @ast.BashError(msg) => {
       self.stderr_buf.write_string("moon_bash: eval: \{msg}\n")
       self.exit_code = 2
@@ -325,10 +331,8 @@ fn ExecContext::builtin_eval(
   self.execute_script(parsed)
 }
 
-fn ExecContext::builtin_let(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_let(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     self.exit_code = 1
     return
@@ -341,32 +345,27 @@ fn ExecContext::builtin_let(
   self.exit_code = if last != 0L { 0 } else { 1 }
 }
 
+///|
 fn ExecContext::builtin_source(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() == 0 {
-    self.stderr_buf.write_string("moon_bash: source: filename argument required\n")
+    self.stderr_buf.write_string(
+      "moon_bash: source: filename argument required\n",
+    )
     self.exit_code = 2
     return
   }
-  let path = try {
-    @fs.resolve_path(self.cwd, args[0])
-  } catch {
-    _ => args[0]
-  }
-  let content = try {
-    self.fs.read_file(path)
-  } catch {
+  let path = @fs.resolve_path(self.cwd, args[0]) catch { _ => args[0] }
+  let content = self.fs.read_file(path) catch {
     @fs.FsError(msg) => {
       self.stderr_buf.write_string("moon_bash: source: \{msg}\n")
       self.exit_code = 1
       return
     }
   }
-  let parsed = try {
-    @parser.parse(content)
-  } catch {
+  let parsed = @parser.parse(content) catch {
     @ast.BashError(msg) => {
       self.stderr_buf.write_string("moon_bash: source: \{msg}\n")
       self.exit_code = 2
@@ -376,10 +375,8 @@ fn ExecContext::builtin_source(
   self.execute_script(parsed)
 }
 
-fn ExecContext::builtin_type(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_type(self : ExecContext, args : Array[String]) -> Unit {
   let mut opt_a = false
   let mut opt_t = false
   let mut opt_p = false
@@ -434,7 +431,7 @@ fn ExecContext::builtin_type(
       if self.lookup_alias_value(name) is Some(_) {
         self.stdout_buf.write_string("alias\n")
         found = true
-      } else if !(opt_f) && self.functions.contains(name) {
+      } else if !opt_f && self.functions.contains(name) {
         self.stdout_buf.write_string("function\n")
         found = true
       } else if is_lookup_shell_keyword(name) {
@@ -452,7 +449,7 @@ fn ExecContext::builtin_type(
           None => ()
         }
       }
-      if !(found) {
+      if !found {
         all_found = false
       }
       continue
@@ -465,9 +462,9 @@ fn ExecContext::builtin_type(
       }
 
       let force_path_lookup = opt_upper_p || opt_a
-      if !(force_path_lookup) {
+      if !force_path_lookup {
         let shadowed_by_non_file = self.lookup_alias_value(name) is Some(_) ||
-          (!(opt_f) && self.functions.contains(name)) ||
+          (!opt_f && self.functions.contains(name)) ||
           is_lookup_shell_keyword(name) ||
           is_lookup_shell_builtin(name)
         if shadowed_by_non_file {
@@ -484,14 +481,12 @@ fn ExecContext::builtin_type(
           self.stdout_buf.write_string(display + "\n")
           found = true
         }
-      } else {
-        if matches.length() > 0 {
-          let (display, _resolved, _is_virtual) = matches[0]
-          self.stdout_buf.write_string(display + "\n")
-          found = true
-        }
+      } else if matches.length() > 0 {
+        let (display, _resolved, _is_virtual) = matches[0]
+        self.stdout_buf.write_string(display + "\n")
+        found = true
       }
-      if !(found) {
+      if !found {
         all_found = false
       }
       continue
@@ -508,7 +503,7 @@ fn ExecContext::builtin_type(
         }
         None => ()
       }
-      if !(opt_f) {
+      if !opt_f {
         match self.functions.get(name) {
           Some(fndef) => {
             self.print_type_function_definition(name, fndef)
@@ -530,18 +525,14 @@ fn ExecContext::builtin_type(
         self.stdout_buf.write_string("\{name} is a \{builtin_kind}\n")
         found = true
       }
-      if !(type_builtin_without_external_path(name)) {
-        for match_item in self.all_path_command_matches(
-          name,
-          false,
-          true,
-        ) {
+      if !type_builtin_without_external_path(name) {
+        for match_item in self.all_path_command_matches(name, false, true) {
           let (display, _resolved, _is_virtual) = match_item
           self.stdout_buf.write_string("\{name} is \{display}\n")
           found = true
         }
       }
-      if !(found) {
+      if !found {
         self.stderr_buf.write_string("\{name}: not found\n")
         all_found = false
       }
@@ -558,7 +549,7 @@ fn ExecContext::builtin_type(
       None => ()
     }
 
-    if !(opt_f) {
+    if !opt_f {
       match self.functions.get(name) {
         Some(fndef) => {
           self.print_type_function_definition(name, fndef)
@@ -584,9 +575,8 @@ fn ExecContext::builtin_type(
     }
 
     match self.first_path_command_match(name, false, true) {
-      Some((display, _resolved, _is_virtual)) => {
+      Some((display, _resolved, _is_virtual)) =>
         self.stdout_buf.write_string("\{name} is \{display}\n")
-      }
       None => {
         self.stderr_buf.write_string("\{name}: not found\n")
         all_found = false
@@ -596,9 +586,10 @@ fn ExecContext::builtin_type(
   self.exit_code = if all_found { 0 } else { 1 }
 }
 
+///|
 fn ExecContext::builtin_command(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() == 0 {
     self.exit_code = 0
@@ -665,9 +656,8 @@ fn ExecContext::builtin_command(
         continue
       }
       match self.first_path_command_match(name, use_default_path, true) {
-        Some((display, _resolved, _is_virtual)) => {
+        Some((display, _resolved, _is_virtual)) =>
           self.stdout_buf.write_string(display + "\n")
-        }
         None => all_found = false
       }
     }
@@ -706,9 +696,8 @@ fn ExecContext::builtin_command(
         continue
       }
       match self.first_path_command_match(name, use_default_path, true) {
-        Some((display, _resolved, _is_virtual)) => {
+        Some((display, _resolved, _is_virtual)) =>
           self.stdout_buf.write_string("\{name} is \{display}\n")
-        }
         None => {
           self.stderr_buf.write_string("\{name}: not found\n")
           all_found = false
@@ -744,6 +733,7 @@ fn ExecContext::builtin_command(
   }
 }
 
+///|
 fn type_word_part_to_text(part : @ast.WordPart) -> String {
   match part {
     @ast.WordPart::Literal(text) => text
@@ -765,6 +755,7 @@ fn type_word_part_to_text(part : @ast.WordPart) -> String {
   }
 }
 
+///|
 fn type_word_to_text(word : @ast.Word) -> String {
   let buf = StringBuilder::new()
   for part in word.parts {
@@ -773,6 +764,7 @@ fn type_word_to_text(word : @ast.Word) -> String {
   buf.to_string()
 }
 
+///|
 fn type_render_simple_command(simple : @ast.SimpleCommand) -> String {
   let pieces : Array[String] = []
   for assign in simple.assignments {
@@ -785,13 +777,12 @@ fn type_render_simple_command(simple : @ast.SimpleCommand) -> String {
           pieces.push("\{assign.name}=\{value}")
         }
       }
-      None => {
+      None =>
         if assign.append {
           pieces.push(assign.name + "+=")
         } else {
           pieces.push(assign.name + "=")
         }
-      }
     }
   }
   for word in simple.words {
@@ -800,15 +791,21 @@ fn type_render_simple_command(simple : @ast.SimpleCommand) -> String {
   if pieces.length() == 0 {
     return ""
   }
-  pieces.iter().fold(
-    init="",
-    fn(acc, piece) { if acc.length() == 0 { piece } else { acc + " " + piece } },
-  )
+  pieces
+  .iter()
+  .fold(init="", fn(acc, piece) {
+    if acc.length() == 0 {
+      piece
+    } else {
+      acc + " " + piece
+    }
+  })
 }
 
+///|
 fn type_collect_pipeline_line(
   pipeline : @ast.Pipeline,
-  lines : Array[String]
+  lines : Array[String],
 ) -> Unit {
   if pipeline.commands.length() == 0 {
     return
@@ -827,12 +824,14 @@ fn type_collect_pipeline_line(
   }
 }
 
+///|
 fn type_collect_statement_lines(
   stmt : @ast.Statement,
-  lines : Array[String]
+  lines : Array[String],
 ) -> Unit {
   match stmt {
-    @ast.Statement::Pipeline(pipeline) => type_collect_pipeline_line(pipeline, lines)
+    @ast.Statement::Pipeline(pipeline) =>
+      type_collect_pipeline_line(pipeline, lines)
     @ast.Statement::Sequence(pipeline, right) => {
       type_collect_pipeline_line(pipeline, lines)
       type_collect_statement_lines(right, lines)
@@ -845,27 +844,31 @@ fn type_collect_statement_lines(
       type_collect_pipeline_line(pipeline, lines)
       type_collect_statement_lines(right, lines)
     }
-    @ast.Statement::Background(pipeline) => type_collect_pipeline_line(pipeline, lines)
+    @ast.Statement::Background(pipeline) =>
+      type_collect_pipeline_line(pipeline, lines)
   }
 }
 
-fn type_render_function_body_lines(body : @ast.CompoundCommand) -> Array[String] {
+///|
+fn type_render_function_body_lines(
+  body : @ast.CompoundCommand,
+) -> Array[String] {
   let lines : Array[String] = []
   match body {
-    @ast.CompoundCommand::Group(script) => {
+    @ast.CompoundCommand::Group(script) =>
       for stmt in script.statements {
         type_collect_statement_lines(stmt, lines)
       }
-    }
     _ => ()
   }
   lines
 }
 
+///|
 fn ExecContext::print_type_function_definition(
   self : ExecContext,
   name : String,
-  fndef : @ast.FunctionDef
+  fndef : @ast.FunctionDef,
 ) -> Unit {
   self.stdout_buf.write_string("\{name} is a function\n")
   self.stdout_buf.write_string("\{name} () \n")
@@ -881,6 +884,7 @@ fn ExecContext::print_type_function_definition(
   self.stdout_buf.write_string("}\n")
 }
 
+///|
 fn type_builtin_without_external_path(name : String) -> Bool {
   match name {
     "cd" | "type" | "builtin" | "command" => true

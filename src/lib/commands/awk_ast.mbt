@@ -1,5 +1,6 @@
 // moon_bash Commands - awk statement AST parsing
 
+///|
 priv enum AwkGetlineTarget {
   Record
   Var(String)
@@ -8,11 +9,13 @@ priv enum AwkGetlineTarget {
   Invalid(String)
 } derive(Debug)
 
+///|
 priv enum AwkAssignTarget {
   Var(String)
   ArrayElem(String, AwkExprAst)
 } derive(Debug)
 
+///|
 fn awk_parse_getline_target(target : String) -> AwkGetlineTarget {
   let t = aj_trim(target)
   if t.length() == 0 {
@@ -23,15 +26,23 @@ fn awk_parse_getline_target(target : String) -> AwkGetlineTarget {
     Field(awk_parse_expr_ast(aj_substr(t, 1, t.length())))
   } else {
     match awk_parse_array_ref(t) {
-      Some((arr_name, idx_expr)) => ArrayElem(arr_name, awk_parse_expr_ast(idx_expr))
+      Some((arr_name, idx_expr)) =>
+        ArrayElem(arr_name, awk_parse_expr_ast(idx_expr))
       None => Invalid(t)
     }
   }
 }
 
+///|
 priv enum AwkStmt {
   If(AwkExprAst, AwkGetlineTarget?, Array[AwkStmt], Array[AwkStmt]?)
-  For(Array[AwkStmt], AwkExprAst?, AwkGetlineTarget?, Array[AwkStmt], Array[AwkStmt])
+  For(
+    Array[AwkStmt],
+    AwkExprAst?,
+    AwkGetlineTarget?,
+    Array[AwkStmt],
+    Array[AwkStmt]
+  )
   ForIn(String, String, Array[AwkStmt])
   While(AwkExprAst, AwkGetlineTarget?, Array[AwkStmt])
   Next
@@ -50,6 +61,7 @@ priv enum AwkStmt {
   ExprStmt(AwkExprAst)
 } derive(Debug)
 
+///|
 fn awk_is_zero_literal_expr_for_getline(expr_ast : AwkExprAst) -> Bool {
   match expr_ast {
     Raw(text) => {
@@ -60,6 +72,7 @@ fn awk_is_zero_literal_expr_for_getline(expr_ast : AwkExprAst) -> Bool {
   }
 }
 
+///|
 fn awk_stringify_simple_expr_for_getline(expr_ast : AwkExprAst) -> String? {
   match expr_ast {
     Raw(text) => Some(aj_trim(text))
@@ -88,10 +101,13 @@ fn awk_stringify_simple_expr_for_getline(expr_ast : AwkExprAst) -> String? {
   }
 }
 
-fn awk_getline_target_from_condition_expr_ast(cond_ast : AwkExprAst) -> AwkGetlineTarget? {
+///|
+fn awk_getline_target_from_condition_expr_ast(
+  cond_ast : AwkExprAst,
+) -> AwkGetlineTarget? {
   match cond_ast {
     Binary(op, left, right) => {
-      if op != ">" || !(awk_is_zero_literal_expr_for_getline(right)) {
+      if op != ">" || !awk_is_zero_literal_expr_for_getline(right) {
         return None
       }
       match awk_stringify_simple_expr_for_getline(left) {
@@ -100,7 +116,11 @@ fn awk_getline_target_from_condition_expr_ast(cond_ast : AwkExprAst) -> AwkGetli
           if expr == "getline" {
             Some(Record)
           } else if aj_starts_with(expr, "getline ") {
-            Some(awk_parse_getline_target(aj_trim(aj_substr(expr, 7, expr.length()))))
+            Some(
+              awk_parse_getline_target(
+                aj_trim(aj_substr(expr, 7, expr.length())),
+              ),
+            )
           } else {
             None
           }
@@ -112,6 +132,7 @@ fn awk_getline_target_from_condition_expr_ast(cond_ast : AwkExprAst) -> AwkGetli
   }
 }
 
+///|
 fn awk_parse_assign_target(lhs : String) -> AwkAssignTarget? {
   let t = aj_trim(lhs)
   if t.length() == 0 || aj_starts_with(t, "$") {
@@ -121,12 +142,16 @@ fn awk_parse_assign_target(lhs : String) -> AwkAssignTarget? {
     return Some(Var(t))
   }
   match awk_parse_array_ref(t) {
-    Some((arr_name, idx_expr)) => Some(ArrayElem(arr_name, awk_parse_expr_ast(idx_expr)))
+    Some((arr_name, idx_expr)) =>
+      Some(ArrayElem(arr_name, awk_parse_expr_ast(idx_expr)))
     None => None
   }
 }
 
-fn awk_parse_compound_assign_stmt(text : String) -> (AwkAssignTarget, String, AwkExprAst)? {
+///|
+fn awk_parse_compound_assign_stmt(
+  text : String,
+) -> (AwkAssignTarget, String, AwkExprAst)? {
   let plus_eq_idx = awk_find_top_level_token(text, "+=")
   if plus_eq_idx > 0 {
     let lhs = aj_substr(text, 0, plus_eq_idx)
@@ -178,6 +203,7 @@ fn awk_parse_compound_assign_stmt(text : String) -> (AwkAssignTarget, String, Aw
   None
 }
 
+///|
 fn awk_parse_assign_stmt(text : String) -> (AwkAssignTarget, AwkExprAst)? {
   let eq_idx = awk_find_top_level_token(text, "=")
   if eq_idx <= 0 {
@@ -189,7 +215,11 @@ fn awk_parse_assign_stmt(text : String) -> (AwkAssignTarget, AwkExprAst)? {
   } else {
     None
   }
-  if prev == '!' || prev == '<' || prev == '>' || prev == '=' || next == Some('=') {
+  if prev == '!' ||
+    prev == '<' ||
+    prev == '>' ||
+    prev == '=' ||
+    next == Some('=') {
     return None
   }
   let lhs = aj_substr(text, 0, eq_idx)
@@ -201,6 +231,7 @@ fn awk_parse_assign_stmt(text : String) -> (AwkAssignTarget, AwkExprAst)? {
   Some((lhs_target, awk_parse_expr_ast(rhs)))
 }
 
+///|
 fn awk_parse_field_assign_stmt(text : String) -> (AwkExprAst, AwkExprAst)? {
   let eq_idx = awk_find_top_level_token(text, "=")
   if eq_idx <= 0 {
@@ -212,11 +243,15 @@ fn awk_parse_field_assign_stmt(text : String) -> (AwkExprAst, AwkExprAst)? {
   } else {
     None
   }
-  if prev == '!' || prev == '<' || prev == '>' || prev == '=' || next == Some('=') {
+  if prev == '!' ||
+    prev == '<' ||
+    prev == '>' ||
+    prev == '=' ||
+    next == Some('=') {
     return None
   }
   let lhs = aj_trim(aj_substr(text, 0, eq_idx))
-  if !(aj_starts_with(lhs, "$")) {
+  if !aj_starts_with(lhs, "$") {
     return None
   }
   let idx_expr = aj_trim(aj_substr(lhs, 1, lhs.length()))
@@ -229,6 +264,7 @@ fn awk_parse_field_assign_stmt(text : String) -> (AwkExprAst, AwkExprAst)? {
   Some((idx_ast, awk_parse_expr_ast(rhs)))
 }
 
+///|
 fn awk_parse_statement_ast(stmt : String) -> AwkStmt {
   let text = aj_trim(stmt)
   if text.length() == 0 {
@@ -239,23 +275,35 @@ fn awk_parse_statement_ast(stmt : String) -> AwkStmt {
     return Next
   }
 
-  if text == "exit" || aj_starts_with(text, "exit ") || aj_starts_with(text, "exit(") {
+  if text == "exit" ||
+    aj_starts_with(text, "exit ") ||
+    aj_starts_with(text, "exit(") {
     let expr_text = if text.length() > 4 {
       aj_trim(aj_substr(text, 4, text.length()))
     } else {
       ""
     }
-    let expr_ast = if expr_text.length() > 0 { Some(awk_parse_expr_ast(expr_text)) } else { None }
+    let expr_ast = if expr_text.length() > 0 {
+      Some(awk_parse_expr_ast(expr_text))
+    } else {
+      None
+    }
     return Exit(expr_ast)
   }
 
-  if text == "return" || aj_starts_with(text, "return ") || aj_starts_with(text, "return(") {
+  if text == "return" ||
+    aj_starts_with(text, "return ") ||
+    aj_starts_with(text, "return(") {
     let expr_text = if text.length() > 6 {
       aj_trim(aj_substr(text, 6, text.length()))
     } else {
       ""
     }
-    let expr_ast = if expr_text.length() > 0 { Some(awk_parse_expr_ast(expr_text)) } else { None }
+    let expr_ast = if expr_text.length() > 0 {
+      Some(awk_parse_expr_ast(expr_text))
+    } else {
+      None
+    }
     return Return(expr_ast)
   }
 
@@ -263,16 +311,28 @@ fn awk_parse_statement_ast(stmt : String) -> AwkStmt {
   if pipe_getline_idx > 0 {
     let cmd_expr = aj_trim(aj_substr(text, 0, pipe_getline_idx))
     let target = aj_trim(aj_substr(text, pipe_getline_idx + 9, text.length()))
-    return PipeGetline(awk_parse_expr_ast(cmd_expr), awk_parse_getline_target(target))
+    return PipeGetline(
+      awk_parse_expr_ast(cmd_expr),
+      awk_parse_getline_target(target),
+    )
   }
 
   if text == "getline" || aj_starts_with(text, "getline ") {
-    let tail = if text.length() > 7 { aj_trim(aj_substr(text, 7, text.length())) } else { "" }
+    let tail = if text.length() > 7 {
+      aj_trim(aj_substr(text, 7, text.length()))
+    } else {
+      ""
+    }
     let read_from_file_idx = awk_find_top_level_token(tail, "<")
     if read_from_file_idx > 0 {
       let target = aj_trim(aj_substr(tail, 0, read_from_file_idx))
-      let path_expr = aj_trim(aj_substr(tail, read_from_file_idx + 1, tail.length()))
-      return Getline(awk_parse_getline_target(target), Some(awk_parse_expr_ast(path_expr)))
+      let path_expr = aj_trim(
+        aj_substr(tail, read_from_file_idx + 1, tail.length()),
+      )
+      return Getline(
+        awk_parse_getline_target(target),
+        Some(awk_parse_expr_ast(path_expr)),
+      )
     }
     return Getline(awk_parse_getline_target(tail), None)
   }
@@ -296,14 +356,16 @@ fn awk_parse_statement_ast(stmt : String) -> AwkStmt {
   if aj_starts_with(text, "delete ") {
     let target_expr = aj_trim(aj_substr(text, 6, text.length()))
     return match awk_parse_array_ref(target_expr) {
-      Some((arr_name, idx_expr)) => Delete(arr_name, Some(awk_parse_expr_ast(idx_expr)))
+      Some((arr_name, idx_expr)) =>
+        Delete(arr_name, Some(awk_parse_expr_ast(idx_expr)))
       None => Delete(target_expr, None)
     }
   }
 
   if aj_starts_with(text, "printf") {
     let rest = aj_trim(aj_substr(text, 6, text.length()))
-    let (printf_expr, target_expr, append) = match awk_parse_print_redirection(rest) {
+    let (printf_expr, target_expr, append) = match
+      awk_parse_print_redirection(rest) {
       Some(parsed) => parsed
       None => (rest, "", false)
     }
@@ -321,10 +383,11 @@ fn awk_parse_statement_ast(stmt : String) -> AwkStmt {
     return Printf(fmt_ast, args_ast, target_ast, append)
   }
 
-  if aj_starts_with(text, "print") && !(aj_starts_with(text, "printf")) {
+  if aj_starts_with(text, "print") && !aj_starts_with(text, "printf") {
     let rest = aj_trim(aj_substr(text, 5, text.length()))
     let has_pipe = awk_find_top_level_token(rest, "|") >= 0
-    let (value_expr, target_expr, append) = match awk_parse_print_redirection(rest) {
+    let (value_expr, target_expr, append) = match
+      awk_parse_print_redirection(rest) {
       Some(parsed) => parsed
       None => (rest, "", false)
     }
@@ -343,7 +406,8 @@ fn awk_parse_statement_ast(stmt : String) -> AwkStmt {
   }
 
   match awk_parse_compound_assign_stmt(text) {
-    Some((lhs_target, op, rhs_ast)) => return CompoundAssignStmt(lhs_target, op, rhs_ast)
+    Some((lhs_target, op, rhs_ast)) =>
+      return CompoundAssignStmt(lhs_target, op, rhs_ast)
     None => ()
   }
 
@@ -374,7 +438,8 @@ fn awk_parse_statement_ast(stmt : String) -> AwkStmt {
         Some(awk_parse_expr_ast(cond_expr))
       }
       let cond_getline = match cond_ast {
-        Some(cond_expr_ast) => awk_getline_target_from_condition_expr_ast(cond_expr_ast)
+        Some(cond_expr_ast) =>
+          awk_getline_target_from_condition_expr_ast(cond_expr_ast)
         None => None
       }
       let update_ast = awk_parse_action_ast(update_stmt)
@@ -402,7 +467,12 @@ fn awk_parse_statement_ast(stmt : String) -> AwkStmt {
       let then_ast = awk_parse_action_ast(then_body)
       match else_body {
         Some(else_stmt) =>
-          If(cond_ast, cond_getline, then_ast, Some(awk_parse_action_ast(else_stmt)))
+          If(
+            cond_ast,
+            cond_getline,
+            then_ast,
+            Some(awk_parse_action_ast(else_stmt)),
+          )
         None => If(cond_ast, cond_getline, then_ast, None)
       }
     }
@@ -410,6 +480,7 @@ fn awk_parse_statement_ast(stmt : String) -> AwkStmt {
   }
 }
 
+///|
 fn awk_parse_action_ast(action : String) -> Array[AwkStmt] {
   let merged = awk_merge_if_else_statements(awk_split_statements(action))
   let out : Array[AwkStmt] = []

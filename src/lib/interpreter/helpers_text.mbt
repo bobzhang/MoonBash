@@ -1,7 +1,12 @@
 // moon_bash Interpreter - Text Helpers
 // Split from helpers.mbt for maintainability.
 
-fn format_nl_number(number : Int, width : Int, number_format : String) -> String {
+///|
+fn format_nl_number(
+  number : Int,
+  width : Int,
+  number_format : String,
+) -> String {
   let text = number.to_string()
   let padding = width - text.length()
   if padding <= 0 {
@@ -14,6 +19,7 @@ fn format_nl_number(number : Int, width : Int, number_format : String) -> String
   }
 }
 
+///|
 fn fold_text(input : String, width : Int, break_spaces : Bool) -> String {
   let out = StringBuilder::new()
   let line = StringBuilder::new()
@@ -37,6 +43,7 @@ fn fold_text(input : String, width : Int, break_spaces : Bool) -> String {
   out.to_string()
 }
 
+///|
 fn fold_single_line(line : String, width : Int, break_spaces : Bool) -> String {
   if line.length() <= width {
     return line
@@ -77,6 +84,7 @@ fn fold_single_line(line : String, width : Int, break_spaces : Bool) -> String {
   out.to_string()
 }
 
+///|
 fn expand_tabs(input : String, tab_width : Int) -> String {
   let width = if tab_width <= 0 { 8 } else { tab_width }
   let out = StringBuilder::new()
@@ -84,7 +92,7 @@ fn expand_tabs(input : String, tab_width : Int) -> String {
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
     if ch == '\t' {
-      let spaces = width - (col % width)
+      let spaces = width - col % width
       for j = 0; j < spaces; j = j + 1 {
         out.write_char(' ')
       }
@@ -101,16 +109,17 @@ fn expand_tabs(input : String, tab_width : Int) -> String {
   out.to_string()
 }
 
+///|
 fn write_unexpand_space_run(
   out : StringBuilder,
   count : Int,
   start_col : Int,
-  tab_width : Int
+  tab_width : Int,
 ) -> Unit {
   let mut remaining = count
   let mut col = start_col
   while remaining > 0 {
-    let mut to_tab = tab_width - (col % tab_width)
+    let mut to_tab = tab_width - col % tab_width
     if to_tab <= 0 {
       to_tab = tab_width
     }
@@ -126,6 +135,7 @@ fn write_unexpand_space_run(
   }
 }
 
+///|
 fn unexpand_tabs(input : String, tab_width : Int, convert_all : Bool) -> String {
   let width = if tab_width <= 0 { 8 } else { tab_width }
   let out = StringBuilder::new()
@@ -161,7 +171,7 @@ fn unexpand_tabs(input : String, tab_width : Int, convert_all : Bool) -> String 
 
     if ch == '\t' {
       out.write_char('\t')
-      let advance = width - (col % width)
+      let advance = width - col % width
       col += advance
       continue
     }
@@ -183,6 +193,7 @@ fn unexpand_tabs(input : String, tab_width : Int, convert_all : Bool) -> String 
   out.to_string()
 }
 
+///|
 fn parse_paste_delimiters(spec : String) -> Array[Char] {
   let delimiters : Array[Char] = []
   let mut i = 0
@@ -207,6 +218,7 @@ fn parse_paste_delimiters(spec : String) -> Array[Char] {
   delimiters
 }
 
+///|
 fn format_column_table(input : String, separator : String?) -> String {
   let lines = split_lines_no_trailing(input)
   if lines.length() == 0 {
@@ -246,6 +258,7 @@ fn format_column_table(input : String, separator : String?) -> String {
   out.to_string()
 }
 
+///|
 fn split_join_fields(line : String, delimiter : String) -> Array[String] {
   if delimiter == " " {
     split_by_whitespace(line)
@@ -254,6 +267,7 @@ fn split_join_fields(line : String, delimiter : String) -> Array[String] {
   }
 }
 
+///|
 fn join_field_value(fields : Array[String], index : Int) -> String {
   if index >= 0 && index < fields.length() {
     fields[index]
@@ -262,7 +276,11 @@ fn join_field_value(fields : Array[String], index : Int) -> String {
   }
 }
 
-fn join_parts_with_delimiter(parts : Array[String], delimiter : String) -> String {
+///|
+fn join_parts_with_delimiter(
+  parts : Array[String],
+  delimiter : String,
+) -> String {
   let out = StringBuilder::new()
   for i = 0; i < parts.length(); i = i + 1 {
     if i > 0 {
@@ -273,12 +291,13 @@ fn join_parts_with_delimiter(parts : Array[String], delimiter : String) -> Strin
   out.to_string()
 }
 
+///|
 fn format_join_line(
   fields1 : Array[String],
   fields2 : Array[String],
   join_idx1 : Int,
   join_idx2 : Int,
-  delimiter : String
+  delimiter : String,
 ) -> String {
   let parts : Array[String] = []
   parts.push(join_field_value(fields1, join_idx1))
@@ -297,6 +316,7 @@ fn format_join_line(
   join_parts_with_delimiter(parts, delimiter)
 }
 
+///|
 fn reverse_string(s : String) -> String {
   let buf = StringBuilder::new()
   for i = s.length() - 1; i >= 0; i = i - 1 {
@@ -305,6 +325,7 @@ fn reverse_string(s : String) -> String {
   buf.to_string()
 }
 
+///|
 fn compare_ints(a : Int, b : Int) -> Int {
   if a < b {
     -1
@@ -315,6 +336,7 @@ fn compare_ints(a : Int, b : Int) -> Int {
   }
 }
 
+///|
 fn compare_strings(a : String, b : String) -> Int {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
   for i = 0; i < min_len; i = i + 1 {
@@ -334,6 +356,7 @@ fn compare_strings(a : String, b : String) -> Int {
   }
 }
 
+///|
 fn compare_sort_text(a : String, b : String) -> Int {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
   for i = 0; i < min_len; i = i + 1 {
@@ -353,6 +376,7 @@ fn compare_sort_text(a : String, b : String) -> Int {
   }
 }
 
+///|
 fn compare_sort_char(a : Char, b : Char) -> Int {
   let (a_class, a_base, a_case, a_code) = sort_char_key(a)
   let (b_class, b_base, b_case, b_code) = sort_char_key(b)
@@ -383,6 +407,7 @@ fn compare_sort_char(a : Char, b : Char) -> Int {
   }
 }
 
+///|
 fn sort_char_key(ch : Char) -> (Int, Int, Int, Int) {
   let code = ch.to_int()
   if ch >= 'a' && ch <= 'z' {
@@ -396,6 +421,7 @@ fn sort_char_key(ch : Char) -> (Int, Int, Int, Int) {
   }
 }
 
+///|
 fn ltrim_blanks(s : String) -> String {
   let mut i = 0
   while i < s.length() {
@@ -406,9 +432,10 @@ fn ltrim_blanks(s : String) -> String {
       break
     }
   }
-  s.view(start_offset=i).to_string()
+  s.view(start_offset=i).to_owned()
 }
 
+///|
 fn split_version_tokens(s : String) -> Array[String] {
   let tokens : Array[String] = []
   if s.length() == 0 {
@@ -419,19 +446,24 @@ fn split_version_tokens(s : String) -> Array[String] {
   for i = 1; i < s.length(); i = i + 1 {
     let is_digit = is_ascii_digit(s[i].to_int().unsafe_to_char())
     if is_digit != in_digit {
-      tokens.push(s.view(start_offset=start, end_offset=i).to_string())
+      tokens.push(s.view(start_offset=start, end_offset=i).to_owned())
       start = i
       in_digit = is_digit
     }
   }
-  tokens.push(s.view(start_offset=start).to_string())
+  tokens.push(s.view(start_offset=start).to_owned())
   tokens
 }
 
+///|
 fn compare_version_like(a : String, b : String) -> Int {
   let ta = split_version_tokens(a)
   let tb = split_version_tokens(b)
-  let max_len = if ta.length() > tb.length() { ta.length() } else { tb.length() }
+  let max_len = if ta.length() > tb.length() {
+    ta.length()
+  } else {
+    tb.length()
+  }
   for i = 0; i < max_len; i = i + 1 {
     if i >= ta.length() {
       return -1
@@ -455,18 +487,20 @@ fn compare_version_like(a : String, b : String) -> Int {
   0
 }
 
+///|
 fn is_numeric_token(s : String) -> Bool {
   if s.length() == 0 {
     return false
   }
   for i = 0; i < s.length(); i = i + 1 {
-    if !(is_ascii_digit(s[i].to_int().unsafe_to_char())) {
+    if !is_ascii_digit(s[i].to_int().unsafe_to_char()) {
       return false
     }
   }
   true
 }
 
+///|
 fn parse_human_size(s : String) -> Int {
   let trimmed = ltrim_blanks(s)
   if trimmed.length() == 0 {
@@ -489,7 +523,9 @@ fn parse_human_size(s : String) -> Int {
     return 0
   }
 
-  let number = parse_int32_str(trimmed.view(start_offset=0, end_offset=i).to_string())
+  let number = parse_int32_str(
+    trimmed.view(start_offset=0, end_offset=i).to_owned(),
+  )
   if i >= trimmed.length() {
     return number
   }
@@ -504,6 +540,7 @@ fn parse_human_size(s : String) -> Int {
   number * factor
 }
 
+///|
 fn ascii_upper(ch : Char) -> Char {
   if ch >= 'a' && ch <= 'z' {
     (ch.to_int() - 32).unsafe_to_char()
@@ -512,15 +549,17 @@ fn ascii_upper(ch : Char) -> Char {
   }
 }
 
+///|
 fn is_ascii_digit(ch : Char) -> Bool {
   ch >= '0' && ch <= '9'
 }
 
+///|
 fn extract_sort_key(
   line : String,
   key_field : Int?,
   delimiter : String?,
-  ignore_leading_blanks : Bool
+  ignore_leading_blanks : Bool,
 ) -> String {
   let key = match key_field {
     None => line
@@ -543,6 +582,7 @@ fn extract_sort_key(
   }
 }
 
+///|
 fn expand_tr_set(s : String) -> Array[Char] {
   let result : Array[Char] = []
   let mut i = 0
@@ -572,6 +612,7 @@ fn expand_tr_set(s : String) -> Array[Char] {
   result
 }
 
+///|
 fn tr_unescape_char(ch : Char) -> Char {
   match ch {
     'n' => '\n'
@@ -582,6 +623,7 @@ fn tr_unescape_char(ch : Char) -> Char {
   }
 }
 
+///|
 fn tr_set_contains(set : Array[Char], ch : Char) -> Bool {
   for c in set {
     if c == ch {
@@ -591,14 +633,16 @@ fn tr_set_contains(set : Array[Char], ch : Char) -> Bool {
   false
 }
 
+///|
 fn tr_set_matches(set : Array[Char], ch : Char, complement : Bool) -> Bool {
   if complement {
-    !(tr_set_contains(set, ch))
+    !tr_set_contains(set, ch)
   } else {
     tr_set_contains(set, ch)
   }
 }
 
+///|
 fn tr_translate(set1 : Array[Char], set2 : Array[Char], ch : Char) -> Char {
   for i = 0; i < set1.length(); i = i + 1 {
     if set1[i] == ch {
@@ -612,11 +656,12 @@ fn tr_translate(set1 : Array[Char], set2 : Array[Char], ch : Char) -> Char {
   ch
 }
 
+///|
 fn tr_translate_with_mode(
   set1 : Array[Char],
   set2 : Array[Char],
   ch : Char,
-  complement : Bool
+  complement : Bool,
 ) -> Char {
   if complement {
     if tr_set_contains(set1, ch) {

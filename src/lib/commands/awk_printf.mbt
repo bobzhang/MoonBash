@@ -1,5 +1,6 @@
 // moon_bash Commands - awk printf formatting
 
+///|
 fn awk_split_csv_args(s : String) -> Array[String] {
   let parts : Array[String] = []
   let buf = StringBuilder::new()
@@ -15,7 +16,7 @@ fn awk_split_csv_args(s : String) -> Array[String] {
           quote = None
         }
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
           buf.write_char(ch)
@@ -41,7 +42,6 @@ fn awk_split_csv_args(s : String) -> Array[String] {
         } else {
           buf.write_char(ch)
         }
-      }
     }
   }
   let last = aj_trim(buf.to_string())
@@ -51,6 +51,7 @@ fn awk_split_csv_args(s : String) -> Array[String] {
   parts
 }
 
+///|
 fn awk_parse_printf(action : String) -> (String, Array[String]) {
   let mut rest = aj_trim(aj_substr(action, 6, action.length()))
   if rest.length() == 0 {
@@ -72,6 +73,7 @@ fn awk_parse_printf(action : String) -> (String, Array[String]) {
   (args[0], tail)
 }
 
+///|
 fn awk_pow10_int(exp : Int) -> Int {
   let mut out = 1
   let mut i = 0
@@ -83,6 +85,7 @@ fn awk_pow10_int(exp : Int) -> Int {
   out
 }
 
+///|
 fn awk_to_hex_string(value : Int) -> String {
   if value == 0 {
     return "0"
@@ -102,6 +105,7 @@ fn awk_to_hex_string(value : Int) -> String {
   out.to_string()
 }
 
+///|
 fn awk_pad_left(text : String, width : Int, pad : Char) -> String {
   if width <= text.length() {
     return text
@@ -116,6 +120,7 @@ fn awk_pad_left(text : String, width : Int, pad : Char) -> String {
   out.to_string()
 }
 
+///|
 fn awk_pad_right(text : String, width : Int, pad : Char) -> String {
   if width <= text.length() {
     return text
@@ -130,11 +135,12 @@ fn awk_pad_right(text : String, width : Int, pad : Char) -> String {
   out.to_string()
 }
 
+///|
 fn awk_apply_printf_width(
   text : String,
   width : Int,
   left_align : Bool,
-  zero_pad : Bool
+  zero_pad : Bool,
 ) -> String {
   if width <= text.length() {
     return text
@@ -145,17 +151,19 @@ fn awk_apply_printf_width(
   if zero_pad && text.length() > 0 {
     let first = text[0].to_int().unsafe_to_char()
     if first == '+' || first == '-' || first == ' ' {
-      return first.to_string() + awk_pad_left(aj_substr(text, 1, text.length()), width - 1, '0')
+      return first.to_string() +
+        awk_pad_left(aj_substr(text, 1, text.length()), width - 1, '0')
     }
   }
   awk_pad_left(text, width, if zero_pad { '0' } else { ' ' })
 }
 
+///|
 fn awk_format_fixed_number(
   raw : Double,
   precision : Int,
   plus_sign : Bool,
-  space_sign : Bool
+  space_sign : Bool,
 ) -> String {
   let mut precision = precision
   if precision < 0 {
@@ -191,6 +199,7 @@ fn awk_format_fixed_number(
   sign + whole.to_string() + "." + frac_padded
 }
 
+///|
 fn awk_trim_trailing_fraction_zeros(text : String) -> String {
   let dot = aj_index_of(text, '.')
   if dot < 0 {
@@ -206,6 +215,7 @@ fn awk_trim_trailing_fraction_zeros(text : String) -> String {
   aj_substr(text, 0, end_)
 }
 
+///|
 fn awk_format_printf(format : String, args : Array[String]) -> String {
   let decoded = aj_decode_c_escapes(format)
   let out = StringBuilder::new()
@@ -214,7 +224,8 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
   while i < decoded.length() {
     let ch = decoded[i].to_int().unsafe_to_char()
     if ch == '%' {
-      if i + 1 < decoded.length() && decoded[i + 1].to_int().unsafe_to_char() == '%' {
+      if i + 1 < decoded.length() &&
+        decoded[i + 1].to_int().unsafe_to_char() == '%' {
         out.write_char('%')
         i += 2
         continue
@@ -244,7 +255,11 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
       }
       let mut width = 0
       if j < decoded.length() && decoded[j].to_int().unsafe_to_char() == '*' {
-        width = if arg_idx < args.length() { awk_parse_number(args[arg_idx]).to_int() } else { 0 }
+        width = if arg_idx < args.length() {
+          awk_parse_number(args[arg_idx]).to_int()
+        } else {
+          0
+        }
         arg_idx += 1
         j += 1
       } else {
@@ -269,7 +284,11 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
       if j < decoded.length() && decoded[j].to_int().unsafe_to_char() == '.' {
         j += 1
         if j < decoded.length() && decoded[j].to_int().unsafe_to_char() == '*' {
-          precision = if arg_idx < args.length() { awk_parse_number(args[arg_idx]).to_int() } else { 0 }
+          precision = if arg_idx < args.length() {
+            awk_parse_number(args[arg_idx]).to_int()
+          } else {
+            0
+          }
           arg_idx += 1
           j += 1
         } else {
@@ -300,7 +319,9 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
         if precision >= 0 && precision < value.length() {
           value = aj_substr(value, 0, precision)
         }
-        out.write_string(awk_apply_printf_width(value, width, left_align, false))
+        out.write_string(
+          awk_apply_printf_width(value, width, left_align, false),
+        )
         arg_idx += 1
         i = j + 1
         continue
@@ -308,7 +329,11 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
       if spec == 'd' || spec == 'i' {
         let num = awk_parse_number(raw).to_int()
         let negative = num < 0
-        let mut digits = if num < 0 { (-num).to_string() } else { num.to_string() }
+        let mut digits = if num < 0 {
+          (-num).to_string()
+        } else {
+          num.to_string()
+        }
         if precision == 0 && num == 0 {
           digits = ""
         }
@@ -326,7 +351,12 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
         }
         let text = sign + digits
         out.write_string(
-          awk_apply_printf_width(text, width, left_align, zero_pad && precision < 0),
+          awk_apply_printf_width(
+            text,
+            width,
+            left_align,
+            zero_pad && precision < 0,
+          ),
         )
         arg_idx += 1
         i = j + 1
@@ -345,7 +375,12 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
           digits = awk_to_upper(digits)
         }
         out.write_string(
-          awk_apply_printf_width(digits, width, left_align, zero_pad && precision < 0),
+          awk_apply_printf_width(
+            digits,
+            width,
+            left_align,
+            zero_pad && precision < 0,
+          ),
         )
         arg_idx += 1
         i = j + 1
@@ -355,11 +390,22 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
         let num = awk_parse_number(raw)
         let text = awk_format_fixed_number(
           num,
-          if precision >= 0 { precision } else { 6 },
+          if precision >= 0 {
+            precision
+          } else {
+            6
+          },
           plus_sign,
           space_sign,
         )
-        out.write_string(awk_apply_printf_width(text, width, left_align, zero_pad && precision < 0))
+        out.write_string(
+          awk_apply_printf_width(
+            text,
+            width,
+            left_align,
+            zero_pad && precision < 0,
+          ),
+        )
         arg_idx += 1
         i = j + 1
         continue
@@ -368,7 +414,11 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
         let num = awk_parse_number(raw)
         let mut text = awk_format_fixed_number(
           num,
-          if precision > 0 { precision } else { 6 },
+          if precision > 0 {
+            precision
+          } else {
+            6
+          },
           plus_sign,
           space_sign,
         )
@@ -390,4 +440,3 @@ fn awk_format_printf(format : String, args : Array[String]) -> String {
   }
   out.to_string()
 }
-

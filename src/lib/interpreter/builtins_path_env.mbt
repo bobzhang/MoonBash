@@ -1,9 +1,10 @@
 // moon_bash Interpreter - Path and Environment Builtins
 // Split from builtins_extra.mbt for maintainability.
 
+///|
 fn ExecContext::builtin_basename(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() == 0 {
     self.stderr_buf.write_string("basename: missing operand\n")
@@ -24,7 +25,9 @@ fn ExecContext::builtin_basename(
     }
     if arg == "-s" {
       if i + 1 >= args.length() {
-        self.stderr_buf.write_string("basename: option requires an argument -- 's'\n")
+        self.stderr_buf.write_string(
+          "basename: option requires an argument -- 's'\n",
+        )
         self.exit_code = 1
         return
       }
@@ -34,7 +37,7 @@ fn ExecContext::builtin_basename(
       continue
     }
     if arg.has_prefix("-s") && arg.length() > 2 {
-      suffix = Some(arg.view(start_offset=2).to_string())
+      suffix = Some(arg.view(start_offset=2).to_owned())
       allow_multiple = true
       i += 1
       continue
@@ -49,25 +52,20 @@ fn ExecContext::builtin_basename(
     return
   }
 
-  if !(allow_multiple) {
+  if !allow_multiple {
     let raw = trim_trailing_slashes_for_path(paths[0])
     let effective_suffix = match suffix {
       Some(s) => Some(s)
-      None => {
-        if paths.length() > 1 {
-          Some(paths[1])
-        } else {
-          None
-        }
-      }
+      None => if paths.length() > 1 { Some(paths[1]) } else { None }
     }
     let mut name = @fs.basename(raw)
     match effective_suffix {
-      Some(s) => {
+      Some(s) =>
         if name.length() > s.length() && name.has_suffix(s) {
-          name = name.view(start_offset=0, end_offset=name.length() - s.length()).to_string()
+          name = name
+            .view(start_offset=0, end_offset=name.length() - s.length())
+            .to_owned()
         }
-      }
       None => ()
     }
     self.stdout_buf.write_string(name + "\n")
@@ -79,11 +77,12 @@ fn ExecContext::builtin_basename(
     let raw = trim_trailing_slashes_for_path(path)
     let mut name = @fs.basename(raw)
     match suffix {
-      Some(s) => {
+      Some(s) =>
         if name.length() > s.length() && name.has_suffix(s) {
-          name = name.view(start_offset=0, end_offset=name.length() - s.length()).to_string()
+          name = name
+            .view(start_offset=0, end_offset=name.length() - s.length())
+            .to_owned()
         }
-      }
       None => ()
     }
     self.stdout_buf.write_string(name + "\n")
@@ -91,9 +90,10 @@ fn ExecContext::builtin_basename(
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_dirname(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() == 0 {
     self.stderr_buf.write_string("dirname: missing operand\n")
@@ -108,7 +108,7 @@ fn ExecContext::builtin_dirname(
       continue
     }
     let parent = @fs.parent_path(normalized)
-    let result = if parent == "/" && !(normalized.has_prefix("/")) {
+    let result = if parent == "/" && !normalized.has_prefix("/") {
       "."
     } else if parent == normalized {
       "."
@@ -120,6 +120,7 @@ fn ExecContext::builtin_dirname(
   self.exit_code = 0
 }
 
+///|
 fn trim_trailing_slashes_for_path(path : String) -> String {
   if path.length() == 0 {
     return path
@@ -131,14 +132,12 @@ fn trim_trailing_slashes_for_path(path : String) -> String {
   if end == path.length() {
     path
   } else {
-    path.view(start_offset=0, end_offset=end).to_string()
+    path.view(start_offset=0, end_offset=end).to_owned()
   }
 }
 
-fn ExecContext::builtin_seq(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_seq(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     self.stderr_buf.write_string("seq: missing operand\n")
     self.exit_code = 1
@@ -174,19 +173,19 @@ fn ExecContext::builtin_seq(
   }
   self.exit_code = 0
 }
-fn ExecContext::builtin_env(
-  self : ExecContext,
-  _args : Array[String]
-) -> Unit {
+
+///|
+fn ExecContext::builtin_env(self : ExecContext, _args : Array[String]) -> Unit {
   for k, v in self.env {
     self.stdout_buf.write_string("\{k}=\{v}\n")
   }
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_printenv(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() == 0 {
     self.builtin_env([])
@@ -202,10 +201,8 @@ fn ExecContext::builtin_printenv(
   self.exit_code = if all_found { 0 } else { 1 }
 }
 
-fn ExecContext::builtin_which(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_which(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     self.exit_code = 1
     return
@@ -214,17 +211,15 @@ fn ExecContext::builtin_which(
   let mut all_found = true
   for arg in args {
     match self.first_path_command_match(arg, false, true) {
-      Some((display, _resolved, _is_virtual)) => {
+      Some((display, _resolved, _is_virtual)) =>
         self.stdout_buf.write_string(display + "\n")
-      }
-      None => {
+      None =>
         if is_lookup_shell_builtin(arg) {
           self.stdout_buf.write_string(arg + "\n")
         } else {
           self.stderr_buf.write_string("which: no \{arg} in PATH\n")
           all_found = false
         }
-      }
     }
   }
   self.exit_code = if all_found { 0 } else { 1 }

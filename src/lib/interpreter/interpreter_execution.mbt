@@ -1,7 +1,11 @@
 // moon_bash Interpreter - Execution Flow
 // Split from interpreter.mbt for maintainability.
 
-fn ExecContext::execute_script(self : ExecContext, script : @ast.Script) -> Unit {
+///|
+fn ExecContext::execute_script(
+  self : ExecContext,
+  script : @ast.Script,
+) -> Unit {
   for stmt in script.statements {
     if self.should_exit || self.return_requested {
       break
@@ -17,9 +21,10 @@ fn ExecContext::execute_script(self : ExecContext, script : @ast.Script) -> Unit
 // Statement Execution
 // ============================================================================
 
+///|
 fn ExecContext::execute_statement(
   self : ExecContext,
-  stmt : @ast.Statement
+  stmt : @ast.Statement,
 ) -> Unit {
   let pipelines : Array[@ast.Pipeline] = []
   let ops : Array[Int] = []
@@ -33,7 +38,9 @@ fn ExecContext::execute_statement(
   self.apply_errexit_after_pipeline(pipelines[0], first_next_op)
   let mut i = 0
   while i < ops.length() {
-    if self.should_exit || self.return_requested || self.break_count > 0 ||
+    if self.should_exit ||
+      self.return_requested ||
+      self.break_count > 0 ||
       self.continue_count > 0 {
       break
     }
@@ -58,13 +65,14 @@ fn ExecContext::execute_statement(
   }
 }
 
+///|
 /// Flatten right-recursive statement AST into linear pipeline/op lists.
 /// op encoding: 0=';', 1='&&', 2='||', 3='&'
 fn ExecContext::flatten_statement(
   self : ExecContext,
   stmt : @ast.Statement,
   pipelines : Array[@ast.Pipeline],
-  ops : Array[Int]
+  ops : Array[Int],
 ) -> Unit {
   match stmt {
     @ast.Statement::Pipeline(pipeline) => pipelines.push(pipeline)
@@ -83,9 +91,7 @@ fn ExecContext::flatten_statement(
       ops.push(0)
       self.flatten_statement(next, pipelines, ops)
     }
-    @ast.Statement::Background(pipeline) => {
-      pipelines.push(pipeline)
-    }
+    @ast.Statement::Background(pipeline) => pipelines.push(pipeline)
   }
 }
 
@@ -93,9 +99,10 @@ fn ExecContext::flatten_statement(
 // Pipeline Execution
 // ============================================================================
 
+///|
 fn ExecContext::execute_pipeline(
   self : ExecContext,
-  pipeline : @ast.Pipeline
+  pipeline : @ast.Pipeline,
 ) -> Unit {
   let commands = pipeline.commands
   if commands.length() == 0 {
@@ -115,15 +122,15 @@ fn ExecContext::execute_pipeline(
 
     let mut pipe_input = self.stdin_buf
     for i = 0; i < commands.length(); i = i + 1 {
-      let stage_env : Map[String, String] = {}
+      let stage_env : Map[String, String] = Map([])
       for key, value in self.env {
         stage_env[key] = value
       }
-      let stage_exported : Map[String, Bool] = {}
+      let stage_exported : Map[String, Bool] = Map([])
       for key, value in self.exported {
         stage_exported[key] = value
       }
-      let stage_functions : Map[String, @ast.FunctionDef] = {}
+      let stage_functions : Map[String, @ast.FunctionDef] = Map([])
       for key, value in self.functions {
         stage_functions[key] = value
       }
@@ -157,7 +164,9 @@ fn ExecContext::execute_pipeline(
     saved_stdout.write_string(pipe_input)
     self.stdout_buf = saved_stdout
     self.stdin_buf = saved_stdin
-    let mut pipeline_exit = parse_int32_str(pipeline_statuses[pipeline_statuses.length() - 1])
+    let mut pipeline_exit = parse_int32_str(
+      pipeline_statuses[pipeline_statuses.length() - 1],
+    )
     if self.options.pipefail {
       pipeline_exit = 0
       for status in pipeline_statuses {
@@ -183,6 +192,7 @@ fn ExecContext::execute_pipeline(
 // Command Execution
 // ============================================================================
 
+///|
 fn ExecContext::execute_command(self : ExecContext, cmd : @ast.Command) -> Unit {
   // Check command count limit
   self.command_count += 1
@@ -233,14 +243,10 @@ fn ExecContext::execute_command(self : ExecContext, cmd : @ast.Command) -> Unit 
           }
           @ast.RedirectOp::Input => {
             let target = self.expand_word_to_string(redir.target)
-            let resolved = try {
-              @fs.resolve_path(self.cwd, target)
-            } catch {
+            let resolved = @fs.resolve_path(self.cwd, target) catch {
               _ => target
             }
-            let content = try {
-              self.fs.read_file(resolved)
-            } catch {
+            let content = self.fs.read_file(resolved) catch {
               @fs.FsError(msg) => {
                 self.stderr_buf.write_string("moon_bash: \{msg}\n")
                 self.exit_code = 1
@@ -269,7 +275,8 @@ fn ExecContext::execute_command(self : ExecContext, cmd : @ast.Command) -> Unit 
             if source_fd == 1 && (target == "2" || target == "/dev/stderr") {
               stdout_to_stderr = true
               self.stdout_buf = StringBuilder::new()
-            } else if source_fd == 2 && (target == "1" || target == "/dev/stdout") {
+            } else if source_fd == 2 &&
+              (target == "1" || target == "/dev/stdout") {
               stderr_to_stdout = true
               self.stderr_buf = StringBuilder::new()
             } else if source_fd == 1 && target == "-" {
@@ -289,11 +296,7 @@ fn ExecContext::execute_command(self : ExecContext, cmd : @ast.Command) -> Unit 
           if stderr_to_stdout {
             output = output + self.stderr_buf.to_string()
           }
-          let resolved = try {
-            @fs.resolve_path(self.cwd, path)
-          } catch {
-            _ => path
-          }
+          let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
           try {
             if redirect_append {
               self.fs.append_file(resolved, output)
@@ -301,8 +304,7 @@ fn ExecContext::execute_command(self : ExecContext, cmd : @ast.Command) -> Unit 
               self.fs.write_file(resolved, output)
             }
           } catch {
-            @fs.FsError(msg) =>
-              saved_stderr.write_string("moon_bash: \{msg}\n")
+            @fs.FsError(msg) => saved_stderr.write_string("moon_bash: \{msg}\n")
           }
           self.stdout_buf = saved_stdout
           if stderr_to_stdout {
@@ -329,8 +331,7 @@ fn ExecContext::execute_command(self : ExecContext, cmd : @ast.Command) -> Unit 
         self.stdin_buf = saved_stdin
       }
     }
-    @ast.Command::FunctionDef(fndef) =>
-      self.functions[fndef.name] = fndef
+    @ast.Command::FunctionDef(fndef) => self.functions[fndef.name] = fndef
   }
 }
 
@@ -338,16 +339,17 @@ fn ExecContext::execute_command(self : ExecContext, cmd : @ast.Command) -> Unit 
 // Simple Command Execution
 // ============================================================================
 
+///|
 fn ExecContext::execute_simple(
   self : ExecContext,
-  cmd : @ast.SimpleCommand
+  cmd : @ast.SimpleCommand,
 ) -> Unit {
   self.env.remove("__MOON_BASH_ABORT_CURRENT_COMMAND__")
 
   // Handle assignments
   let has_words = cmd.words.length() > 0
   let mut prefix_assignment_restore_names : Array[String] = []
-  let mut prefix_assignment_snapshot : Map[String, String] = {}
+  let mut prefix_assignment_snapshot : Map[String, String] = Map([])
   let mut track_prefix_assignment_restore = false
 
   // Process variable assignments
@@ -355,7 +357,9 @@ fn ExecContext::execute_simple(
     // Assignment command status is independent from previous pipeline status.
     self.exit_code = 0
     if has_words {
-      prefix_assignment_restore_names = collect_assignment_restore_names(cmd.assignments)
+      prefix_assignment_restore_names = collect_assignment_restore_names(
+        cmd.assignments,
+      )
       if prefix_assignment_restore_names.length() > 0 {
         prefix_assignment_snapshot = snapshot_assignment_env_entries(
           self.env,
@@ -399,14 +403,19 @@ fn ExecContext::execute_simple(
                 }
                 None => ()
               }
-              self.store_array_element_assignment(base, index, value, assign.append)
+              self.store_array_element_assignment(
+                base,
+                index,
+                value,
+                assign.append,
+              )
               continue
             }
             None => ()
           }
-          let target_name = self.env.get("__MOON_BASH_NAMEREF__" + assign.name).unwrap_or(
-            assign.name,
-          )
+          let target_name = self.env
+            .get("__MOON_BASH_NAMEREF__" + assign.name)
+            .unwrap_or(assign.name)
           match self.resolve_array_assignment_target(target_name) {
             Some((target_base, target_index)) => {
               if self.should_exit {
@@ -439,7 +448,7 @@ fn ExecContext::execute_simple(
           } else {
             value
           }
-          if !(self.store_scalar_assignment(target_name, next_value)) {
+          if !self.store_scalar_assignment(target_name, next_value) {
             return
           }
         }
@@ -449,14 +458,19 @@ fn ExecContext::execute_simple(
               if self.should_exit {
                 return
               }
-              self.store_array_element_assignment(base, index, "", assign.append)
+              self.store_array_element_assignment(
+                base,
+                index,
+                "",
+                assign.append,
+              )
               continue
             }
             None => ()
           }
-          let target_name = self.env.get("__MOON_BASH_NAMEREF__" + assign.name).unwrap_or(
-            assign.name,
-          )
+          let target_name = self.env
+            .get("__MOON_BASH_NAMEREF__" + assign.name)
+            .unwrap_or(assign.name)
           match self.resolve_array_assignment_target(target_name) {
             Some((target_base, target_index)) => {
               if self.should_exit {
@@ -488,15 +502,15 @@ fn ExecContext::execute_simple(
           } else {
             ""
           }
-          if !(self.store_scalar_assignment(target_name, next_value)) {
+          if !self.store_scalar_assignment(target_name, next_value) {
             return
           }
         }
       }
     }
     // If no words follow, we're done (assignment-only command)
-    if !(has_words) {
-      if !(self.should_exit) && !(keep_expansion_status) && self.exit_code == 0 {
+    if !has_words {
+      if !self.should_exit && !keep_expansion_status && self.exit_code == 0 {
         self.exit_code = 0
       }
       return
@@ -506,12 +520,11 @@ fn ExecContext::execute_simple(
       let mut has_empty_prefix_assignment = false
       for assign in cmd.assignments {
         match assign.value {
-          Some(word) => {
+          Some(word) =>
             if assignment_word_is_empty_literal(word) {
               has_empty_prefix_assignment = true
               break
             }
-          }
           None => {
             has_empty_prefix_assignment = true
             break
@@ -553,7 +566,11 @@ fn ExecContext::execute_simple(
       }
       return
     }
-    let cmd_name_for_expansion = if expanded.length() > 0 { expanded[0] } else { "" }
+    let cmd_name_for_expansion = if expanded.length() > 0 {
+      expanded[0]
+    } else {
+      ""
+    }
     let first_word_static = word_is_static_command_name_candidate(cmd.words[0])
     let conditional_test = syntactic_double_bracket
     let disable_glob_args = cmd_name_for_expansion == "find"
@@ -564,8 +581,7 @@ fn ExecContext::execute_simple(
 
     for i = 1; i < cmd.words.length(); i = i + 1 {
       let assignment_builtin_active = assignment_builtin_active_for_expanded_words(
-        expanded,
-        first_word_static,
+        expanded, first_word_static,
       )
       let parts = if assignment_builtin_active {
         match self.expand_compound_assignment_argument(cmd.words[i]) {
@@ -585,7 +601,7 @@ fn ExecContext::execute_simple(
             grep_expect_e_pattern = false
             grep_pattern_set = true
             no_glob = true
-          } else if !(grep_stop_options) {
+          } else if !grep_stop_options {
             if token == "--" {
               grep_stop_options = true
               no_glob = true
@@ -602,8 +618,8 @@ fn ExecContext::execute_simple(
               no_glob = true
             }
           }
-          if !(no_glob) {
-            if !(grep_pattern_set) {
+          if !no_glob {
+            if !grep_pattern_set {
               grep_pattern_set = true
               no_glob = true
             }
@@ -659,10 +675,12 @@ fn ExecContext::execute_simple(
   } else {
     None
   }
-  let alias_has_multiline_literal_arg = alias_call_has_multiline_literal_arg(cmd.words)
+  let alias_has_multiline_literal_arg = alias_call_has_multiline_literal_arg(
+    cmd.words,
+  )
 
   let cmd_name = expanded[0]
-  let run_cmd_name = if cmd_name == "[[" && !(syntactic_double_bracket) {
+  let run_cmd_name = if cmd_name == "[[" && !syntactic_double_bracket {
     "__MOON_BASH_RUNTIME_DBRACKET__"
   } else {
     cmd_name
@@ -675,8 +693,8 @@ fn ExecContext::execute_simple(
     args.push(arg)
   }
   let should_restore_prefix_assignments = track_prefix_assignment_restore &&
-    !(command_keeps_prefix_assignments(run_cmd_name))
-  let originally_exported_prefix_assignments : Map[String, Bool] = {}
+    !command_keeps_prefix_assignments(run_cmd_name)
+  let originally_exported_prefix_assignments : Map[String, Bool] = Map([])
   if has_words {
     for name in prefix_assignment_restore_names {
       if self.exported.contains(name) {
@@ -785,14 +803,8 @@ fn ExecContext::execute_simple(
           input_from_file = true
           continue
         }
-        let resolved = try {
-          @fs.resolve_path(self.cwd, target)
-        } catch {
-          _ => target
-        }
-        let content = try {
-          self.fs.read_file(resolved)
-        } catch {
+        let resolved = @fs.resolve_path(self.cwd, target) catch { _ => target }
+        let content = self.fs.read_file(resolved) catch {
           @fs.FsError(msg) => {
             self.stderr_buf.write_string("moon_bash: \{msg}\n")
             self.exit_code = 1
@@ -880,13 +892,9 @@ fn ExecContext::execute_simple(
   }
 
   // Execute command
-  if !(
-    self.try_execute_alias_command(
-      alias_candidate,
-      args,
-      alias_has_multiline_literal_arg,
-    )
-  ) {
+  if !self.try_execute_alias_command(
+      alias_candidate, args, alias_has_multiline_literal_arg,
+    ) {
     self.run_command(run_cmd_name, args)
   }
   if should_restore_prefix_assignments {
@@ -896,7 +904,7 @@ fn ExecContext::execute_simple(
       prefix_assignment_snapshot,
     )
     for name in prefix_assignment_restore_names {
-      if !(originally_exported_prefix_assignments.contains(name)) {
+      if !originally_exported_prefix_assignments.contains(name) {
         self.exported.remove(name)
       }
     }
@@ -906,11 +914,7 @@ fn ExecContext::execute_simple(
   match redirected_file {
     Some(path) => {
       let output = self.stdout_buf.to_string()
-      let resolved = try {
-        @fs.resolve_path(self.cwd, path)
-      } catch {
-        _ => path
-      }
+      let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
       try {
         if redirect_append {
           self.fs.append_file(resolved, output)
@@ -918,12 +922,11 @@ fn ExecContext::execute_simple(
           self.fs.write_file(resolved, output)
         }
       } catch {
-        @fs.FsError(msg) =>
-          self.stderr_buf.write_string("moon_bash: \{msg}\n")
+        @fs.FsError(msg) => self.stderr_buf.write_string("moon_bash: \{msg}\n")
       }
       self.stdout_buf = saved_stdout
     }
-    None => {
+    None =>
       if stdout_to_stderr {
         let output = self.stdout_buf.to_string()
         saved_stderr.write_string(output)
@@ -931,24 +934,20 @@ fn ExecContext::execute_simple(
       } else if null_output {
         self.stdout_buf = saved_stdout
       }
-    }
   }
 
   match redirected_stderr_file {
     Some(path) => {
-      let resolved = try {
-        @fs.resolve_path(self.cwd, path)
-      } catch {
-        _ => path
-      }
+      let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
       let mut output = self.stderr_buf.to_string()
       match self.env.get(cmd_sub_stderr_capture_path_key) {
-        Some(captured_path) => {
+        Some(captured_path) =>
           if captured_path == resolved {
-            let captured = self.env.get(cmd_sub_stderr_capture_data_key).unwrap_or("")
+            let captured = self.env
+              .get(cmd_sub_stderr_capture_data_key)
+              .unwrap_or("")
             output = captured + output
           }
-        }
         None => ()
       }
       try {
@@ -958,8 +957,7 @@ fn ExecContext::execute_simple(
           self.fs.write_file(resolved, output)
         }
       } catch {
-        @fs.FsError(msg) =>
-          saved_stderr.write_string("moon_bash: \{msg}\n")
+        @fs.FsError(msg) => saved_stderr.write_string("moon_bash: \{msg}\n")
       }
       self.env.remove(cmd_sub_stderr_capture_path_key)
       self.env.remove(cmd_sub_stderr_capture_data_key)
@@ -984,6 +982,7 @@ fn ExecContext::execute_simple(
   self.enforce_output_size_limit()
 }
 
+///|
 fn is_assignment_builtin_name(cmd_name : String) -> Bool {
   cmd_name == "declare" ||
   cmd_name == "typeset" ||
@@ -992,9 +991,10 @@ fn is_assignment_builtin_name(cmd_name : String) -> Bool {
   cmd_name == "readonly"
 }
 
+///|
 fn assignment_builtin_active_for_expanded_words(
   expanded : Array[String],
-  first_word_static : Bool
+  first_word_static : Bool,
 ) -> Bool {
   if expanded.length() == 0 {
     return false
@@ -1046,6 +1046,7 @@ fn assignment_builtin_active_for_expanded_words(
   false
 }
 
+///|
 fn parse_command_builtin_mode_token(token : String) -> Int? {
   if token.length() < 2 || token[0].to_int().unsafe_to_char() != '-' {
     return None
@@ -1064,9 +1065,10 @@ fn parse_command_builtin_mode_token(token : String) -> Int? {
   Some(mode)
 }
 
+///|
 fn ExecContext::pending_cmd_sub_stderr_redirect_spec(
   self : ExecContext,
-  redirections : Array[@ast.Redirection]
+  redirections : Array[@ast.Redirection],
 ) -> String? {
   let mut spec : String? = None
   for redir in redirections {
@@ -1100,6 +1102,7 @@ fn ExecContext::pending_cmd_sub_stderr_redirect_spec(
   spec
 }
 
+///|
 fn word_starts_with_literal_paren(word : @ast.Word) -> Bool {
   if word.parts.length() == 0 {
     return false
@@ -1111,6 +1114,7 @@ fn word_starts_with_literal_paren(word : @ast.Word) -> Bool {
   }
 }
 
+///|
 fn word_is_single_literal(word : @ast.Word, expected : String) -> Bool {
   if word.parts.length() != 1 {
     return false
@@ -1121,6 +1125,7 @@ fn word_is_single_literal(word : @ast.Word, expected : String) -> Bool {
   }
 }
 
+///|
 fn word_is_plain_literal(word : @ast.Word) -> Bool {
   if word.parts.length() == 0 {
     return false
@@ -1134,6 +1139,7 @@ fn word_is_plain_literal(word : @ast.Word) -> Bool {
   true
 }
 
+///|
 fn word_is_static_command_name_candidate(word : @ast.Word) -> Bool {
   if word.parts.length() == 0 {
     return false
@@ -1146,6 +1152,7 @@ fn word_is_static_command_name_candidate(word : @ast.Word) -> Bool {
   true
 }
 
+///|
 fn word_part_has_runtime_expansion(part : @ast.WordPart) -> Bool {
   match part {
     @ast.WordPart::Literal(_) => false
@@ -1162,6 +1169,7 @@ fn word_part_has_runtime_expansion(part : @ast.WordPart) -> Bool {
   }
 }
 
+///|
 fn word_is_single_tilde(word : @ast.Word) -> Bool {
   if word.parts.length() != 1 {
     return false
@@ -1172,6 +1180,7 @@ fn word_is_single_tilde(word : @ast.Word) -> Bool {
   }
 }
 
+///|
 fn escape_conditional_glob_meta(text : String) -> String {
   let out = StringBuilder::new()
   for i = 0; i < text.length(); i = i + 1 {
@@ -1184,9 +1193,10 @@ fn escape_conditional_glob_meta(text : String) -> String {
   out.to_string()
 }
 
+///|
 fn ExecContext::expand_conditional_part_text(
   self : ExecContext,
-  part : @ast.WordPart
+  part : @ast.WordPart,
 ) -> String {
   match part {
     @ast.WordPart::Literal(text) => text
@@ -1202,9 +1212,10 @@ fn ExecContext::expand_conditional_part_text(
   }
 }
 
+///|
 fn ExecContext::expand_conditional_test_word(
   self : ExecContext,
-  word : @ast.Word
+  word : @ast.Word,
 ) -> String {
   let out = StringBuilder::new()
   for part in word.parts {
@@ -1214,12 +1225,13 @@ fn ExecContext::expand_conditional_test_word(
   if word_is_single_tilde(word) {
     return test_encode_tilde_token(expanded)
   }
-  if !(word_is_plain_literal(word)) {
+  if !word_is_plain_literal(word) {
     return test_encode_dynamic_token(expanded)
   }
   expanded
 }
 
+///|
 fn assignment_word_is_empty_literal(word : @ast.Word) -> Bool {
   if word.parts.length() == 0 {
     return true
@@ -1233,16 +1245,19 @@ fn assignment_word_is_empty_literal(word : @ast.Word) -> Bool {
   }
 }
 
+///|
 fn ExecContext::append_scalar_array_assignment(
   self : ExecContext,
   name : String,
-  suffix : String
+  suffix : String,
 ) -> Bool {
-  if !(self.env.contains(test_array_count_storage_key(name))) {
+  if !self.env.contains(test_array_count_storage_key(name)) {
     return false
   }
 
-  let kind = self.env.get(test_array_kind_storage_key(name)).unwrap_or("indexed")
+  let kind = self.env
+    .get(test_array_kind_storage_key(name))
+    .unwrap_or("indexed")
   if kind == "assoc" {
     self.exit_code = 1
     self.should_exit = true
@@ -1255,6 +1270,7 @@ fn ExecContext::append_scalar_array_assignment(
   true
 }
 
+///|
 fn encode_assignment_quoted_marker(text : String) -> String {
   if text.length() == 0 {
     return "\u0001\u0000"
@@ -1267,32 +1283,39 @@ fn encode_assignment_quoted_marker(text : String) -> String {
   out.to_string()
 }
 
+///|
 fn ExecContext::expand_compound_assignment_word_preserving_quotes(
   self : ExecContext,
-  word : @ast.Word
+  word : @ast.Word,
 ) -> String {
   let out = StringBuilder::new()
   for part in word.parts {
-    out.write_string(self.expand_compound_assignment_part_preserving_quotes(part))
+    out.write_string(
+      self.expand_compound_assignment_part_preserving_quotes(part),
+    )
   }
   out.to_string()
 }
 
+///|
 fn ExecContext::expand_compound_assignment_part_preserving_quotes(
   self : ExecContext,
-  part : @ast.WordPart
+  part : @ast.WordPart,
 ) -> String {
   match part {
     @ast.WordPart::SingleQuoted(text) => encode_assignment_quoted_marker(text)
     @ast.WordPart::DoubleQuoted(inner_parts) =>
-      encode_assignment_quoted_marker(self.expand_double_quoted_parts(inner_parts))
+      encode_assignment_quoted_marker(
+        self.expand_double_quoted_parts(inner_parts),
+      )
     _ => self.expand_word_part(part)
   }
 }
 
+///|
 fn ExecContext::expand_compound_assignment_argument(
   self : ExecContext,
-  word : @ast.Word
+  word : @ast.Word,
 ) -> String? {
   let raw = self.expand_compound_assignment_word_preserving_quotes(word)
   if self.should_exit {

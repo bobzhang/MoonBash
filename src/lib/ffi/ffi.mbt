@@ -1,6 +1,7 @@
 // moon_bash FFI Layer
 // Host bridges for side-effectful operations.
 
+///|
 /// JS bridge: delegate fetch requests to `globalThis.__moon_bash_fetch`.
 /// The bridge must return a JSON string.
 #cfg(target="js")
@@ -56,16 +57,19 @@ extern "js" fn host_fetch_sync_js(request_json : String) -> String =
   #|   }
   #| }
 
+///|
 #cfg(not(target="js"))
 fn host_fetch_sync_js(_request_json : String) -> String {
   "{\"ok\":false,\"status\":0,\"statusText\":\"\",\"headers\":{},\"body\":\"\",\"error\":\"network fetch is only supported on js target\"}"
 }
 
+///|
 /// Perform one fetch bridge call and return a JSON-encoded response payload.
 pub fn fetch_sync(request_json : String) -> String {
   host_fetch_sync_js(request_json)
 }
 
+///|
 /// JS bridge: delegate sleep requests to `globalThis.__moon_bash_sleep`.
 /// The bridge returns an empty string on success or an error message.
 #cfg(target="js")
@@ -92,16 +96,19 @@ extern "js" fn host_sleep_sync_js(duration_ms : Int) -> String =
   #|   }
   #| }
 
+///|
 #cfg(not(target="js"))
 fn host_sleep_sync_js(_duration_ms : Int) -> String {
   "sleep is only supported on js target"
 }
 
+///|
 /// Sleep through host timer bridge.
 pub fn sleep_sync(duration_ms : Int) -> String {
   host_sleep_sync_js(duration_ms)
 }
 
+///|
 /// JS bridge: read monotonic milliseconds from `globalThis.__moon_bash_now`.
 #cfg(target="js")
 extern "js" fn host_now_ms_sync_js() -> Int =
@@ -130,16 +137,19 @@ extern "js" fn host_now_ms_sync_js() -> Int =
   #|   }
   #| }
 
+///|
 #cfg(not(target="js"))
 fn host_now_ms_sync_js() -> Int {
   0
 }
 
+///|
 /// Return monotonic milliseconds from the host.
 pub fn now_ms_sync() -> Int {
   host_now_ms_sync_js()
 }
 
+///|
 fn parse_host_int64_decimal(text : String) -> Int64 {
   if text.length() == 0 {
     return 0L
@@ -164,6 +174,7 @@ fn parse_host_int64_decimal(text : String) -> Int64 {
   value * sign
 }
 
+///|
 /// JS bridge: read wall-clock milliseconds since Unix epoch.
 #cfg(target="js")
 extern "js" fn host_wall_now_ms_sync_js() -> String =
@@ -187,16 +198,19 @@ extern "js" fn host_wall_now_ms_sync_js() -> String =
   #|   }
   #| }
 
+///|
 #cfg(not(target="js"))
 fn host_wall_now_ms_sync_js() -> String {
   "0"
 }
 
+///|
 /// Return wall-clock milliseconds since Unix epoch from the host.
 pub fn wall_now_ms_sync() -> Int64 {
   parse_host_int64_decimal(host_wall_now_ms_sync_js())
 }
 
+///|
 /// JS bridge: delegate VM execution requests to `globalThis.__moon_bash_vm`.
 /// The bridge must return a JSON string.
 #cfg(target="js")
@@ -244,16 +258,19 @@ extern "js" fn host_vm_sync_js(request_json : String) -> String =
   #|   }
   #| }
 
+///|
 #cfg(not(target="js"))
 fn host_vm_sync_js(_request_json : String) -> String {
   "{\"stdout\":\"\",\"stderr\":\"\",\"exitCode\":127,\"error\":\"vm bridge is only supported on js target\"}"
 }
 
+///|
 /// Perform one VM bridge call and return a JSON-encoded response payload.
 pub fn vm_sync(request_json : String) -> String {
   host_vm_sync_js(request_json)
 }
 
+///|
 /// JS bridge: delegate custom command execution to `globalThis.__moon_bash_custom`.
 /// The bridge must return a JSON string.
 #cfg(target="js")
@@ -304,11 +321,13 @@ extern "js" fn host_custom_command_sync_js(request_json : String) -> String =
   #|   }
   #| }
 
+///|
 #cfg(not(target="js"))
 fn host_custom_command_sync_js(_request_json : String) -> String {
   "{\"handled\":false,\"stdout\":\"\",\"stderr\":\"\",\"exitCode\":127,\"error\":\"custom command bridge is only supported on js target\"}"
 }
 
+///|
 /// Perform one custom command bridge call and return a JSON payload.
 pub fn custom_command_sync(request_json : String) -> String {
   host_custom_command_sync_js(request_json)

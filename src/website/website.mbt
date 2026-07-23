@@ -2,7 +2,7 @@
 fn mount_demo_impl() -> Unit {
   let config = parse_website_config(get_runtime_config_json())
   let dom = build_dom()
-  let app = Ref::new(make_app_state(config, dom))
+  let app = Ref(make_app_state(config, dom))
 
   dom.title.set_inner_text(config.verification_title)
   dom.github_link.set_attribute("href", config.github_url)

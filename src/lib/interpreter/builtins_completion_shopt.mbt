@@ -1,5 +1,6 @@
 // moon_bash Interpreter - shopt, builtin, hash Builtins
 
+///|
 fn is_known_shopt_name(name : String) -> Bool {
   for known in shopt_option_names() {
     if known == name {
@@ -9,31 +10,29 @@ fn is_known_shopt_name(name : String) -> Bool {
   false
 }
 
+///|
 fn ExecContext::shopt_is_enabled(self : ExecContext, name : String) -> Bool {
   self.env.get(shopt_storage_key(name)).unwrap_or("0") == "1"
 }
 
+///|
 fn ExecContext::shopt_set_enabled(
   self : ExecContext,
   name : String,
-  enabled : Bool
+  enabled : Bool,
 ) -> Unit {
   self.env[shopt_storage_key(name)] = if enabled { "1" } else { "0" }
 }
 
-fn ExecContext::print_shopt_state(
-  self : ExecContext,
-  name : String
-) -> Unit {
+///|
+fn ExecContext::print_shopt_state(self : ExecContext, name : String) -> Unit {
   let enabled = self.shopt_is_enabled(name)
   let flag = if enabled { "s" } else { "u" }
   self.stdout_buf.write_string("shopt -\{flag} \{name}\n")
 }
 
-fn ExecContext::builtin_shopt(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_shopt(self : ExecContext, args : Array[String]) -> Unit {
   // Mode:
   // 0 = print
   // 1 = set
@@ -95,18 +94,14 @@ fn ExecContext::builtin_shopt(
   let mut had_error = false
   let mut any_unset_in_query = false
   for name in names {
-    if !(is_known_shopt_name(name)) {
+    if !is_known_shopt_name(name) {
       had_error = true
       continue
     }
     match mode {
       1 => self.shopt_set_enabled(name, true)
       2 => self.shopt_set_enabled(name, false)
-      3 => {
-        if !(self.shopt_is_enabled(name)) {
-          any_unset_in_query = true
-        }
-      }
+      3 => if !self.shopt_is_enabled(name) { any_unset_in_query = true }
       _ => self.print_shopt_state(name)
     }
   }
@@ -118,9 +113,10 @@ fn ExecContext::builtin_shopt(
   }
 }
 
+///|
 fn ExecContext::builtin_builtin_cd(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let target = if args.length() == 0 {
     self.env.get("HOME").unwrap_or("/home/user")
@@ -130,9 +126,7 @@ fn ExecContext::builtin_builtin_cd(
     args[0]
   }
 
-  let resolved = try {
-    @fs.resolve_path(self.cwd, target)
-  } catch {
+  let resolved = @fs.resolve_path(self.cwd, target) catch {
     _ => {
       self.exit_code = 1
       return
@@ -153,9 +147,10 @@ fn ExecContext::builtin_builtin_cd(
   }
 }
 
+///|
 fn ExecContext::builtin_builtin(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let mut start = 0
   if args.length() > 0 && args[0] == "--" {
@@ -183,9 +178,10 @@ fn ExecContext::builtin_builtin(
   self.exit_code = 1
 }
 
+///|
 fn ExecContext::remember_hashed_command(
   self : ExecContext,
-  name : String
+  name : String,
 ) -> Unit {
   if name.length() == 0 || contains_slash(name) {
     return
@@ -193,10 +189,8 @@ fn ExecContext::remember_hashed_command(
   self.remember_hashed_command_path(name, "/usr/bin/" + name)
 }
 
-fn ExecContext::builtin_hash(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_hash(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     let values : Array[String] = []
     for key, value in self.env {

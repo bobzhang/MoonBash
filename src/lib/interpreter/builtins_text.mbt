@@ -1,20 +1,12 @@
 // moon_bash Interpreter - Text Builtins
 // Split from builtins_extra.mbt for maintainability.
 
-fn ExecContext::builtin_rev(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_rev(self : ExecContext, args : Array[String]) -> Unit {
   let input = if args.length() > 0 {
     // Read from file
-    let path = try {
-      @fs.resolve_path(self.cwd, args[0])
-    } catch {
-      _ => args[0]
-    }
-    try {
-      self.fs.read_file(path)
-    } catch {
+    let path = @fs.resolve_path(self.cwd, args[0]) catch { _ => args[0] }
+    self.fs.read_file(path) catch {
       @fs.FsError(msg) => {
         self.stderr_buf.write_string("rev: \{msg}\n")
         self.exit_code = 1
@@ -32,10 +24,8 @@ fn ExecContext::builtin_rev(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_nl(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_nl(self : ExecContext, args : Array[String]) -> Unit {
   let mut number_all = false
   let mut number_format = "rn"
   let mut width = 6
@@ -54,7 +44,7 @@ fn ExecContext::builtin_nl(
       continue
     }
     if arg.has_prefix("-b") && arg.length() > 2 {
-      let style = arg.view(start_offset=2).to_string()
+      let style = arg.view(start_offset=2).to_owned()
       number_all = style == "a"
       i += 1
       continue
@@ -65,7 +55,7 @@ fn ExecContext::builtin_nl(
       continue
     }
     if arg.has_prefix("-n") && arg.length() > 2 {
-      number_format = arg.view(start_offset=2).to_string()
+      number_format = arg.view(start_offset=2).to_owned()
       i += 1
       continue
     }
@@ -75,7 +65,7 @@ fn ExecContext::builtin_nl(
       continue
     }
     if arg.has_prefix("-w") && arg.length() > 2 {
-      width = parse_int32_str(arg.view(start_offset=2).to_string())
+      width = parse_int32_str(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -85,7 +75,7 @@ fn ExecContext::builtin_nl(
       continue
     }
     if arg.has_prefix("-s") && arg.length() > 2 {
-      separator = arg.view(start_offset=2).to_string()
+      separator = arg.view(start_offset=2).to_owned()
       i += 1
       continue
     }
@@ -95,7 +85,7 @@ fn ExecContext::builtin_nl(
       continue
     }
     if arg.has_prefix("-v") && arg.length() > 2 {
-      current_number = parse_int32_str(arg.view(start_offset=2).to_string())
+      current_number = parse_int32_str(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -105,7 +95,7 @@ fn ExecContext::builtin_nl(
       continue
     }
     if arg.has_prefix("-i") && arg.length() > 2 {
-      increment = parse_int32_str(arg.view(start_offset=2).to_string())
+      increment = parse_int32_str(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -122,14 +112,8 @@ fn ExecContext::builtin_nl(
     inputs.push(self.stdin_buf)
   } else {
     for path in files {
-      let resolved = try {
-        @fs.resolve_path(self.cwd, path)
-      } catch {
-        _ => path
-      }
-      let content = try {
-        self.fs.read_file(resolved)
-      } catch {
+      let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+      let content = self.fs.read_file(resolved) catch {
         @fs.FsError(msg) => {
           self.stderr_buf.write_string("nl: \{msg}\n")
           self.exit_code = 1
@@ -160,10 +144,8 @@ fn ExecContext::builtin_nl(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_fold(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_fold(self : ExecContext, args : Array[String]) -> Unit {
   let mut width = 80
   let mut break_spaces = false
   let files : Array[String] = []
@@ -182,7 +164,7 @@ fn ExecContext::builtin_fold(
       continue
     }
     if arg.has_prefix("-w") && arg.length() > 2 {
-      width = parse_int32_str(arg.view(start_offset=2).to_string())
+      width = parse_int32_str(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -194,7 +176,7 @@ fn ExecContext::builtin_fold(
           's' => break_spaces = true
           'w' => {
             if j + 1 < arg.length() {
-              width = parse_int32_str(arg.view(start_offset=j + 1).to_string())
+              width = parse_int32_str(arg.view(start_offset=j + 1).to_owned())
             } else if i + 1 < args.length() {
               i += 1
               width = parse_int32_str(args[i])
@@ -226,14 +208,8 @@ fn ExecContext::builtin_fold(
   }
 
   for path in files {
-    let resolved = try {
-      @fs.resolve_path(self.cwd, path)
-    } catch {
-      _ => path
-    }
-    let content = try {
-      self.fs.read_file(resolved)
-    } catch {
+    let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+    let content = self.fs.read_file(resolved) catch {
       @fs.FsError(msg) => {
         self.stderr_buf.write_string("fold: \{msg}\n")
         self.exit_code = 1
@@ -246,9 +222,10 @@ fn ExecContext::builtin_fold(
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_expand(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let mut tab_width = 8
   let files : Array[String] = []
@@ -262,7 +239,7 @@ fn ExecContext::builtin_expand(
       continue
     }
     if arg.has_prefix("-t") && arg.length() > 2 {
-      tab_width = parse_int32_str(arg.view(start_offset=2).to_string())
+      tab_width = parse_int32_str(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -281,14 +258,8 @@ fn ExecContext::builtin_expand(
   }
 
   for path in files {
-    let resolved = try {
-      @fs.resolve_path(self.cwd, path)
-    } catch {
-      _ => path
-    }
-    let content = try {
-      self.fs.read_file(resolved)
-    } catch {
+    let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+    let content = self.fs.read_file(resolved) catch {
       @fs.FsError(msg) => {
         self.stderr_buf.write_string("expand: \{msg}\n")
         self.exit_code = 1
@@ -301,9 +272,10 @@ fn ExecContext::builtin_expand(
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_unexpand(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let mut convert_all = false
   let mut tab_width = 8
@@ -323,7 +295,7 @@ fn ExecContext::builtin_unexpand(
       continue
     }
     if arg.has_prefix("-t") && arg.length() > 2 {
-      tab_width = parse_int32_str(arg.view(start_offset=2).to_string())
+      tab_width = parse_int32_str(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -334,7 +306,9 @@ fn ExecContext::builtin_unexpand(
           'a' => convert_all = true
           't' => {
             if j + 1 < arg.length() {
-              tab_width = parse_int32_str(arg.view(start_offset=j + 1).to_string())
+              tab_width = parse_int32_str(
+                arg.view(start_offset=j + 1).to_owned(),
+              )
             } else if i + 1 < args.length() {
               i += 1
               tab_width = parse_int32_str(args[i])
@@ -364,32 +338,22 @@ fn ExecContext::builtin_unexpand(
   }
 
   for path in files {
-    let resolved = try {
-      @fs.resolve_path(self.cwd, path)
-    } catch {
-      _ => path
-    }
-    let content = try {
-      self.fs.read_file(resolved)
-    } catch {
+    let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+    let content = self.fs.read_file(resolved) catch {
       @fs.FsError(msg) => {
         self.stderr_buf.write_string("unexpand: \{msg}\n")
         self.exit_code = 1
         return
       }
     }
-    self.stdout_buf.write_string(
-      unexpand_tabs(content, tab_width, convert_all),
-    )
+    self.stdout_buf.write_string(unexpand_tabs(content, tab_width, convert_all))
   }
 
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_paste(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_paste(self : ExecContext, args : Array[String]) -> Unit {
   let mut serial_mode = false
   let mut delimiter_spec = "\t"
   let sources : Array[String] = []
@@ -408,7 +372,7 @@ fn ExecContext::builtin_paste(
       continue
     }
     if arg.has_prefix("-d") && arg.length() > 2 {
-      delimiter_spec = arg.view(start_offset=2).to_string()
+      delimiter_spec = arg.view(start_offset=2).to_owned()
       i += 1
       continue
     }
@@ -419,7 +383,7 @@ fn ExecContext::builtin_paste(
           's' => serial_mode = true
           'd' => {
             if j + 1 < arg.length() {
-              delimiter_spec = arg.view(start_offset=j + 1).to_string()
+              delimiter_spec = arg.view(start_offset=j + 1).to_owned()
             } else if i + 1 < args.length() {
               i += 1
               delimiter_spec = args[i]
@@ -450,14 +414,8 @@ fn ExecContext::builtin_paste(
       source_lines.push([])
       continue
     }
-    let resolved = try {
-      @fs.resolve_path(self.cwd, source)
-    } catch {
-      _ => source
-    }
-    let content = try {
-      self.fs.read_file(resolved)
-    } catch {
+    let resolved = @fs.resolve_path(self.cwd, source) catch { _ => source }
+    let content = self.fs.read_file(resolved) catch {
       @fs.FsError(msg) => {
         self.stderr_buf.write_string("paste: \{msg}\n")
         self.exit_code = 1
@@ -473,7 +431,9 @@ fn ExecContext::builtin_paste(
   let mut stdin_cursor = 0
 
   if serial_mode {
-    for source_idx = 0; source_idx < sources.length(); source_idx = source_idx + 1 {
+    for source_idx = 0
+        source_idx < sources.length()
+        source_idx = source_idx + 1 {
       let lines : Array[String] = if source_is_stdin[source_idx] {
         let remaining : Array[String] = []
         for j = stdin_cursor; j < stdin_lines.length(); j = j + 1 {
@@ -503,7 +463,9 @@ fn ExecContext::builtin_paste(
     let row_values : Array[String] = []
     let mut row_has_data = false
 
-    for source_idx = 0; source_idx < sources.length(); source_idx = source_idx + 1 {
+    for source_idx = 0
+        source_idx < sources.length()
+        source_idx = source_idx + 1 {
       if source_is_stdin[source_idx] {
         if stdin_cursor < stdin_lines.length() {
           row_values.push(stdin_lines[stdin_cursor])
@@ -523,7 +485,7 @@ fn ExecContext::builtin_paste(
       }
     }
 
-    if !(row_has_data) {
+    if !row_has_data {
       break
     }
 
@@ -541,9 +503,10 @@ fn ExecContext::builtin_paste(
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_column(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let mut table_mode = false
   let mut separator : String? = None
@@ -563,7 +526,7 @@ fn ExecContext::builtin_column(
       continue
     }
     if arg.has_prefix("-s") && arg.length() > 2 {
-      separator = Some(arg.view(start_offset=2).to_string())
+      separator = Some(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -574,7 +537,7 @@ fn ExecContext::builtin_column(
           't' => table_mode = true
           's' => {
             if j + 1 < arg.length() {
-              separator = Some(arg.view(start_offset=j + 1).to_string())
+              separator = Some(arg.view(start_offset=j + 1).to_owned())
             } else if i + 1 < args.length() {
               i += 1
               separator = Some(args[i])
@@ -596,14 +559,8 @@ fn ExecContext::builtin_column(
     inputs.push(self.stdin_buf)
   } else {
     for path in files {
-      let resolved = try {
-        @fs.resolve_path(self.cwd, path)
-      } catch {
-        _ => path
-      }
-      let content = try {
-        self.fs.read_file(resolved)
-      } catch {
+      let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+      let content = self.fs.read_file(resolved) catch {
         @fs.FsError(msg) => {
           self.stderr_buf.write_string("column: \{msg}\n")
           self.exit_code = 1
@@ -625,10 +582,8 @@ fn ExecContext::builtin_column(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_join(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_join(self : ExecContext, args : Array[String]) -> Unit {
   let mut field1 = 1
   let mut field2 = 1
   let mut delimiter = " "
@@ -646,7 +601,7 @@ fn ExecContext::builtin_join(
       continue
     }
     if arg.has_prefix("-1") && arg.length() > 2 {
-      field1 = parse_int32_str(arg.view(start_offset=2).to_string())
+      field1 = parse_int32_str(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -656,7 +611,7 @@ fn ExecContext::builtin_join(
       continue
     }
     if arg.has_prefix("-2") && arg.length() > 2 {
-      field2 = parse_int32_str(arg.view(start_offset=2).to_string())
+      field2 = parse_int32_str(arg.view(start_offset=2).to_owned())
       i += 1
       continue
     }
@@ -666,7 +621,7 @@ fn ExecContext::builtin_join(
       continue
     }
     if arg.has_prefix("-t") && arg.length() > 2 {
-      delimiter = arg.view(start_offset=2).to_string()
+      delimiter = arg.view(start_offset=2).to_owned()
       i += 1
       continue
     }
@@ -681,7 +636,7 @@ fn ExecContext::builtin_join(
       continue
     }
     if arg.has_prefix("-a") && arg.length() > 2 {
-      let side = parse_int32_str(arg.view(start_offset=2).to_string())
+      let side = parse_int32_str(arg.view(start_offset=2).to_owned())
       if side == 1 {
         include_unpair_1 = true
       } else if side == 2 {
@@ -699,7 +654,7 @@ fn ExecContext::builtin_join(
       continue
     }
     if arg.has_prefix("-v") && arg.length() > 2 {
-      let side = parse_int32_str(arg.view(start_offset=2).to_string())
+      let side = parse_int32_str(arg.view(start_offset=2).to_owned())
       if side == 1 || side == 2 {
         only_unpair_file = Some(side)
       }
@@ -717,14 +672,8 @@ fn ExecContext::builtin_join(
   }
 
   let read_join_file = (path : String) => {
-    let resolved = try {
-      @fs.resolve_path(self.cwd, path)
-    } catch {
-      _ => path
-    }
-    try {
-      self.fs.read_file(resolved)
-    } catch {
+    let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+    self.fs.read_file(resolved) catch {
       @fs.FsError(msg) => {
         self.stderr_buf.write_string("join: \{msg}\n")
         self.exit_code = 1
@@ -810,4 +759,3 @@ fn ExecContext::builtin_join(
 
   self.exit_code = 0
 }
-

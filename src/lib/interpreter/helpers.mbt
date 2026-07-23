@@ -1,24 +1,95 @@
 // moon_bash Interpreter - Common Helpers
 // Shared utilities used across interpreter modules.
 
+///|
 fn is_shell_builtin(name : String) -> Bool {
   match name {
-    "export" | "unset" | "set" | "shift" | "exit" | "return" | "break"
-    | "continue" | "read" | "test" | "[" | "[[" | "printf" | "eval" | "source"
-    | "." | "local" | "readonly" | "declare" | "typeset" | "getopts" | "let"
-    | ":" | "type" | "command" | "builtin" | "hash" | "shopt" | "complete"
-    | "compgen" | "compopt" | "pushd" | "popd" | "dirs" | "basename"
-    | "dirname" | "seq" | "rev" | "nl" | "fold" | "expand" | "unexpand" | "paste"
-    | "column" | "join" | "tr" | "sort" | "uniq" | "cut" | "tee" | "sed" | "grep"
-    | "egrep" | "fgrep" | "rg" | "xargs" | "date" | "env" | "printenv"
-    | "which" | "whoami" | "hostname" | "help" | "clear" | "history" | "tac"
-    | "od" | "alias" | "unalias" | "bash" | "sh" | "time" | "sleep"
-    | "timeout" | "mapfile" | "readarray" | "cd" | "pwd" | "echo" | "true"
+    "export"
+    | "unset"
+    | "set"
+    | "shift"
+    | "exit"
+    | "return"
+    | "break"
+    | "continue"
+    | "read"
+    | "test"
+    | "["
+    | "[["
+    | "printf"
+    | "eval"
+    | "source"
+    | "."
+    | "local"
+    | "readonly"
+    | "declare"
+    | "typeset"
+    | "getopts"
+    | "let"
+    | ":"
+    | "type"
+    | "command"
+    | "builtin"
+    | "hash"
+    | "shopt"
+    | "complete"
+    | "compgen"
+    | "compopt"
+    | "pushd"
+    | "popd"
+    | "dirs"
+    | "basename"
+    | "dirname"
+    | "seq"
+    | "rev"
+    | "nl"
+    | "fold"
+    | "expand"
+    | "unexpand"
+    | "paste"
+    | "column"
+    | "join"
+    | "tr"
+    | "sort"
+    | "uniq"
+    | "cut"
+    | "tee"
+    | "sed"
+    | "grep"
+    | "egrep"
+    | "fgrep"
+    | "rg"
+    | "xargs"
+    | "date"
+    | "env"
+    | "printenv"
+    | "which"
+    | "whoami"
+    | "hostname"
+    | "help"
+    | "clear"
+    | "history"
+    | "tac"
+    | "od"
+    | "alias"
+    | "unalias"
+    | "bash"
+    | "sh"
+    | "time"
+    | "sleep"
+    | "timeout"
+    | "mapfile"
+    | "readarray"
+    | "cd"
+    | "pwd"
+    | "echo"
+    | "true"
     | "false" => true
     _ => false
   }
 }
 
+///|
 fn parse_int_str(s : String) -> Int64 {
   let mut result = 0L
   let mut neg = false
@@ -37,13 +108,19 @@ fn parse_int_str(s : String) -> Int64 {
       break
     }
   }
-  if neg { -result } else { result }
+  if neg {
+    -result
+  } else {
+    result
+  }
 }
 
+///|
 fn parse_int32_str(s : String) -> Int {
   parse_int_str(s).to_int()
 }
 
+///|
 fn split_by_whitespace(s : String) -> Array[String] {
   let result : Array[String] = []
   let buf = StringBuilder::new()
@@ -66,6 +143,7 @@ fn split_by_whitespace(s : String) -> Array[String] {
   result
 }
 
+///|
 fn split_lines(s : String) -> Array[String] {
   let result : Array[String] = []
   let buf = StringBuilder::new()
@@ -85,6 +163,7 @@ fn split_lines(s : String) -> Array[String] {
   result
 }
 
+///|
 fn split_lines_no_trailing(s : String) -> Array[String] {
   if s.length() == 0 {
     return []
@@ -102,6 +181,7 @@ fn split_lines_no_trailing(s : String) -> Array[String] {
   }
 }
 
+///|
 fn repeat_char(ch : Char, count : Int) -> String {
   let out = StringBuilder::new()
   let total = if count < 0 { 0 } else { count }
@@ -111,6 +191,7 @@ fn repeat_char(ch : Char, count : Int) -> String {
   out.to_string()
 }
 
+///|
 fn contains_substring(haystack : String, needle : String) -> Bool {
   if needle.length() == 0 {
     return true
@@ -133,15 +214,15 @@ fn contains_substring(haystack : String, needle : String) -> Bool {
   false
 }
 
-
+///|
 fn substring_slice(s : String, start : Int, end : Int) -> String {
   if start >= end || start < 0 || end > s.length() {
     return ""
   }
-  s.view(start_offset=start, end_offset=end).to_string()
+  s.view(start_offset=start, end_offset=end).to_owned()
 }
 
-
+///|
 fn parse_field_spec(spec : String) -> Array[Int] {
   let fields : Array[Int] = []
   let parts = split_string_by_delimiter(spec, ",")
@@ -163,6 +244,7 @@ fn parse_field_spec(spec : String) -> Array[Int] {
   fields
 }
 
+///|
 fn split_string_by_delimiter(s : String, delim : String) -> Array[String] {
   let result : Array[String] = []
   let buf = StringBuilder::new()
@@ -197,6 +279,7 @@ fn split_string_by_delimiter(s : String, delim : String) -> Array[String] {
   result
 }
 
+///|
 fn find_substring_offset(text : String, fragment : String) -> Int {
   if fragment.length() == 0 {
     return 0
@@ -219,7 +302,11 @@ fn find_substring_offset(text : String, fragment : String) -> Int {
   -1
 }
 
-fn ExecContext::line_number_for_fragment(self : ExecContext, fragment : String) -> Int {
+///|
+fn ExecContext::line_number_for_fragment(
+  self : ExecContext,
+  fragment : String,
+) -> Int {
   let script = self.current_script
   if script.length() == 0 {
     return 1
@@ -235,13 +322,18 @@ fn ExecContext::line_number_for_fragment(self : ExecContext, fragment : String) 
     }
   }
   let adjusted = line - 4
-  if adjusted > 0 { adjusted } else { 1 }
+  if adjusted > 0 {
+    adjusted
+  } else {
+    1
+  }
 }
 
+///|
 fn ExecContext::emit_bad_array_subscript(
   self : ExecContext,
   subject : String,
-  fragment : String
+  fragment : String,
 ) -> Unit {
   let line = self.line_number_for_fragment(fragment)
   self.stderr_buf.write_string(
@@ -249,62 +341,77 @@ fn ExecContext::emit_bad_array_subscript(
   )
 }
 
+///|
 priv enum TestEvalMode {
   TestBuiltin
   BracketBuiltin
   DoubleBracketBuiltin
 }
 
+///|
 priv struct TestEvalResult {
   value : Bool
   status : Int
 }
 
+///|
 priv struct TestExprParser {
   tokens : Array[String]
   mut pos : Int
 }
 
+///|
 fn test_eval_ok(value : Bool) -> TestEvalResult {
   { value, status: 0 }
 }
 
+///|
 fn test_eval_syntax_error() -> TestEvalResult {
   { value: false, status: 2 }
 }
 
+///|
 let test_token_tilde_prefix : UInt16 = '\u0006'
+
+///|
 let test_token_dynamic_prefix : UInt16 = '\u0007'
 
+///|
 fn test_encode_tilde_token(raw : String) -> String {
   "\u0006" + raw
 }
 
+///|
 fn test_encode_dynamic_token(raw : String) -> String {
   "\u0007" + raw
 }
 
+///|
 fn test_token_has_meta(token : String) -> Bool {
   token.length() > 0 &&
   (token[0] == test_token_tilde_prefix || token[0] == test_token_dynamic_prefix)
 }
 
+///|
 fn test_token_is_tilde(token : String) -> Bool {
   token.length() > 0 && token[0] == test_token_tilde_prefix
 }
 
+///|
 fn test_token_raw(token : String) -> String {
   if test_token_has_meta(token) {
-    token.view(start_offset=1).to_string()
+    token.view(start_offset=1).to_owned()
   } else {
     token
   }
 }
 
+///|
 fn test_token_can_be_operator(token : String) -> Bool {
-  !(test_token_has_meta(token))
+  !test_token_has_meta(token)
 }
 
+///|
 fn TestExprParser::peek(self : TestExprParser) -> String? {
   if self.pos < self.tokens.length() {
     Some(self.tokens[self.pos])
@@ -313,7 +420,12 @@ fn TestExprParser::peek(self : TestExprParser) -> String? {
   }
 }
 
-fn test_slice_args(args : Array[String], start : Int, end_ : Int) -> Array[String] {
+///|
+fn test_slice_args(
+  args : Array[String],
+  start : Int,
+  end_ : Int,
+) -> Array[String] {
   let out : Array[String] = []
   for i = start; i < end_; i = i + 1 {
     out.push(args[i])
@@ -321,31 +433,70 @@ fn test_slice_args(args : Array[String], start : Int, end_ : Int) -> Array[Strin
   out
 }
 
+///|
 fn test_is_logical_or_op(op : String) -> Bool {
   op == "-o" || op == "||"
 }
 
+///|
 fn test_is_logical_and_op(op : String) -> Bool {
   op == "-a" || op == "&&"
 }
 
+///|
 fn test_is_unary_op(op : String) -> Bool {
   match op {
-    "-a" | "-e" | "-f" | "-d" | "-s" | "-r" | "-w" | "-x" | "-L" | "-h"
-    | "-k" | "-O" | "-G" | "-u" | "-g" | "-b" | "-c" | "-S" | "-p"
-    | "-t" | "-v" | "-o" | "-z" | "-n" => true
+    "-a"
+    | "-e"
+    | "-f"
+    | "-d"
+    | "-s"
+    | "-r"
+    | "-w"
+    | "-x"
+    | "-L"
+    | "-h"
+    | "-k"
+    | "-O"
+    | "-G"
+    | "-u"
+    | "-g"
+    | "-b"
+    | "-c"
+    | "-S"
+    | "-p"
+    | "-t"
+    | "-v"
+    | "-o"
+    | "-z"
+    | "-n" => true
     _ => false
   }
 }
 
+///|
 fn test_is_binary_op(op : String) -> Bool {
   match op {
-    "=" | "==" | "!=" | "<" | ">" | "=~" | "-eq" | "-ne" | "-lt" | "-le"
-    | "-gt" | "-ge" | "-nt" | "-ot" | "-ef" => true
+    "="
+    | "=="
+    | "!="
+    | "<"
+    | ">"
+    | "=~"
+    | "-eq"
+    | "-ne"
+    | "-lt"
+    | "-le"
+    | "-gt"
+    | "-ge"
+    | "-nt"
+    | "-ot"
+    | "-ef" => true
     _ => false
   }
 }
 
+///|
 fn test_mode_is_double_bracket(mode : TestEvalMode) -> Bool {
   match mode {
     TestEvalMode::DoubleBracketBuiltin => true
@@ -353,6 +504,7 @@ fn test_mode_is_double_bracket(mode : TestEvalMode) -> Bool {
   }
 }
 
+///|
 fn test_parse_decimal_operand(text : String) -> Int64? {
   let trimmed = arith_trim(text)
   if trimmed.length() == 0 {
@@ -380,6 +532,7 @@ fn test_parse_decimal_operand(text : String) -> Int64? {
   Some(value * sign)
 }
 
+///|
 fn test_parse_fd_operand(text : String) -> Int64? {
   if text.length() == 0 {
     return None
@@ -398,6 +551,7 @@ fn test_parse_fd_operand(text : String) -> Int64? {
   Some(value)
 }
 
+///|
 fn test_entry_mode(entry : @fs.FsEntry) -> Int {
   match entry {
     @fs.FsEntry::File(data) => data.mode
@@ -406,6 +560,7 @@ fn test_entry_mode(entry : @fs.FsEntry) -> Int {
   }
 }
 
+///|
 fn test_entry_mtime(entry : @fs.FsEntry) -> Int64 {
   match entry {
     @fs.FsEntry::File(data) => data.mtime
@@ -414,23 +569,20 @@ fn test_entry_mtime(entry : @fs.FsEntry) -> Int64 {
   }
 }
 
+///|
 fn ExecContext::test_lookup_entry(
   self : ExecContext,
   arg : String,
-  follow_symlink : Bool
+  follow_symlink : Bool,
 ) -> @fs.FsEntry? {
-  let resolved = try {
-    @fs.resolve_path(self.cwd, arg)
-  } catch {
-    _ => return None
-  }
-  if !(follow_symlink) {
+  let resolved = @fs.resolve_path(self.cwd, arg) catch { _ => return None }
+  if !follow_symlink {
     return self.fs.entries.get(resolved)
   }
   let mut current = resolved
   for i = 0; i < 40; i = i + 1 {
     match self.fs.entries.get(current) {
-      Some(@fs.FsEntry::Symlink(data)) => {
+      Some(@fs.FsEntry::Symlink(data)) =>
         current = try {
           if data.target.length() > 0 && data.target[0] == '/' {
             @fs.resolve_path("/", data.target)
@@ -440,7 +592,6 @@ fn ExecContext::test_lookup_entry(
         } catch {
           _ => return None
         }
-      }
       Some(entry) => return Some(entry)
       None => return None
     }
@@ -448,6 +599,7 @@ fn ExecContext::test_lookup_entry(
   None
 }
 
+///|
 fn test_shell_option_enabled(ctx : ExecContext, name : String) -> Bool? {
   match name {
     "pipefail" => Some(ctx.options.pipefail)
@@ -461,17 +613,19 @@ fn test_shell_option_enabled(ctx : ExecContext, name : String) -> Bool? {
   }
 }
 
+///|
 fn ExecContext::test_eval_unary_with_status(
   self : ExecContext,
   op : String,
-  arg : String
+  arg : String,
 ) -> TestEvalResult {
   let op_text = test_token_raw(op)
   let arg_text = test_token_raw(arg)
   match op_text {
     "-z" => test_eval_ok(arg_text.length() == 0)
     "-n" => test_eval_ok(arg_text.length() > 0)
-    "-a" | "-e" => test_eval_ok(self.test_lookup_entry(arg_text, true) is Some(_))
+    "-a" | "-e" =>
+      test_eval_ok(self.test_lookup_entry(arg_text, true) is Some(_))
     "-f" =>
       test_eval_ok(
         match self.test_lookup_entry(arg_text, true) {
@@ -528,7 +682,8 @@ fn ExecContext::test_eval_unary_with_status(
           None => false
         },
       )
-    "-O" | "-G" => test_eval_ok(self.test_lookup_entry(arg_text, true) is Some(_))
+    "-O" | "-G" =>
+      test_eval_ok(self.test_lookup_entry(arg_text, true) is Some(_))
     "-u" =>
       test_eval_ok(
         match self.test_lookup_entry(arg_text, true) {
@@ -560,12 +715,13 @@ fn ExecContext::test_eval_unary_with_status(
   }
 }
 
+///|
 fn ExecContext::test_eval_binary_with_status(
   self : ExecContext,
   left : String,
   op : String,
   right : String,
-  mode : TestEvalMode
+  mode : TestEvalMode,
 ) -> TestEvalResult {
   let left_text = test_token_raw(left)
   let op_text = test_token_raw(op)
@@ -591,7 +747,7 @@ fn ExecContext::test_eval_binary_with_status(
         if literal_compare {
           left_text != right_text
         } else {
-          !(test_string_compare(left_value, right_text))
+          !test_string_compare(left_value, right_text)
         },
       )
     "<" => test_eval_ok(left_value < right_value)
@@ -630,17 +786,30 @@ fn ExecContext::test_eval_binary_with_status(
                   _ => false
                 },
               )
-            None => if test_mode_is_double_bracket(mode) { test_eval_ok(false) } else { test_eval_syntax_error() }
+            None =>
+              if test_mode_is_double_bracket(mode) {
+                test_eval_ok(false)
+              } else {
+                test_eval_syntax_error()
+              }
           }
         }
-        None => if test_mode_is_double_bracket(mode) { test_eval_ok(false) } else { test_eval_syntax_error() }
+        None =>
+          if test_mode_is_double_bracket(mode) {
+            test_eval_ok(false)
+          } else {
+            test_eval_syntax_error()
+          }
       }
     }
     "-nt" =>
       match self.test_lookup_entry(left_text, true) {
         Some(left_entry) =>
           match self.test_lookup_entry(right_text, true) {
-            Some(right_entry) => test_eval_ok(test_entry_mtime(left_entry) > test_entry_mtime(right_entry))
+            Some(right_entry) =>
+              test_eval_ok(
+                test_entry_mtime(left_entry) > test_entry_mtime(right_entry),
+              )
             None => test_eval_ok(false)
           }
         None => test_eval_ok(false)
@@ -649,7 +818,10 @@ fn ExecContext::test_eval_binary_with_status(
       match self.test_lookup_entry(left_text, true) {
         Some(left_entry) =>
           match self.test_lookup_entry(right_text, true) {
-            Some(right_entry) => test_eval_ok(test_entry_mtime(left_entry) < test_entry_mtime(right_entry))
+            Some(right_entry) =>
+              test_eval_ok(
+                test_entry_mtime(left_entry) < test_entry_mtime(right_entry),
+              )
             None => test_eval_ok(false)
           }
         None => test_eval_ok(false)
@@ -659,9 +831,10 @@ fn ExecContext::test_eval_binary_with_status(
   }
 }
 
+///|
 fn ExecContext::test_parse_double_bracket_numeric_operand(
   self : ExecContext,
-  text : String
+  text : String,
 ) -> Int64? {
   let trimmed = arith_trim(text)
   if trimmed.length() == 0 {
@@ -682,19 +855,18 @@ fn ExecContext::test_parse_double_bracket_numeric_operand(
   Some(value)
 }
 
+///|
 fn ExecContext::test_eval_regex_with_status(
   self : ExecContext,
   text : String,
-  pattern : String
+  pattern : String,
 ) -> TestEvalResult {
-  let matcher = try {
-    @regex.compile_grep_matcher(
-      pattern,
-      extended=true,
-      fixed=false,
-      ignore_case=false,
-    )
-  } catch {
+  let matcher = @regex.compile_grep_matcher(
+    pattern,
+    extended=true,
+    fixed=false,
+    ignore_case=false,
+  ) catch {
     _ => {
       self.store_array_assignment("BASH_REMATCH", [])
       return test_eval_syntax_error()
@@ -703,7 +875,7 @@ fn ExecContext::test_eval_regex_with_status(
   match matcher.find_first_with_groups(text) {
     Some((start, end, groups)) => {
       let values : Array[String] = []
-      values.push(text.view(start_offset=start, end_offset=end).to_string())
+      values.push(text.view(start_offset=start, end_offset=end).to_owned())
       for group in groups {
         values.push(group)
       }
@@ -717,22 +889,25 @@ fn ExecContext::test_eval_regex_with_status(
   }
 }
 
+///|
 fn test_eval_string_operand(arg : String) -> Bool {
   test_token_raw(arg).length() > 0
 }
 
+///|
 fn test_eval_negated(result : TestEvalResult) -> TestEvalResult {
   if result.status != 0 {
     result
   } else {
-    test_eval_ok(!(result.value))
+    test_eval_ok(!result.value)
   }
 }
 
+///|
 fn ExecContext::test_eval_small_arity(
   self : ExecContext,
   args : Array[String],
-  mode : TestEvalMode
+  mode : TestEvalMode,
 ) -> TestEvalResult {
   match args.length() {
     0 =>
@@ -745,13 +920,15 @@ fn ExecContext::test_eval_small_arity(
         let token = args[0]
         let token_text = test_token_raw(token)
         if test_token_can_be_operator(token) &&
-          (token_text == "!" ||
-          token_text == "(" ||
-          token_text == ")" ||
-          test_is_unary_op(token_text) ||
-          test_is_binary_op(token_text) ||
-          test_is_logical_and_op(token_text) ||
-          test_is_logical_or_op(token_text)) {
+          (
+            token_text == "!" ||
+            token_text == "(" ||
+            token_text == ")" ||
+            test_is_unary_op(token_text) ||
+            test_is_binary_op(token_text) ||
+            test_is_logical_and_op(token_text) ||
+            test_is_logical_or_op(token_text)
+          ) {
           return test_eval_syntax_error()
         }
       }
@@ -763,16 +940,18 @@ fn ExecContext::test_eval_small_arity(
       let op_text = test_token_raw(op)
       let arg_text = test_token_raw(arg)
       if test_token_can_be_operator(op) && op_text == "!" {
-        test_eval_ok(!(test_eval_string_operand(args[1])))
+        test_eval_ok(!test_eval_string_operand(args[1]))
       } else if test_token_can_be_operator(op) && test_is_unary_op(op_text) {
         if test_mode_is_double_bracket(mode) &&
           test_token_can_be_operator(arg) &&
-          (arg_text == "!" ||
-          arg_text == "(" ||
-          arg_text == ")" ||
-          test_is_logical_and_op(arg_text) ||
-          test_is_logical_or_op(arg_text) ||
-          test_is_binary_op(arg_text)) {
+          (
+            arg_text == "!" ||
+            arg_text == "(" ||
+            arg_text == ")" ||
+            test_is_logical_and_op(arg_text) ||
+            test_is_logical_or_op(arg_text) ||
+            test_is_binary_op(arg_text)
+          ) {
           test_eval_syntax_error()
         } else {
           self.test_eval_unary_with_status(op, arg)
@@ -791,7 +970,9 @@ fn ExecContext::test_eval_small_arity(
       if test_token_can_be_operator(op) && test_is_binary_op(op_text) {
         self.test_eval_binary_with_status(left, op, right, mode)
       } else if test_token_can_be_operator(left) && left_text == "!" {
-        test_eval_negated(self.test_eval_small_arity(test_slice_args(args, 1, 3), mode))
+        test_eval_negated(
+          self.test_eval_small_arity(test_slice_args(args, 1, 3), mode),
+        )
       } else if test_token_can_be_operator(left) &&
         test_token_can_be_operator(right) &&
         left_text == "(" &&
@@ -799,19 +980,25 @@ fn ExecContext::test_eval_small_arity(
         test_eval_ok(test_eval_string_operand(op))
       } else if test_token_can_be_operator(op) &&
         test_is_logical_and_op(op_text) &&
-        !(test_mode_is_double_bracket(mode)) {
-        test_eval_ok(test_eval_string_operand(left) && test_eval_string_operand(right))
+        !test_mode_is_double_bracket(mode) {
+        test_eval_ok(
+          test_eval_string_operand(left) && test_eval_string_operand(right),
+        )
       } else if test_token_can_be_operator(op) &&
         test_is_logical_or_op(op_text) &&
-        !(test_mode_is_double_bracket(mode)) {
-        test_eval_ok(test_eval_string_operand(left) || test_eval_string_operand(right))
+        !test_mode_is_double_bracket(mode) {
+        test_eval_ok(
+          test_eval_string_operand(left) || test_eval_string_operand(right),
+        )
       } else {
         test_eval_syntax_error()
       }
     }
-    4 => {
+    4 =>
       if test_token_can_be_operator(args[0]) && test_token_raw(args[0]) == "!" {
-        test_eval_negated(self.test_eval_small_arity(test_slice_args(args, 1, 4), mode))
+        test_eval_negated(
+          self.test_eval_small_arity(test_slice_args(args, 1, 4), mode),
+        )
       } else if test_token_can_be_operator(args[0]) &&
         test_token_can_be_operator(args[3]) &&
         test_token_raw(args[0]) == "(" &&
@@ -820,23 +1007,23 @@ fn ExecContext::test_eval_small_arity(
       } else {
         test_eval_syntax_error()
       }
-    }
     _ => test_eval_syntax_error()
   }
 }
 
+///|
 fn ExecContext::test_parse_or_expr(
   self : ExecContext,
   parser : TestExprParser,
-  mode : TestEvalMode
+  mode : TestEvalMode,
 ) -> TestEvalResult {
   let mut left = self.test_parse_and_expr(parser, mode)
   if left.status != 0 {
     return left
   }
   while parser.pos < parser.tokens.length() &&
-    test_token_can_be_operator(parser.tokens[parser.pos]) &&
-    test_is_logical_or_op(test_token_raw(parser.tokens[parser.pos])) {
+        test_token_can_be_operator(parser.tokens[parser.pos]) &&
+        test_is_logical_or_op(test_token_raw(parser.tokens[parser.pos])) {
     parser.pos += 1
     let right = self.test_parse_and_expr(parser, mode)
     if right.status != 0 {
@@ -847,18 +1034,19 @@ fn ExecContext::test_parse_or_expr(
   left
 }
 
+///|
 fn ExecContext::test_parse_and_expr(
   self : ExecContext,
   parser : TestExprParser,
-  mode : TestEvalMode
+  mode : TestEvalMode,
 ) -> TestEvalResult {
   let mut left = self.test_parse_not_expr(parser, mode)
   if left.status != 0 {
     return left
   }
   while parser.pos < parser.tokens.length() &&
-    test_token_can_be_operator(parser.tokens[parser.pos]) &&
-    test_is_logical_and_op(test_token_raw(parser.tokens[parser.pos])) {
+        test_token_can_be_operator(parser.tokens[parser.pos]) &&
+        test_is_logical_and_op(test_token_raw(parser.tokens[parser.pos])) {
     parser.pos += 1
     let right = self.test_parse_not_expr(parser, mode)
     if right.status != 0 {
@@ -869,31 +1057,32 @@ fn ExecContext::test_parse_and_expr(
   left
 }
 
+///|
 fn ExecContext::test_parse_not_expr(
   self : ExecContext,
   parser : TestExprParser,
-  mode : TestEvalMode
+  mode : TestEvalMode,
 ) -> TestEvalResult {
   match parser.peek() {
-    Some(tok) => {
+    Some(tok) =>
       if test_token_can_be_operator(tok) && test_token_raw(tok) == "!" {
         parser.pos += 1
         let inner = self.test_parse_not_expr(parser, mode)
         if inner.status != 0 {
           return inner
         }
-        return test_eval_ok(!(inner.value))
+        return test_eval_ok(!inner.value)
       }
-    }
     None => return test_eval_syntax_error()
   }
   self.test_parse_primary_expr(parser, mode)
 }
 
+///|
 fn ExecContext::test_parse_primary_expr(
   self : ExecContext,
   parser : TestExprParser,
-  mode : TestEvalMode
+  mode : TestEvalMode,
 ) -> TestEvalResult {
   match parser.peek() {
     None => test_eval_syntax_error()
@@ -907,7 +1096,7 @@ fn ExecContext::test_parse_primary_expr(
           return inner
         }
         if parser.pos >= parser.tokens.length() ||
-          !(test_token_can_be_operator(parser.tokens[parser.pos])) ||
+          !test_token_can_be_operator(parser.tokens[parser.pos]) ||
           test_token_raw(parser.tokens[parser.pos]) != ")" {
           return test_eval_syntax_error()
         }
@@ -915,10 +1104,12 @@ fn ExecContext::test_parse_primary_expr(
         return inner
       }
       if tok_is_operator &&
-        (tok_text == ")" ||
-        test_is_logical_and_op(tok_text) ||
-        test_is_logical_or_op(tok_text) ||
-        test_is_binary_op(tok_text)) {
+        (
+          tok_text == ")" ||
+          test_is_logical_and_op(tok_text) ||
+          test_is_logical_or_op(tok_text) ||
+          test_is_binary_op(tok_text)
+        ) {
         return test_eval_syntax_error()
       }
       if tok_is_operator && test_is_unary_op(tok_text) {
@@ -931,7 +1122,8 @@ fn ExecContext::test_parse_primary_expr(
       }
       if parser.pos + 2 < parser.tokens.length() {
         let op = parser.tokens[parser.pos + 1]
-        if test_token_can_be_operator(op) && test_is_binary_op(test_token_raw(op)) {
+        if test_token_can_be_operator(op) &&
+          test_is_binary_op(test_token_raw(op)) {
           let left = parser.tokens[parser.pos]
           let right = parser.tokens[parser.pos + 2]
           parser.pos += 3
@@ -944,10 +1136,11 @@ fn ExecContext::test_parse_primary_expr(
   }
 }
 
+///|
 fn ExecContext::evaluate_test_with_status(
   self : ExecContext,
   args : Array[String],
-  mode : TestEvalMode
+  mode : TestEvalMode,
 ) -> TestEvalResult {
   if args.length() <= 4 {
     return self.test_eval_small_arity(args, mode)
@@ -963,11 +1156,14 @@ fn ExecContext::evaluate_test_with_status(
   result
 }
 
+///|
 fn test_var_is_set(name : String, ctx : ExecContext) -> Bool {
   match parse_array_reference_name(name) {
     Some((base, index)) => {
       if index == "@" || index == "*" {
-        let count = parse_int32_str(ctx.env.get(test_array_count_storage_key(base)).unwrap_or("-1"))
+        let count = parse_int32_str(
+          ctx.env.get(test_array_count_storage_key(base)).unwrap_or("-1"),
+        )
         if count >= 0 {
           return count > 0
         }
@@ -976,7 +1172,8 @@ fn test_var_is_set(name : String, ctx : ExecContext) -> Bool {
       let kind = ctx.env.get(test_array_kind_storage_key(base)).unwrap_or("")
       if kind == "assoc" {
         let resolved_index = ctx.expand_array_index_expr(index)
-        if resolved_index.length() > 0 && ctx.env.contains("\{base}[\{resolved_index}]") {
+        if resolved_index.length() > 0 &&
+          ctx.env.contains("\{base}[\{resolved_index}]") {
           return true
         }
         return ctx.env.contains("\{base}[\{index}]")
@@ -984,27 +1181,29 @@ fn test_var_is_set(name : String, ctx : ExecContext) -> Bool {
       let key = test_indexed_lookup_key(base, index, ctx)
       ctx.env.contains(key)
     }
-    None => {
+    None =>
       match ctx.env.get(test_array_count_storage_key(name)) {
         Some(count_text) => parse_int32_str(count_text) > 0
         None => ctx.env.contains(name)
       }
-    }
   }
 }
 
+///|
 fn test_array_count_storage_key(name : String) -> String {
   "__MOON_BASH_ARRAY_COUNT__" + name
 }
 
+///|
 fn test_array_kind_storage_key(name : String) -> String {
   "__MOON_BASH_ARRAY_KIND__" + name
 }
 
+///|
 fn test_indexed_lookup_key(
   base : String,
   index_expr : String,
-  ctx : ExecContext
+  ctx : ExecContext,
 ) -> String {
   let trimmed = trim_ascii_space_simple(index_expr)
   if trimmed.length() == 0 {
@@ -1036,6 +1235,7 @@ fn test_indexed_lookup_key(
   "\{base}[\{resolved.to_string()}]"
 }
 
+///|
 fn contains_test_arith_operator(text : String) -> Bool {
   for i = 0; i < text.length(); i = i + 1 {
     let ch = text[i].to_int().unsafe_to_char()
@@ -1061,6 +1261,7 @@ fn contains_test_arith_operator(text : String) -> Bool {
   false
 }
 
+///|
 fn test_string_compare(left : String, right : String) -> Bool {
   if has_glob_meta(right) || test_has_glob_escape(right) {
     simple_pattern_match(left, right)
@@ -1069,6 +1270,7 @@ fn test_string_compare(left : String, right : String) -> Bool {
   }
 }
 
+///|
 fn test_has_glob_escape(s : String) -> Bool {
   let mut i = 0
   while i + 1 < s.length() {
@@ -1085,6 +1287,7 @@ fn test_has_glob_escape(s : String) -> Bool {
   false
 }
 
+///|
 fn test_unescape_glob_escapes(s : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -1104,6 +1307,7 @@ fn test_unescape_glob_escapes(s : String) -> String {
   out.to_string()
 }
 
+///|
 fn test_escape_regex_literal(s : String) -> String {
   let out = StringBuilder::new()
   for i = 0; i < s.length(); i = i + 1 {
@@ -1133,6 +1337,7 @@ fn test_escape_regex_literal(s : String) -> String {
 // Printf Implementation
 // ============================================================================
 
+///|
 fn format_printf(format : String, args : Array[String]) -> String {
   let buf = StringBuilder::new()
   let mut arg_idx = 0
@@ -1174,7 +1379,7 @@ fn format_printf(format : String, args : Array[String]) -> String {
           let mut digits = 0
           while j < format.length() && digits < 3 {
             let oct_ch = format[j].to_int().unsafe_to_char()
-            if !(printf_is_octal_digit(oct_ch)) {
+            if !printf_is_octal_digit(oct_ch) {
               break
             }
             value = value * 8 + (oct_ch.to_int() - '0'.to_int())
@@ -1186,11 +1391,27 @@ fn format_printf(format : String, args : Array[String]) -> String {
           continue
         }
         match next {
-          'n' => { buf.write_char('\n'); i += 2 }
-          't' => { buf.write_char('\t'); i += 2 }
-          '\\' => { buf.write_char('\\'); i += 2 }
-          '"' => { buf.write_char('"'); i += 2 }
-          _ => { buf.write_char('\\'); buf.write_char(next); i += 2 }
+          'n' => {
+            buf.write_char('\n')
+            i += 2
+          }
+          't' => {
+            buf.write_char('\t')
+            i += 2
+          }
+          '\\' => {
+            buf.write_char('\\')
+            i += 2
+          }
+          '"' => {
+            buf.write_char('"')
+            i += 2
+          }
+          _ => {
+            buf.write_char('\\')
+            buf.write_char(next)
+            i += 2
+          }
         }
       } else if ch == '%' {
         if i + 1 >= format.length() {
@@ -1220,7 +1441,7 @@ fn format_printf(format : String, args : Array[String]) -> String {
         let mut width = 0
         while j < format.length() {
           let digit = format[j].to_int().unsafe_to_char()
-          if !(printf_is_digit(digit)) {
+          if !printf_is_digit(digit) {
             break
           }
           width = width * 10 + (digit.to_int() - '0'.to_int())
@@ -1234,7 +1455,7 @@ fn format_printf(format : String, args : Array[String]) -> String {
           let mut has_digits = false
           while j < format.length() {
             let digit = format[j].to_int().unsafe_to_char()
-            if !(printf_is_digit(digit)) {
+            if !printf_is_digit(digit) {
               break
             }
             has_digits = true
@@ -1256,12 +1477,7 @@ fn format_printf(format : String, args : Array[String]) -> String {
 
         let spec = format[j].to_int().unsafe_to_char()
         if spec == '%' {
-          let rendered = printf_apply_width(
-            "%",
-            width,
-            left_justify,
-            false,
-          )
+          let rendered = printf_apply_width("%", width, left_justify, false)
           buf.write_string(rendered)
           i = j + 1
           continue
@@ -1273,18 +1489,16 @@ fn format_printf(format : String, args : Array[String]) -> String {
         }
 
         let mut rendered = match spec {
-          's' => {
+          's' =>
             match precision {
-              Some(p) => {
+              Some(p) =>
                 if p < arg.length() {
                   substring_slice(arg, 0, p)
                 } else {
                   arg
                 }
-              }
               None => arg
             }
-          }
           'd' => {
             let value = parse_int_str(arg)
             printf_format_decimal(value, precision)
@@ -1306,14 +1520,11 @@ fn format_printf(format : String, args : Array[String]) -> String {
         }
 
         let allow_zero_pad = zero_pad &&
-          !(left_justify) &&
-          (precision is None) &&
+          !left_justify &&
+          precision is None &&
           (spec == 'd' || spec == 'x' || spec == 'f')
         rendered = printf_apply_width(
-          rendered,
-          width,
-          left_justify,
-          allow_zero_pad,
+          rendered, width, left_justify, allow_zero_pad,
         )
         buf.write_string(rendered)
         i = j + 1
@@ -1326,21 +1537,26 @@ fn format_printf(format : String, args : Array[String]) -> String {
     if first_pass {
       first_pass = false
     }
-    if args.length() == 0 || arg_idx >= args.length() || arg_idx == start_arg_idx {
+    if args.length() == 0 ||
+      arg_idx >= args.length() ||
+      arg_idx == start_arg_idx {
       break
     }
   }
   buf.to_string()
 }
 
+///|
 fn printf_is_digit(ch : Char) -> Bool {
   ch >= '0' && ch <= '9'
 }
 
+///|
 fn printf_is_octal_digit(ch : Char) -> Bool {
   ch >= '0' && ch <= '7'
 }
 
+///|
 fn printf_hex_digit_value(ch : Char) -> Int? {
   if ch >= '0' && ch <= '9' {
     return Some(ch.to_int() - '0'.to_int())
@@ -1354,6 +1570,7 @@ fn printf_hex_digit_value(ch : Char) -> Int? {
   None
 }
 
+///|
 fn printf_repeat_char(ch : Char, count : Int) -> String {
   if count <= 0 {
     return ""
@@ -1365,11 +1582,12 @@ fn printf_repeat_char(ch : Char, count : Int) -> String {
   out.to_string()
 }
 
+///|
 fn printf_apply_width(
   value : String,
   width : Int,
   left_justify : Bool,
-  zero_pad : Bool
+  zero_pad : Bool,
 ) -> String {
   if width <= value.length() {
     return value
@@ -1378,15 +1596,16 @@ fn printf_apply_width(
   if left_justify {
     return value + printf_repeat_char(' ', pad_len)
   }
-  if zero_pad &&
-    value.length() > 0 &&
-    value[0].to_int().unsafe_to_char() == '-' {
-    return "-" + printf_repeat_char('0', pad_len) + substring_slice(value, 1, value.length())
+  if zero_pad && value.length() > 0 && value[0].to_int().unsafe_to_char() == '-' {
+    return "-" +
+      printf_repeat_char('0', pad_len) +
+      substring_slice(value, 1, value.length())
   }
   let pad_ch = if zero_pad { '0' } else { ' ' }
   printf_repeat_char(pad_ch, pad_len) + value
 }
 
+///|
 fn printf_to_hex(value : Int64) -> String {
   if value == 0L {
     return "0"
@@ -1411,6 +1630,7 @@ fn printf_to_hex(value : Int64) -> String {
   }
 }
 
+///|
 fn printf_format_decimal(value : Int64, precision : Int?) -> String {
   let text = value.to_string()
   match precision {
@@ -1419,8 +1639,13 @@ fn printf_format_decimal(value : Int64, precision : Int?) -> String {
       if p <= 0 {
         return text
       }
-      let negative = text.length() > 0 && text[0].to_int().unsafe_to_char() == '-'
-      let digits = if negative { substring_slice(text, 1, text.length()) } else { text }
+      let negative = text.length() > 0 &&
+        text[0].to_int().unsafe_to_char() == '-'
+      let digits = if negative {
+        substring_slice(text, 1, text.length())
+      } else {
+        text
+      }
       if digits.length() >= p {
         text
       } else {
@@ -1435,6 +1660,7 @@ fn printf_format_decimal(value : Int64, precision : Int?) -> String {
   }
 }
 
+///|
 fn printf_shell_quote(value : String) -> String {
   if value.length() == 0 {
     return "''"
@@ -1443,7 +1669,7 @@ fn printf_shell_quote(value : String) -> String {
   let mut safe = true
   for i = 0; i < value.length(); i = i + 1 {
     let ch = value[i].to_int().unsafe_to_char()
-    if !(printf_is_shell_safe_char(ch)) {
+    if !printf_is_shell_safe_char(ch) {
       safe = false
       break
     }
@@ -1466,6 +1692,7 @@ fn printf_shell_quote(value : String) -> String {
   out.to_string()
 }
 
+///|
 fn printf_is_shell_safe_char(ch : Char) -> Bool {
   (ch >= 'a' && ch <= 'z') ||
   (ch >= 'A' && ch <= 'Z') ||
@@ -1478,6 +1705,7 @@ fn printf_is_shell_safe_char(ch : Char) -> Bool {
   ch == '@'
 }
 
+///|
 fn printf_format_float(raw : String, precision : Int) -> String {
   let mut i = 0
   let mut negative = false
@@ -1501,7 +1729,7 @@ fn printf_format_float(raw : String, precision : Int) -> String {
       i += 1
       continue
     }
-    if !(printf_is_digit(ch)) {
+    if !printf_is_digit(ch) {
       break
     }
     if in_frac {
@@ -1553,6 +1781,7 @@ fn printf_format_float(raw : String, precision : Int) -> String {
   }
 }
 
+///|
 fn printf_increment_digits(digits : String) -> String {
   if digits.length() == 0 {
     return "1"
@@ -1567,7 +1796,7 @@ fn printf_increment_digits(digits : String) -> String {
     if ch < '0' || ch > '9' {
       continue
     }
-    let sum = (ch.to_int() - '0'.to_int()) + carry
+    let sum = ch.to_int() - '0'.to_int() + carry
     if sum >= 10 {
       chars[i] = '0'
       carry = 1
@@ -1590,6 +1819,7 @@ fn printf_increment_digits(digits : String) -> String {
   out.to_string()
 }
 
+///|
 fn printf_increment_fraction(frac : String) -> (String, Bool) {
   if frac.length() == 0 {
     return ("", true)
@@ -1600,7 +1830,7 @@ fn printf_increment_fraction(frac : String) -> (String, Bool) {
   }
   let mut carry = 1
   for i = chars.length() - 1; i >= 0; i = i - 1 {
-    let sum = (chars[i].to_int() - '0'.to_int()) + carry
+    let sum = chars[i].to_int() - '0'.to_int() + carry
     if sum >= 10 {
       chars[i] = '0'
       carry = 1
@@ -1620,6 +1850,7 @@ fn printf_increment_fraction(frac : String) -> (String, Bool) {
   (out.to_string(), carry == 1)
 }
 
+///|
 fn printf_all_zeros(s : String) -> Bool {
   for i = 0; i < s.length(); i = i + 1 {
     if s[i].to_int().unsafe_to_char() != '0' {

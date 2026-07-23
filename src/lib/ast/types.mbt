@@ -5,6 +5,7 @@
 // Token Types (Lexer output)
 // ============================================================================
 
+///|
 pub(all) enum Token {
   // Literals
   Word(String)
@@ -66,7 +67,8 @@ pub(all) enum Token {
   FdNumber(Int) // File descriptor number before redirect
 } derive(Debug, Eq)
 
-pub impl Show for Token with output(self, logger) {
+///|
+pub impl Show for Token with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
@@ -74,11 +76,13 @@ pub impl Show for Token with output(self, logger) {
 // AST Nodes
 // ============================================================================
 
+///|
 /// Top-level script: a sequence of statements.
 pub(all) struct Script {
   statements : Array[Statement]
 } derive(Debug)
 
+///|
 /// A statement is a pipeline combined with list operators.
 pub(all) enum Statement {
   Pipeline(Pipeline)
@@ -88,6 +92,7 @@ pub(all) enum Statement {
   Sequence(Pipeline, Statement) // cmd1 ; cmd2
 } derive(Debug)
 
+///|
 /// A pipeline connects commands via pipes.
 pub(all) struct Pipeline {
   negated : Bool // ! prefix
@@ -95,6 +100,7 @@ pub(all) struct Pipeline {
   pipe_stderr : Bool // |& instead of |
 } derive(Debug)
 
+///|
 /// Command variants.
 pub(all) enum Command {
   Simple(SimpleCommand)
@@ -102,6 +108,7 @@ pub(all) enum Command {
   FunctionDef(FunctionDef)
 } derive(Debug)
 
+///|
 /// A simple command with optional assignments, words, and redirections.
 pub(all) struct SimpleCommand {
   assignments : Array[Assignment]
@@ -109,6 +116,7 @@ pub(all) struct SimpleCommand {
   redirections : Array[Redirection]
 } derive(Debug)
 
+///|
 /// Compound command variants.
 pub(all) enum CompoundCommand {
   If(IfClause)
@@ -123,6 +131,7 @@ pub(all) enum CompoundCommand {
   ConditionalCommand(CondExpr)
 } derive(Debug)
 
+///|
 /// if/elif/else/fi clause.
 pub(all) struct IfClause {
   condition : Script
@@ -131,6 +140,7 @@ pub(all) struct IfClause {
   else_branch : Script?
 } derive(Debug)
 
+///|
 /// for var in words; do body; done
 pub(all) struct ForClause {
   var_name : String
@@ -138,6 +148,7 @@ pub(all) struct ForClause {
   body : Script
 } derive(Debug)
 
+///|
 /// C-style for: for (( init; cond; update )); do body; done
 pub(all) struct CStyleForClause {
   init : ArithExpr
@@ -146,24 +157,28 @@ pub(all) struct CStyleForClause {
   body : Script
 } derive(Debug)
 
+///|
 /// while condition; do body; done
 pub(all) struct WhileClause {
   condition : Script
   body : Script
 } derive(Debug)
 
+///|
 /// until condition; do body; done
 pub(all) struct UntilClause {
   condition : Script
   body : Script
 } derive(Debug)
 
+///|
 /// case word in pattern) body ;; esac
 pub(all) struct CaseClause {
   word : Word
   items : Array[CaseItem]
 } derive(Debug)
 
+///|
 /// A single case item: pattern) body terminator
 pub(all) struct CaseItem {
   patterns : Array[Word]
@@ -171,6 +186,7 @@ pub(all) struct CaseItem {
   terminator : CaseTerminator
 } derive(Debug)
 
+///|
 /// Case item terminators.
 pub(all) enum CaseTerminator {
   Break // ;;
@@ -178,6 +194,7 @@ pub(all) enum CaseTerminator {
   Continue // ;;&
 } derive(Debug, Eq)
 
+///|
 /// Function definition.
 pub(all) struct FunctionDef {
   name : String
@@ -189,11 +206,13 @@ pub(all) struct FunctionDef {
 // Word and Expansion Types
 // ============================================================================
 
+///|
 /// A word is composed of parts that may need expansion.
 pub(all) struct Word {
   parts : Array[WordPart]
 } derive(Debug)
 
+///|
 /// Individual parts of a word.
 pub(all) enum WordPart {
   Literal(String)
@@ -208,6 +227,7 @@ pub(all) enum WordPart {
   Glob(GlobPattern)
 } derive(Debug)
 
+///|
 /// Parameter expansion variants.
 pub(all) enum ParamExpansion {
   Simple(String) // $VAR
@@ -225,6 +245,7 @@ pub(all) enum ParamExpansion {
   Indirection(String) // ${!VAR}
 } derive(Debug)
 
+///|
 /// Replace mode for ${VAR/pat/str} variants.
 pub(all) enum ReplaceMode {
   First // ${VAR/pat/str}
@@ -237,6 +258,7 @@ pub(all) enum ReplaceMode {
 // Redirection Types
 // ============================================================================
 
+///|
 /// A redirection specification.
 pub(all) struct Redirection {
   fd : Int? // File descriptor (None = default)
@@ -245,6 +267,7 @@ pub(all) struct Redirection {
   target : Word
 } derive(Debug)
 
+///|
 /// Redirection operator variants.
 pub(all) enum RedirectOp {
   Input // <
@@ -260,7 +283,8 @@ pub(all) enum RedirectOp {
   AndAppend // &>>
 } derive(Debug, Eq)
 
-pub impl Show for RedirectOp with output(self, logger) {
+///|
+pub impl Show for RedirectOp with fn output(self, logger) {
   logger.write_string(@debug.to_string(self))
 }
 
@@ -268,6 +292,7 @@ pub impl Show for RedirectOp with output(self, logger) {
 // Assignment
 // ============================================================================
 
+///|
 /// A variable assignment: name=value or name+=value
 pub(all) struct Assignment {
   name : String
@@ -279,6 +304,7 @@ pub(all) struct Assignment {
 // Arithmetic Expressions (placeholder, expanded later)
 // ============================================================================
 
+///|
 pub(all) enum ArithExpr {
   Num(Int64)
   Var(String)
@@ -289,6 +315,7 @@ pub(all) enum ArithExpr {
   Raw(String)
 } derive(Debug)
 
+///|
 pub(all) enum ArithBinOp {
   Add
   Sub
@@ -311,6 +338,7 @@ pub(all) enum ArithBinOp {
   LogicalOr
 } derive(Debug, Eq)
 
+///|
 pub(all) enum ArithUnaryOp {
   Negate
   BitwiseNot
@@ -325,6 +353,7 @@ pub(all) enum ArithUnaryOp {
 // Conditional Expressions (placeholder, expanded later)
 // ============================================================================
 
+///|
 pub(all) enum CondExpr {
   UnaryTest(String, Word) // -f, -d, -e, -z, -n, etc.
   BinaryTest(Word, String, Word) // =, !=, -eq, -gt, etc.
@@ -338,6 +367,7 @@ pub(all) enum CondExpr {
 // Glob Pattern (placeholder)
 // ============================================================================
 
+///|
 pub(all) struct GlobPattern {
   pattern : String
 } derive(Debug)
@@ -346,27 +376,31 @@ pub(all) struct GlobPattern {
 // Execution Result
 // ============================================================================
 
+///|
 pub(all) struct ExecResult {
   stdout : String
   stderr : String
   exit_code : Int
 } derive(Debug)
 
+///|
 /// Create a successful result with stdout output.
 pub fn ExecResult::ok(stdout : String) -> ExecResult {
   { stdout, stderr: "", exit_code: 0 }
 }
 
+///|
 /// Create an error result with stderr output.
 pub fn ExecResult::err(stderr : String) -> ExecResult {
   { stdout: "", stderr, exit_code: 1 }
 }
 
+///|
 /// Create a result with named parameters.
 pub fn ExecResult::new(
-  stdout~ : String = "",
-  stderr~ : String = "",
-  exit_code~ : Int = 0
+  stdout? : String = "",
+  stderr? : String = "",
+  exit_code? : Int = 0,
 ) -> ExecResult {
   { stdout, stderr, exit_code }
 }
@@ -375,6 +409,7 @@ pub fn ExecResult::new(
 // Error Type
 // ============================================================================
 
+///|
 pub(all) suberror BashError {
   BashError(String)
 }
@@ -383,6 +418,7 @@ pub(all) suberror BashError {
 // Execution Limits
 // ============================================================================
 
+///|
 pub(all) struct ExecutionLimits {
   max_call_depth : Int
   max_command_count : Int
@@ -397,6 +433,7 @@ pub(all) struct ExecutionLimits {
   max_jq_iterations : Int
 } derive(Debug)
 
+///|
 pub fn ExecutionLimits::default() -> ExecutionLimits {
   {
     max_call_depth: 100,
@@ -417,6 +454,7 @@ pub fn ExecutionLimits::default() -> ExecutionLimits {
 // Shell Options
 // ============================================================================
 
+///|
 pub(all) struct ShellOptions {
   mut errexit : Bool // set -e
   mut nounset : Bool // set -u
@@ -427,6 +465,7 @@ pub(all) struct ShellOptions {
   mut allexport : Bool // set -a
 } derive(Debug)
 
+///|
 pub fn ShellOptions::default() -> ShellOptions {
   {
     errexit: false,

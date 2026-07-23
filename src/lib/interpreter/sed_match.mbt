@@ -1,10 +1,11 @@
 // Shell sed executor - address matching, substitution, and transliteration
 
+///|
 fn sed_emit_chunk(
   out : StringBuilder,
   text : String,
   terminated : Bool,
-  pending_no_newline : Bool
+  pending_no_newline : Bool,
 ) -> Bool {
   if pending_no_newline {
     out.write_char('\n')
@@ -18,6 +19,7 @@ fn sed_emit_chunk(
   }
 }
 
+///|
 fn sed_find_newline(text : String) -> Int {
   for i = 0; i < text.length(); i = i + 1 {
     if text[i].to_int().unsafe_to_char() == '\n' {
@@ -27,10 +29,11 @@ fn sed_find_newline(text : String) -> Int {
   -1
 }
 
+///|
 fn sed_find_label_index(
   names : Array[String],
   indices : Array[Int],
-  label : String
+  label : String,
 ) -> Int {
   for i = 0; i < names.length(); i = i + 1 {
     if names[i] == label {
@@ -40,6 +43,7 @@ fn sed_find_label_index(
   -1
 }
 
+///|
 fn sed_find_group_end(commands : Array[SedCommand], start_idx : Int) -> Int {
   let mut depth = 0
   for i = start_idx; i < commands.length(); i = i + 1 {
@@ -57,6 +61,7 @@ fn sed_find_group_end(commands : Array[SedCommand], start_idx : Int) -> Int {
   -1
 }
 
+///|
 fn sed_find_missing_branch_label(commands : Array[SedCommand]) -> String? {
   let labels : Array[String] = []
   for cmd in commands {
@@ -68,7 +73,7 @@ fn sed_find_missing_branch_label(commands : Array[SedCommand]) -> String? {
 
   for cmd in commands {
     match cmd.kind {
-      Branch(label) | BranchIfSubst(label) | BranchIfNotSubst(label) => {
+      Branch(label) | BranchIfSubst(label) | BranchIfNotSubst(label) =>
         match label {
           Some(name) => {
             let mut found = false
@@ -78,13 +83,12 @@ fn sed_find_missing_branch_label(commands : Array[SedCommand]) -> String? {
                 break
               }
             }
-            if !(found) {
+            if !found {
               return Some(name)
             }
           }
           None => ()
         }
-      }
       _ => ()
     }
   }
@@ -92,6 +96,7 @@ fn sed_find_missing_branch_label(commands : Array[SedCommand]) -> String? {
   None
 }
 
+///|
 fn sed_split_lines_with_flags(input : String) -> Array[(String, Bool)] {
   let lines : Array[(String, Bool)] = []
   if input.length() == 0 {
@@ -116,17 +121,14 @@ fn sed_split_lines_with_flags(input : String) -> Array[(String, Bool)] {
   lines
 }
 
+///|
 fn ExecContext::sed_append_write(
   self : ExecContext,
   path : String,
   text : String,
-  terminated : Bool
+  terminated : Bool,
 ) -> Unit {
-  let resolved = try {
-    @fs.resolve_path(self.cwd, path)
-  } catch {
-    _ => path
-  }
+  let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
 
   let existing = match self.fs.entries.get(resolved) {
     Some(@fs.FsEntry::File(file)) => file.content
@@ -142,283 +144,244 @@ fn ExecContext::sed_append_write(
   if terminated {
     next.write_char('\n')
   }
-  try {
-    self.fs.write_file(resolved, next.to_string())
-  } catch {
+  self.fs.write_file(resolved, next.to_string()) catch {
     _ => ()
   }
 }
 
+///|
 fn sed_address_applies(
   address : SedAddressRange?,
   line : String,
   line_no : Int,
   total_lines : Int,
   state : SedRangeState,
-  last_regex : @regex.GrepMatcher?
+  last_regex : @regex.GrepMatcher?,
 ) -> (Bool, SedRangeState, @regex.GrepMatcher?) {
   match address {
-    None => (
-      true,
-      sed_empty_range_state(),
-      last_regex,
-    )
-    Some(addr) => match addr.end {
-      None => {
-        let (hit, next_last) = sed_address_matches(
-          addr.start,
-          line,
-          line_no,
-          total_lines,
-          last_regex,
-        )
-        (
-          hit,
-          sed_empty_range_state(),
-          next_last,
-        )
-      }
-      Some(end_addr) => {
-        if state.pending_single_line {
-          (
-            true,
-            sed_empty_range_state(),
-            last_regex,
-          )
-        } else if state.in_range {
-          match end_addr {
-            Relative(_) => {
-              if state.relative_end_line >= 0 && line_no >= state.relative_end_line {
-                (
-                  true,
-                  sed_empty_range_state(),
-                  last_regex,
-                )
-              } else {
-                (true, state, last_regex)
-              }
-            }
-            _ => {
-              let (end_hit, next_last) = sed_address_matches(
-                end_addr,
-                line,
-                line_no,
-                total_lines,
-                last_regex,
-              )
-              (
-                true,
-                {
-                  in_range: !(end_hit),
-                  relative_end_line: -1,
-                  pending_single_line: false,
-                },
-                next_last,
-              )
-            }
-          }
-        } else {
-          let (start_hit, last_after_start) = sed_address_matches(
+    None => (true, sed_empty_range_state(), last_regex)
+    Some(addr) =>
+      match addr.end {
+        None => {
+          let (hit, next_last) = sed_address_matches(
             addr.start,
             line,
             line_no,
             total_lines,
             last_regex,
           )
-          if !(start_hit) {
-            (
-              false,
-              sed_empty_range_state(),
-              last_after_start,
-            )
-          } else {
+          (hit, sed_empty_range_state(), next_last)
+        }
+        Some(end_addr) =>
+          if state.pending_single_line {
+            (true, sed_empty_range_state(), last_regex)
+          } else if state.in_range {
             match end_addr {
-              Relative(count) => {
-                if count <= 0 {
-                  (
-                    true,
-                    sed_empty_range_state(),
-                    last_after_start,
-                  )
+              Relative(_) =>
+                if state.relative_end_line >= 0 &&
+                  line_no >= state.relative_end_line {
+                  (true, sed_empty_range_state(), last_regex)
                 } else {
-                  (
-                    true,
-                    {
-                      in_range: true,
-                      relative_end_line: line_no + count,
-                      pending_single_line: false,
-                    },
-                    last_after_start,
-                  )
+                  (true, state, last_regex)
                 }
-              }
-              Line(end_line) => {
-                if end_line <= line_no {
-                  (
-                    true,
-                    sed_empty_range_state(),
-                    last_after_start,
-                  )
-                } else {
-                  (
-                    true,
-                    {
-                      in_range: true,
-                      relative_end_line: -1,
-                      pending_single_line: false,
-                    },
-                    last_after_start,
-                  )
-                }
-              }
               _ => {
-                let (end_hit, last_after_end) = sed_address_matches(
-                  end_addr,
-                  line,
-                  line_no,
-                  total_lines,
-                  last_after_start,
+                let (end_hit, next_last) = sed_address_matches(
+                  end_addr, line, line_no, total_lines, last_regex,
                 )
                 (
                   true,
                   {
-                    in_range: !(end_hit),
+                    in_range: !end_hit,
                     relative_end_line: -1,
                     pending_single_line: false,
                   },
-                  last_after_end,
+                  next_last,
                 )
               }
             }
+          } else {
+            let (start_hit, last_after_start) = sed_address_matches(
+              addr.start,
+              line,
+              line_no,
+              total_lines,
+              last_regex,
+            )
+            if !start_hit {
+              (false, sed_empty_range_state(), last_after_start)
+            } else {
+              match end_addr {
+                Relative(count) =>
+                  if count <= 0 {
+                    (true, sed_empty_range_state(), last_after_start)
+                  } else {
+                    (
+                      true,
+                      {
+                        in_range: true,
+                        relative_end_line: line_no + count,
+                        pending_single_line: false,
+                      },
+                      last_after_start,
+                    )
+                  }
+                Line(end_line) =>
+                  if end_line <= line_no {
+                    (true, sed_empty_range_state(), last_after_start)
+                  } else {
+                    (
+                      true,
+                      {
+                        in_range: true,
+                        relative_end_line: -1,
+                        pending_single_line: false,
+                      },
+                      last_after_start,
+                    )
+                  }
+                _ => {
+                  let (end_hit, last_after_end) = sed_address_matches(
+                    end_addr, line, line_no, total_lines, last_after_start,
+                  )
+                  (
+                    true,
+                    {
+                      in_range: !end_hit,
+                      relative_end_line: -1,
+                      pending_single_line: false,
+                    },
+                    last_after_end,
+                  )
+                }
+              }
+            }
           }
-        }
       }
-    }
   }
 }
 
+///|
 fn sed_address_tick_skipped(
   address : SedAddressRange?,
   line : String,
   line_no : Int,
   total_lines : Int,
   state : SedRangeState,
-  last_regex : @regex.GrepMatcher?
+  last_regex : @regex.GrepMatcher?,
 ) -> (SedRangeState, @regex.GrepMatcher?) {
   match address {
-    None => (
-      sed_empty_range_state(),
-      last_regex,
-    )
-    Some(addr) => match addr.end {
-      None => {
-        // Single-address commands do not carry range state across skipped cycles.
-        (sed_empty_range_state(), last_regex)
-      }
-      Some(end_addr) => {
-        if state.pending_single_line {
-          (state, last_regex)
-        } else if state.in_range {
-          // When a previous command deleted the cycle, this command is not executed.
-          // Keep range active; end-address checks happen only on executed cycles.
-          (state, last_regex)
-        } else {
-          let (start_hit, last_after_start) = sed_address_matches(
-            addr.start,
-            line,
-            line_no,
-            total_lines,
-            last_regex,
-          )
-          if !(start_hit) {
-            (
-              sed_empty_range_state(),
-              last_after_start,
-            )
+    None => (sed_empty_range_state(), last_regex)
+    Some(addr) =>
+      match addr.end {
+        None =>
+          // Single-address commands do not carry range state across skipped cycles.
+          (sed_empty_range_state(), last_regex)
+        Some(end_addr) =>
+          if state.pending_single_line {
+            (state, last_regex)
+          } else if state.in_range {
+            // When a previous command deleted the cycle, this command is not executed.
+            // Keep range active; end-address checks happen only on executed cycles.
+            (state, last_regex)
           } else {
-            match end_addr {
-              Relative(count) => {
-                if count <= 0 {
-                  (
-                    {
-                      in_range: false,
-                      relative_end_line: -1,
-                      pending_single_line: true,
-                    },
-                    last_after_start,
-                  )
-                } else {
+            let (start_hit, last_after_start) = sed_address_matches(
+              addr.start,
+              line,
+              line_no,
+              total_lines,
+              last_regex,
+            )
+            if !start_hit {
+              (sed_empty_range_state(), last_after_start)
+            } else {
+              match end_addr {
+                Relative(count) =>
+                  if count <= 0 {
+                    (
+                      {
+                        in_range: false,
+                        relative_end_line: -1,
+                        pending_single_line: true,
+                      },
+                      last_after_start,
+                    )
+                  } else {
+                    (
+                      {
+                        in_range: true,
+                        relative_end_line: line_no + count,
+                        pending_single_line: false,
+                      },
+                      last_after_start,
+                    )
+                  }
+                Line(end_line) =>
+                  if end_line <= line_no {
+                    (
+                      {
+                        in_range: false,
+                        relative_end_line: -1,
+                        pending_single_line: true,
+                      },
+                      last_after_start,
+                    )
+                  } else {
+                    (
+                      {
+                        in_range: true,
+                        relative_end_line: -1,
+                        pending_single_line: false,
+                      },
+                      last_after_start,
+                    )
+                  }
+                _ =>
                   (
                     {
                       in_range: true,
-                      relative_end_line: line_no + count,
+                      relative_end_line: -1,
                       pending_single_line: false,
                     },
                     last_after_start,
                   )
-                }
               }
-              Line(end_line) => {
-                if end_line <= line_no {
-                  (
-                    {
-                      in_range: false,
-                      relative_end_line: -1,
-                      pending_single_line: true,
-                    },
-                    last_after_start,
-                  )
-                } else {
-                  (
-                    {
-                      in_range: true,
-                      relative_end_line: -1,
-                      pending_single_line: false,
-                    },
-                    last_after_start,
-                  )
-                }
-              }
-              _ => (
-                { in_range: true, relative_end_line: -1, pending_single_line: false },
-                last_after_start,
-              )
             }
           }
-        }
       }
-    }
   }
 }
 
+///|
 fn sed_address_matches(
   address : SedAddress,
   line : String,
   line_no : Int,
   total_lines : Int,
-  last_regex : @regex.GrepMatcher?
+  last_regex : @regex.GrepMatcher?,
 ) -> (Bool, @regex.GrepMatcher?) {
   match address {
     Line(n) => (line_no == n, last_regex)
     LastLine => (line_no == total_lines, last_regex)
     Regex(matcher) => (matcher.find_first(line) is Some(_), Some(matcher))
-    LastRegex => match last_regex {
-      Some(matcher) => (matcher.find_first(line) is Some(_), last_regex)
-      None => (false, None)
-    }
+    LastRegex =>
+      match last_regex {
+        Some(matcher) => (matcher.find_first(line) is Some(_), last_regex)
+        None => (false, None)
+      }
     Relative(_) => (false, last_regex)
   }
 }
 
+///|
 fn sed_substitute_line(
   line : String,
   matcher : @regex.GrepMatcher,
   replacement : String,
   global : Bool,
   occurrence : Int,
-  literal_ampersand~ : Bool = false
+  literal_ampersand? : Bool = false,
 ) -> (String, Bool) {
-  if !(global) {
+  if !global {
     if occurrence > 1 {
       let mut cursor = 0
       let mut seen = 0
@@ -481,9 +444,9 @@ fn sed_substitute_line(
     let mut changed = false
     let mut done = false
     let mut last_match_end = -1
-    while !(done) {
+    while !done {
       match matcher.find_first_with_groups(line, start=cursor) {
-        Some((start, end, groups)) => {
+        Some((start, end, groups)) =>
           if start < cursor {
             done = true
           } else if start == end && start == last_match_end {
@@ -517,7 +480,6 @@ fn sed_substitute_line(
               done = true
             }
           }
-        }
         None => done = true
       }
     }
@@ -532,10 +494,11 @@ fn sed_substitute_line(
   }
 }
 
+///|
 fn sed_transliterate_line(
   line : String,
   source : String,
-  target : String
+  target : String,
 ) -> String {
   if source.length() == 0 || target.length() == 0 {
     return line
@@ -551,18 +514,19 @@ fn sed_transliterate_line(
         break
       }
     }
-    if !(replaced) {
+    if !replaced {
       out.write_char(ch.to_int().unsafe_to_char())
     }
   }
   out.to_string()
 }
 
+///|
 fn apply_sed_replacement(
   template : String,
   matched : String,
   groups : Array[String],
-  literal_ampersand~ : Bool = false
+  literal_ampersand? : Bool = false,
 ) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -594,7 +558,7 @@ fn apply_sed_replacement(
       }
       continue
     }
-    if ch == '&' && !(literal_ampersand) {
+    if ch == '&' && !literal_ampersand {
       out.write_string(matched)
       i += 1
       continue

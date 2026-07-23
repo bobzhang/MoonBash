@@ -1,6 +1,7 @@
 // moon_bash Commands - Hash commands (md5sum, sha1sum, sha256sum)
 // Uses community packages: gmlewis/md5, gmlewis/sha1, shu-kitamura/sha256
 
+///|
 /// Convert a string to an array of bytes (treating each char as a byte).
 fn string_to_bytes(s : String) -> Bytes {
   let arr : Array[Byte] = Array::new()
@@ -10,6 +11,7 @@ fn string_to_bytes(s : String) -> Bytes {
   Bytes::from_array(arr)
 }
 
+///|
 /// md5sum: compute MD5 message digest
 fn cmd_md5sum(ctx : CommandContext) -> @ast.ExecResult {
   let mut check_mode = false
@@ -36,14 +38,8 @@ fn cmd_md5sum(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut had_error = false
   for file in files {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, file)
-    } catch {
-      _ => file
-    }
-    let content = try {
-      ctx.fs.read_file(resolved)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, file) catch { _ => file }
+    let content = ctx.fs.read_file(resolved) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("md5sum: \{msg}\n")
         had_error = true
@@ -60,6 +56,7 @@ fn cmd_md5sum(ctx : CommandContext) -> @ast.ExecResult {
   )
 }
 
+///|
 /// sha1sum: compute SHA1 message digest
 fn cmd_sha1sum(ctx : CommandContext) -> @ast.ExecResult {
   let mut check_mode = false
@@ -85,14 +82,8 @@ fn cmd_sha1sum(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut had_error = false
   for file in files {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, file)
-    } catch {
-      _ => file
-    }
-    let content = try {
-      ctx.fs.read_file(resolved)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, file) catch { _ => file }
+    let content = ctx.fs.read_file(resolved) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("sha1sum: \{msg}\n")
         had_error = true
@@ -109,6 +100,7 @@ fn cmd_sha1sum(ctx : CommandContext) -> @ast.ExecResult {
   )
 }
 
+///|
 /// sha256sum: compute SHA256 message digest
 fn cmd_sha256sum(ctx : CommandContext) -> @ast.ExecResult {
   let mut check_mode = false
@@ -134,14 +126,8 @@ fn cmd_sha256sum(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut had_error = false
   for file in files {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, file)
-    } catch {
-      _ => file
-    }
-    let content = try {
-      ctx.fs.read_file(resolved)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, file) catch { _ => file }
+    let content = ctx.fs.read_file(resolved) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("sha256sum: \{msg}\n")
         had_error = true
@@ -158,6 +144,7 @@ fn cmd_sha256sum(ctx : CommandContext) -> @ast.ExecResult {
   )
 }
 
+///|
 /// Compute MD5 hash of a string, returns hex digest.
 fn compute_md5(input : String) -> String {
   let digest = @md5.Digest::new()
@@ -167,42 +154,37 @@ fn compute_md5(input : String) -> String {
   digest.check_sum()
 }
 
+///|
 /// Compute SHA1 hash of a string, returns hex digest.
 fn compute_sha1(input : String) -> String {
   let digest = @sha1.Digest::new()
   for i = 0; i < input.length(); i = i + 1 {
     let _ = digest.write_byte((input[i].to_int() & 0xFF).to_byte())
-
   }
   digest.check_sum()
 }
 
+///|
 /// Compute SHA256 hash of a string, returns hex digest.
 fn compute_sha256(input : String) -> String {
   let bytes = string_to_bytes(input)
   @sha256.sha256_hexdigest(bytes)
 }
 
+///|
 /// Shared -c (check) logic for all hash commands.
 fn hash_check(
   ctx : CommandContext,
   files : Array[String],
   cmd_name : String,
-  hash_fn : (String) -> String
+  hash_fn : (String) -> String,
 ) -> @ast.ExecResult {
   // Read hash file (first file arg, or stdin)
   let check_content = if files.length() > 0 {
     let path = files[0]
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, path)
-    } catch {
-      _ => path
-    }
-    try {
-      ctx.fs.read_file(resolved)
-    } catch {
-      @fs.FsError(msg) =>
-        return @ast.ExecResult::err("\{cmd_name}: \{msg}\n")
+    let resolved = @fs.resolve_path(ctx.cwd, path) catch { _ => path }
+    ctx.fs.read_file(resolved) catch {
+      @fs.FsError(msg) => return @ast.ExecResult::err("\{cmd_name}: \{msg}\n")
     }
   } else {
     ctx.stdin_content
@@ -226,14 +208,10 @@ fn hash_check(
         continue
       }
       Some((expected_hash, filename)) => {
-        let resolved = try {
-          @fs.resolve_path(ctx.cwd, filename)
-        } catch {
+        let resolved = @fs.resolve_path(ctx.cwd, filename) catch {
           _ => filename
         }
-        let content = try {
-          ctx.fs.read_file(resolved)
-        } catch {
+        let content = ctx.fs.read_file(resolved) catch {
           @fs.FsError(_) => {
             errbuf.write_string(
               "\{cmd_name}: \{filename}: No such file or directory\n",
@@ -265,6 +243,7 @@ fn hash_check(
   )
 }
 
+///|
 /// Split a string into lines, excluding trailing empty line.
 fn hash_split_lines(s : String) -> Array[String] {
   let lines : Array[String] = []
@@ -284,6 +263,7 @@ fn hash_split_lines(s : String) -> Array[String] {
   lines
 }
 
+///|
 /// Parse a check line "hash  filename" or "hash filename".
 /// Returns (hash, filename) or None if malformed.
 fn hash_parse_check_line(line : String) -> (String, String)? {
@@ -295,14 +275,15 @@ fn hash_parse_check_line(line : String) -> (String, String)? {
   if i == 0 || i >= line.length() {
     return None
   }
-  let hash = line.view(start_offset=0, end_offset=i).to_string()
+  let hash = line.view(start_offset=0, end_offset=i).to_owned()
   // Skip whitespace (typically two spaces or space+asterisk)
-  while i < line.length() && (line[i] == ' ' || line[i] == '\t' || line[i] == '*') {
+  while i < line.length() &&
+        (line[i] == ' ' || line[i] == '\t' || line[i] == '*') {
     i += 1
   }
   if i >= line.length() {
     return None
   }
-  let filename = line.view(start_offset=i).to_string()
+  let filename = line.view(start_offset=i).to_owned()
   Some((hash, filename))
 }

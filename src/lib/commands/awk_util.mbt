@@ -1,8 +1,9 @@
 // moon_bash Commands - awk field, string, number, and array utilities
 
+///|
 fn awk_eval_getline_command_line(command : String) -> String {
   let cmd = aj_trim(command)
-  if !(aj_starts_with(cmd, "echo")) {
+  if !aj_starts_with(cmd, "echo") {
     return ""
   }
   let mut rest = if cmd.length() > 4 {
@@ -20,6 +21,7 @@ fn awk_eval_getline_command_line(command : String) -> String {
   aj_first_line(rest)
 }
 
+///|
 fn awk_split_fields(line : String, fs : String) -> Array[String] {
   if fs == "." {
     return []
@@ -49,13 +51,15 @@ fn awk_split_fields(line : String, fs : String) -> Array[String] {
   aj_split_by_delim(line, fs)
 }
 
+///|
 fn awk_is_numeric_string(s : String) -> Bool {
   let t = aj_trim(s)
   if t.length() == 0 {
     return false
   }
   let mut i = 0
-  if t[0].to_int().unsafe_to_char() == '+' || t[0].to_int().unsafe_to_char() == '-' {
+  if t[0].to_int().unsafe_to_char() == '+' ||
+    t[0].to_int().unsafe_to_char() == '-' {
     i = 1
   }
   if i >= t.length() {
@@ -75,12 +79,12 @@ fn awk_is_numeric_string(s : String) -> Bool {
       i += 1
       continue
     }
-    if ch == '.' && !(seen_dot) && !(seen_exp) {
+    if ch == '.' && !seen_dot && !seen_exp {
       seen_dot = true
       i += 1
       continue
     }
-    if (ch == 'e' || ch == 'E') && seen_digit && !(seen_exp) {
+    if (ch == 'e' || ch == 'E') && seen_digit && !seen_exp {
       seen_exp = true
       seen_exp_digit = false
       i += 1
@@ -101,8 +105,9 @@ fn awk_is_numeric_string(s : String) -> Bool {
   }
 }
 
+///|
 fn awk_parse_number(s : String) -> Double {
-  if !(awk_is_numeric_string(s)) {
+  if !awk_is_numeric_string(s) {
     return 0.0
   }
   let t = aj_trim(s)
@@ -140,7 +145,11 @@ fn awk_parse_number(s : String) -> Double {
       }
     }
   }
-  if i < t.length() && (t[i].to_int().unsafe_to_char() == 'e' || t[i].to_int().unsafe_to_char() == 'E') {
+  if i < t.length() &&
+    (
+      t[i].to_int().unsafe_to_char() == 'e' ||
+      t[i].to_int().unsafe_to_char() == 'E'
+    ) {
     i += 1
     let mut exp_sign = 1
     if i < t.length() {
@@ -167,6 +176,7 @@ fn awk_parse_number(s : String) -> Double {
   sign * value
 }
 
+///|
 fn awk_number_to_string(n : Double) -> String {
   let as_int = n.to_int()
   if as_int.to_double() == n {
@@ -176,6 +186,7 @@ fn awk_number_to_string(n : Double) -> String {
   }
 }
 
+///|
 fn awk_normalize_array_index(index : String) -> String {
   let trimmed = aj_trim(index)
   if trimmed.length() == 0 {
@@ -187,10 +198,12 @@ fn awk_normalize_array_index(index : String) -> String {
   trimmed
 }
 
+///|
 fn awk_array_key(name : String, index : String) -> String {
   name + "#" + awk_normalize_array_index(index)
 }
 
+///|
 fn awk_parse_array_ref(expr : String) -> (String, String)? {
   let t = aj_trim(expr)
   if t.length() < 3 {
@@ -201,7 +214,7 @@ fn awk_parse_array_ref(expr : String) -> (String, String)? {
     return None
   }
   let arr_name = aj_trim(aj_substr(t, 0, open_bracket))
-  if !(awk_is_identifier(arr_name)) {
+  if !awk_is_identifier(arr_name) {
     return None
   }
   let idx_expr = aj_trim(aj_substr(t, open_bracket + 1, t.length() - 1))
@@ -211,9 +224,10 @@ fn awk_parse_array_ref(expr : String) -> (String, String)? {
   Some((arr_name, idx_expr))
 }
 
+///|
 fn awk_collect_array_namespace(
   array_vars : Map[String, String],
-  ns_name : String
+  ns_name : String,
 ) -> Array[(String, String)] {
   let entries : Array[(String, String)] = []
   let prefix = ns_name + "#"
@@ -225,17 +239,22 @@ fn awk_collect_array_namespace(
   entries
 }
 
-fn awk_remove_array_namespace(array_vars : Map[String, String], ns_name : String) -> Unit {
+///|
+fn awk_remove_array_namespace(
+  array_vars : Map[String, String],
+  ns_name : String,
+) -> Unit {
   let entries = awk_collect_array_namespace(array_vars, ns_name)
   for entry in entries {
     array_vars.remove(entry.0)
   }
 }
 
+///|
 fn awk_copy_array_namespace(
   array_vars : Map[String, String],
   source_name : String,
-  target_name : String
+  target_name : String,
 ) -> Unit {
   awk_remove_array_namespace(array_vars, target_name)
   let source_prefix = source_name + "#"
@@ -247,6 +266,7 @@ fn awk_copy_array_namespace(
   }
 }
 
+///|
 fn awk_function_param_is_array(fn_def : AwkFunction, param : String) -> Bool {
   let needle = param + "["
   if aj_find_substring(fn_def.body, needle) >= 0 {
@@ -255,6 +275,7 @@ fn awk_function_param_is_array(fn_def : AwkFunction, param : String) -> Bool {
   aj_find_substring(fn_def.body, " in " + param) >= 0
 }
 
+///|
 fn awk_to_lower(s : String) -> String {
   let out = StringBuilder::new()
   for i = 0; i < s.length(); i = i + 1 {
@@ -274,6 +295,7 @@ fn awk_to_lower(s : String) -> String {
   out.to_string()
 }
 
+///|
 fn awk_to_upper(s : String) -> String {
   let out = StringBuilder::new()
   for i = 0; i < s.length(); i = i + 1 {
@@ -293,6 +315,7 @@ fn awk_to_upper(s : String) -> String {
   out.to_string()
 }
 
+///|
 fn awk_join_fields(fields : Array[String], sep : String) -> String {
   let out = StringBuilder::new()
   for i = 0; i < fields.length(); i = i + 1 {
@@ -304,6 +327,7 @@ fn awk_join_fields(fields : Array[String], sep : String) -> String {
   out.to_string()
 }
 
+///|
 fn awk_split_chars(input : String) -> Array[String] {
   let parts : Array[String] = []
   for i = 0; i < input.length(); i = i + 1 {
@@ -312,7 +336,11 @@ fn awk_split_chars(input : String) -> Array[String] {
   parts
 }
 
-fn awk_split_for_split_builtin(source : String, delim : String) -> Array[String] {
+///|
+fn awk_split_for_split_builtin(
+  source : String,
+  delim : String,
+) -> Array[String] {
   let is_regex = aj_starts_with(delim, awk_regex_delim_prefix)
   let delim = if is_regex {
     aj_substr(delim, awk_regex_delim_prefix.length(), delim.length())
@@ -322,12 +350,13 @@ fn awk_split_for_split_builtin(source : String, delim : String) -> Array[String]
   if delim.length() == 0 {
     return awk_split_chars(source)
   }
-  if delim == " " && !(is_regex) {
+  if delim == " " && !is_regex {
     return awk_split_fields(source, " ")
   }
   aj_split_by_delim(source, delim)
 }
 
+///|
 fn awk_eval_split_delim(
   expr : String,
   line : String,
@@ -335,7 +364,7 @@ fn awk_eval_split_delim(
   nr : Int,
   nf : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> String {
   let text = aj_trim(expr)
   if aj_starts_with(text, "/") && aj_ends_with(text, "/") && text.length() >= 2 {
@@ -344,6 +373,7 @@ fn awk_eval_split_delim(
   awk_eval_expr(text, line, fields, nr, nf, vars, array_vars)
 }
 
+///|
 fn awk_eval_sub_pattern_ast(
   expr_ast : AwkExprAst,
   line : String,
@@ -351,7 +381,7 @@ fn awk_eval_sub_pattern_ast(
   nr : Int,
   nf : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> String {
   match expr_ast {
     Raw(text) => {
@@ -365,6 +395,7 @@ fn awk_eval_sub_pattern_ast(
   }
 }
 
+///|
 fn awk_is_wrapped_in_parens(expr : String) -> Bool {
   if expr.length() < 2 ||
     expr[0].to_int().unsafe_to_char() != '(' ||
@@ -384,7 +415,7 @@ fn awk_is_wrapped_in_parens(expr : String) -> Bool {
           quote = None
         }
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
         } else if ch == '(' {
@@ -395,12 +426,12 @@ fn awk_is_wrapped_in_parens(expr : String) -> Bool {
             return false
           }
         }
-      }
     }
   }
   depth == 0
 }
 
+///|
 fn awk_strip_outer_parens(expr : String) -> String {
   let mut current = aj_trim(expr)
   while awk_is_wrapped_in_parens(current) {
@@ -409,6 +440,7 @@ fn awk_strip_outer_parens(expr : String) -> String {
   current
 }
 
+///|
 fn awk_find_top_level_ternary_colon(expr : String, start_idx : Int) -> Int {
   let mut quote : Char? = None
   let mut paren_depth = 0
@@ -425,7 +457,7 @@ fn awk_find_top_level_ternary_colon(expr : String, start_idx : Int) -> Int {
           quote = None
         }
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
         } else if ch == '(' {
@@ -446,16 +478,16 @@ fn awk_find_top_level_ternary_colon(expr : String, start_idx : Int) -> Int {
             ternary_depth -= 1
           }
         }
-      }
     }
   }
   -1
 }
 
+///|
 fn awk_replace_first_literal(
   source : String,
   pattern : String,
-  replacement : String
+  replacement : String,
 ) -> (String, Int) {
   if pattern.length() == 0 {
     return (source, 0)
@@ -485,10 +517,11 @@ fn awk_replace_first_literal(
   (updated, 1)
 }
 
+///|
 fn awk_replace_all_literal(
   source : String,
   pattern : String,
-  replacement : String
+  replacement : String,
 ) -> (String, Int) {
   if pattern.length() == 0 {
     return (source, 0)
@@ -528,6 +561,7 @@ fn awk_replace_all_literal(
   (out.to_string(), count)
 }
 
+///|
 fn awk_find_top_level_token(expr : String, token : String) -> Int {
   if token.length() == 0 || token.length() > expr.length() {
     return -1
@@ -594,6 +628,7 @@ fn awk_find_top_level_token(expr : String, token : String) -> Int {
   -1
 }
 
+///|
 fn awk_find_top_level_operator(expr : String, ops : String) -> Int {
   let mut quote : Char? = None
   let mut paren_depth = 0
@@ -610,7 +645,7 @@ fn awk_find_top_level_operator(expr : String, ops : String) -> Int {
           quote = None
         }
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
         } else if ch == '(' {
@@ -636,7 +671,6 @@ fn awk_find_top_level_operator(expr : String, ops : String) -> Int {
             idx = i
           }
         }
-      }
     }
   }
   idx

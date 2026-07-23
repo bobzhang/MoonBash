@@ -1,7 +1,11 @@
 // moon_bash Interpreter - Builtins (State and Flow)
 // Split from builtins_core.mbt for maintainability.
 
-fn ExecContext::builtin_export(self : ExecContext, args : Array[String]) -> Unit {
+///|
+fn ExecContext::builtin_export(
+  self : ExecContext,
+  args : Array[String],
+) -> Unit {
   if args.length() > 1 && args[0] == "-p" {
     self.exit_code = 0
     return
@@ -29,7 +33,9 @@ fn ExecContext::builtin_export(self : ExecContext, args : Array[String]) -> Unit
       Some((name, assigned_value, append)) => {
         match parse_array_element_assignment_name(name) {
           Some(_) => {
-            self.stderr_buf.write_string("moon_bash: export: \{name}: not a valid identifier\n")
+            self.stderr_buf.write_string(
+              "moon_bash: export: \{name}: not a valid identifier\n",
+            )
             failed = true
             continue
           }
@@ -49,7 +55,9 @@ fn ExecContext::builtin_export(self : ExecContext, args : Array[String]) -> Unit
         self.exported[name] = true
       }
       None => {
-        self.stderr_buf.write_string("moon_bash: export: \{arg}: not a valid identifier\n")
+        self.stderr_buf.write_string(
+          "moon_bash: export: \{arg}: not a valid identifier\n",
+        )
         failed = true
       }
     }
@@ -57,6 +65,7 @@ fn ExecContext::builtin_export(self : ExecContext, args : Array[String]) -> Unit
   self.exit_code = if failed { 1 } else { 0 }
 }
 
+///|
 fn ExecContext::builtin_unset(self : ExecContext, args : Array[String]) -> Unit {
   let mut unset_functions = false
   let mut explicit_mode = false
@@ -77,8 +86,9 @@ fn ExecContext::builtin_unset(self : ExecContext, args : Array[String]) -> Unit 
       continue
     }
     match parse_array_element_assignment_name(arg) {
-      Some((base, index_expr)) => {
-        if self.env.get(test_array_kind_storage_key(base)).unwrap_or("") != "assoc" {
+      Some((base, index_expr)) =>
+        if self.env.get(test_array_kind_storage_key(base)).unwrap_or("") !=
+          "assoc" {
           let expanded_index = self.expand_array_index_expr(index_expr)
           let raw_text = if expanded_index.length() > 0 {
             expanded_index
@@ -100,7 +110,6 @@ fn ExecContext::builtin_unset(self : ExecContext, args : Array[String]) -> Unit 
             continue
           }
         }
-      }
       None => ()
     }
     match self.resolve_array_assignment_target(arg) {
@@ -122,13 +131,14 @@ fn ExecContext::builtin_unset(self : ExecContext, args : Array[String]) -> Unit 
     self.env.remove(lower_attr_storage_key(arg))
     self.env.remove(upper_attr_storage_key(arg))
     self.exported.remove(arg)
-    if !(explicit_mode) {
+    if !explicit_mode {
       self.functions.remove(arg)
     }
   }
   self.exit_code = if failed { 1 } else { 0 }
 }
 
+///|
 fn ExecContext::builtin_set(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     // Print all variables
@@ -165,7 +175,7 @@ fn ExecContext::builtin_set(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.length() >= 2 && arg[0] == '-' {
-      let ch = arg.view(start_offset=1, end_offset=2).to_string()
+      let ch = arg.view(start_offset=1, end_offset=2).to_owned()
       match ch {
         "e" => self.options.errexit = true
         "u" => self.options.nounset = true
@@ -177,7 +187,7 @@ fn ExecContext::builtin_set(self : ExecContext, args : Array[String]) -> Unit {
       }
       i += 1
     } else if arg.length() >= 2 && arg[0] == '+' {
-      let ch = arg.view(start_offset=1, end_offset=2).to_string()
+      let ch = arg.view(start_offset=1, end_offset=2).to_owned()
       match ch {
         "e" => self.options.errexit = false
         "u" => self.options.nounset = false
@@ -205,10 +215,11 @@ fn ExecContext::builtin_set(self : ExecContext, args : Array[String]) -> Unit {
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::set_named_shell_option(
   self : ExecContext,
   name : String,
-  enabled : Bool
+  enabled : Bool,
 ) -> Unit {
   match name {
     "pipefail" => self.options.pipefail = enabled
@@ -222,9 +233,10 @@ fn ExecContext::set_named_shell_option(
   }
 }
 
+///|
 fn ExecContext::set_positional_parameters(
   self : ExecContext,
-  values : Array[String]
+  values : Array[String],
 ) -> Unit {
   let old_count = match self.env.get("#") {
     Some(s) => parse_int32_str(s)
@@ -234,10 +246,15 @@ fn ExecContext::set_positional_parameters(
     self.env.remove(i.to_string())
   }
 
-  let joined = values.iter().fold(
-    init="",
-    fn(acc, value) { if acc.length() == 0 { value } else { acc + " " + value } },
-  )
+  let joined = values
+    .iter()
+    .fold(init="", fn(acc, value) {
+      if acc.length() == 0 {
+        value
+      } else {
+        acc + " " + value
+      }
+    })
   self.env["@"] = joined
   self.env["#"] = values.length().to_string()
   for i = 0; i < values.length(); i = i + 1 {
@@ -245,17 +262,17 @@ fn ExecContext::set_positional_parameters(
   }
 }
 
-fn ExecContext::builtin_shift(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_shift(self : ExecContext, args : Array[String]) -> Unit {
   let n = if args.length() > 0 { parse_int32_str(args[0]) } else { 1 }
   let count = match self.env.get("#") {
     Some(s) => parse_int32_str(s)
     None => 0
   }
   if n > count {
-    self.stderr_buf.write_string("moon_bash: shift: count exceeds positional parameters\n")
+    self.stderr_buf.write_string(
+      "moon_bash: shift: count exceeds positional parameters\n",
+    )
     self.exit_code = 1
     return
   }
@@ -275,13 +292,19 @@ fn ExecContext::builtin_shift(
   for i = 1; i <= remaining; i = i + 1 {
     values.push(self.env.get(i.to_string()).unwrap_or(""))
   }
-  self.env["@"] = values.iter().fold(
-    init="",
-    fn(acc, value) { if acc.length() == 0 { value } else { acc + " " + value } },
-  )
+  self.env["@"] = values
+    .iter()
+    .fold(init="", fn(acc, value) {
+      if acc.length() == 0 {
+        value
+      } else {
+        acc + " " + value
+      }
+    })
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_exit(self : ExecContext, args : Array[String]) -> Unit {
   self.exit_code = if args.length() > 0 {
     parse_int32_str(args[0])
@@ -291,6 +314,7 @@ fn ExecContext::builtin_exit(self : ExecContext, args : Array[String]) -> Unit {
   self.should_exit = true
 }
 
+///|
 fn ExecContext::builtin_exec(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     self.exit_code = 0
@@ -305,9 +329,10 @@ fn ExecContext::builtin_exec(self : ExecContext, args : Array[String]) -> Unit {
   self.run_command(command, cmd_args)
 }
 
+///|
 fn ExecContext::builtin_return(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if self.call_depth <= 0 {
     self.stderr_buf.write_string(
@@ -325,6 +350,7 @@ fn ExecContext::builtin_return(
   self.return_requested = true
 }
 
+///|
 fn is_positive_decimal_text(text : String) -> Bool {
   if text.length() == 0 {
     return false
@@ -338,24 +364,29 @@ fn is_positive_decimal_text(text : String) -> Bool {
   true
 }
 
+///|
 fn ExecContext::parse_loop_control_count_arg(
   self : ExecContext,
   builtin_name : String,
-  args : Array[String]
+  args : Array[String],
 ) -> Int? {
   if args.length() == 0 {
     return Some(1)
   }
   if args.length() > 1 {
-    self.stderr_buf.write_string("moon_bash: \{builtin_name}: too many arguments\n")
+    self.stderr_buf.write_string(
+      "moon_bash: \{builtin_name}: too many arguments\n",
+    )
     self.exit_code = 1
     self.should_exit = true
     return None
   }
 
   let raw = args[0]
-  if !(is_positive_decimal_text(raw)) {
-    self.stderr_buf.write_string("moon_bash: \{builtin_name}: \{raw}: numeric argument required\n")
+  if !is_positive_decimal_text(raw) {
+    self.stderr_buf.write_string(
+      "moon_bash: \{builtin_name}: \{raw}: numeric argument required\n",
+    )
     self.exit_code = 1
     self.should_exit = true
     return None
@@ -363,7 +394,9 @@ fn ExecContext::parse_loop_control_count_arg(
 
   let n = parse_int32_str(raw)
   if n <= 0 {
-    self.stderr_buf.write_string("moon_bash: \{builtin_name}: \{raw}: loop count out of range\n")
+    self.stderr_buf.write_string(
+      "moon_bash: \{builtin_name}: \{raw}: loop count out of range\n",
+    )
     self.exit_code = 1
     self.should_exit = true
     return None
@@ -371,10 +404,8 @@ fn ExecContext::parse_loop_control_count_arg(
   Some(n)
 }
 
-fn ExecContext::builtin_break(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_break(self : ExecContext, args : Array[String]) -> Unit {
   let n = match self.parse_loop_control_count_arg("break", args) {
     Some(value) => value
     None => return
@@ -390,9 +421,10 @@ fn ExecContext::builtin_break(
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_continue(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let n = match self.parse_loop_control_count_arg("continue", args) {
     Some(value) => value
@@ -409,17 +441,15 @@ fn ExecContext::builtin_continue(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_local(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_local(self : ExecContext, args : Array[String]) -> Unit {
   let mut indexed_array_mode = false
   let mut assoc_array_mode = false
   let mut print_mode = false
   let mut has_other_flags = false
   for arg in args {
     match parse_declare_option_token(arg) {
-      Some((_enable, flags)) => {
+      Some((_enable, flags)) =>
         for flag in flags {
           match flag {
             'a' => indexed_array_mode = true
@@ -428,7 +458,6 @@ fn ExecContext::builtin_local(
             _ => has_other_flags = true
           }
         }
-      }
       None => ()
     }
   }
@@ -441,10 +470,10 @@ fn ExecContext::builtin_local(
     let locals = split_local_scope_names(
       self.env.get(local_scope_names_key(self.call_depth)).unwrap_or(""),
     )
-    let seen : Map[String, Bool] = {}
+    let seen : Map[String, Bool] = Map([])
     let names : Array[String] = []
     for name in locals {
-      if !(seen.contains(name)) {
+      if !seen.contains(name) {
         seen[name] = true
         names.push(name)
       }
@@ -468,7 +497,7 @@ fn ExecContext::builtin_local(
     let local_names = split_local_scope_names(
       self.env.get(local_scope_names_key(self.call_depth)).unwrap_or(""),
     )
-    let local_seen : Map[String, Bool] = {}
+    let local_seen : Map[String, Bool] = Map([])
     for name in local_names {
       local_seen[name] = true
     }
@@ -508,7 +537,11 @@ fn ExecContext::builtin_local(
       match parse_name_value_spec(arg) {
         Some((name, assigned_value, append)) => {
           self.capture_local_binding(name)
-          self.env[test_array_kind_storage_key(name)] = if assoc_array_mode { "assoc" } else { "indexed" }
+          self.env[test_array_kind_storage_key(name)] = if assoc_array_mode {
+            "assoc"
+          } else {
+            "indexed"
+          }
           match assigned_value {
             Some(raw_value) => {
               let word = @parser.parse_word_content(raw_value)
@@ -525,8 +558,14 @@ fn ExecContext::builtin_local(
                 failed = true
                 break
               }
-              let next_value = if append { self.env.get(name).unwrap_or("") + value } else { value }
-              if !(self.store_scalar_assignment_with_options(name, next_value, false)) {
+              let next_value = if append {
+                self.env.get(name).unwrap_or("") + value
+              } else {
+                value
+              }
+              if !self.store_scalar_assignment_with_options(
+                  name, next_value, false,
+                ) {
                 failed = true
                 break
               }
@@ -595,8 +634,11 @@ fn ExecContext::builtin_local(
                 self.store_array_element_assignment(base, index, value, append)
               }
               None => {
-                let target_name = self.env.get("__MOON_BASH_NAMEREF__" + name).unwrap_or(name)
-                if append && self.env.contains(test_array_count_storage_key(target_name)) {
+                let target_name = self.env
+                  .get("__MOON_BASH_NAMEREF__" + name)
+                  .unwrap_or(name)
+                if append &&
+                  self.env.contains(test_array_count_storage_key(target_name)) {
                   self.should_exit = true
                   failed = true
                   break
@@ -606,7 +648,9 @@ fn ExecContext::builtin_local(
                 } else {
                   value
                 }
-                if !(self.store_scalar_assignment_with_options(target_name, next_value, false)) {
+                if !self.store_scalar_assignment_with_options(
+                    target_name, next_value, false,
+                  ) {
                   failed = true
                   break
                 }
@@ -619,8 +663,8 @@ fn ExecContext::builtin_local(
               failed = true
               break
             }
-            if !(self.env.contains(name)) {
-              if !(self.store_scalar_assignment_with_options(name, "", false)) {
+            if !self.env.contains(name) {
+              if !self.store_scalar_assignment_with_options(name, "", false) {
                 failed = true
                 break
               }
@@ -637,7 +681,11 @@ fn ExecContext::builtin_local(
   self.exit_code = if failed { 1 } else { 0 }
 }
 
-fn ExecContext::capture_local_binding(self : ExecContext, name : String) -> Unit {
+///|
+fn ExecContext::capture_local_binding(
+  self : ExecContext,
+  name : String,
+) -> Unit {
   if self.call_depth <= 0 {
     return
   }
@@ -666,6 +714,7 @@ fn ExecContext::capture_local_binding(self : ExecContext, name : String) -> Unit
   }
 }
 
+///|
 fn ExecContext::restore_local_bindings(self : ExecContext, depth : Int) -> Unit {
   if depth <= 0 {
     return
@@ -682,13 +731,12 @@ fn ExecContext::restore_local_bindings(self : ExecContext, depth : Int) -> Unit 
     let saved_set_key = local_scope_saved_set_key(depth, name)
     let saved_value_key = local_scope_saved_value_key(depth, name)
     match self.env.get(saved_set_key) {
-      Some(flag) => {
+      Some(flag) =>
         if flag == "1" {
           self.env[name] = self.env.get(saved_value_key).unwrap_or("")
         } else {
           self.env.remove(name)
         }
-      }
       None => ()
     }
     self.env.remove(saved_set_key)
@@ -698,25 +746,29 @@ fn ExecContext::restore_local_bindings(self : ExecContext, depth : Int) -> Unit 
   self.env.remove(names_key)
 }
 
+///|
 fn local_scope_names_key(depth : Int) -> String {
   "__MOON_BASH_LOCAL_NAMES__" + depth.to_string()
 }
 
+///|
 fn local_scope_saved_set_key(depth : Int, name : String) -> String {
   "__MOON_BASH_LOCAL_SET__" + depth.to_string() + "__" + name
 }
 
+///|
 fn local_scope_saved_value_key(depth : Int, name : String) -> String {
   "__MOON_BASH_LOCAL_VAL__" + depth.to_string() + "__" + name
 }
 
+///|
 fn split_local_scope_names(spec : String) -> Array[String] {
   let parts : Array[String] = []
   let mut start = 0
   for i = 0; i <= spec.length(); i = i + 1 {
     if i == spec.length() || spec[i].to_int().unsafe_to_char() == '\u001f' {
       if i > start {
-        parts.push(spec.view(start_offset=start, end_offset=i).to_string())
+        parts.push(spec.view(start_offset=start, end_offset=i).to_owned())
       }
       start = i + 1
     }
@@ -724,9 +776,10 @@ fn split_local_scope_names(spec : String) -> Array[String] {
   parts
 }
 
+///|
 fn ExecContext::builtin_declare(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let mut nameref = false
   let mut print_mode = false
@@ -750,43 +803,35 @@ fn ExecContext::builtin_declare(
           match flag {
             'n' => nameref = enable
             'p' => print_mode = true
-            'f' => {
+            'f' =>
               if enable {
                 function_mode = true
                 print_mode = true
               }
-            }
-            'F' => {
+            'F' =>
               if enable {
                 function_mode = true
                 function_name_mode = true
                 print_mode = true
               }
-            }
-            'r' => {
+            'r' =>
               if enable {
                 readonly_mode = true
               } else {
                 clear_readonly_mode = true
               }
-            }
             'i' => integer_mode = enable
             'l' => lowercase_mode = enable
             'u' => uppercase_mode = enable
-            'x' => {
+            'x' =>
               if enable {
                 export_mode = true
               } else {
                 clear_export_mode = true
               }
-            }
             'a' => indexed_array_mode = enable
             'A' => assoc_array_mode = enable
-            'g' => {
-              if enable {
-                global_mode = true
-              }
-            }
+            'g' => if enable { global_mode = true }
             _ => ()
           }
         }
@@ -817,14 +862,17 @@ fn ExecContext::builtin_declare(
         }
       } else {
         for name in filtered {
-          if self.functions.contains(name) && is_visible_declare_function_name(name) {
+          if self.functions.contains(name) &&
+            is_visible_declare_function_name(name) {
             if function_name_mode {
               self.stdout_buf.write_string(name + "\n")
             } else {
               self.stdout_buf.write_string("\{name} ()\n")
             }
           } else {
-            self.stderr_buf.write_string("moon_bash: declare: \{name}: not found\n")
+            self.stderr_buf.write_string(
+              "moon_bash: declare: \{name}: not found\n",
+            )
             failed = true
           }
         }
@@ -836,26 +884,20 @@ fn ExecContext::builtin_declare(
         filtered
       }
       for name in names {
-        if !(
-          self.declare_entry_matches_filters(
-            name,
-            nameref,
-            readonly_mode,
-            export_mode,
-            indexed_array_mode,
-            assoc_array_mode,
-          )
-        ) {
+        if !self.declare_entry_matches_filters(
+            name, nameref, readonly_mode, export_mode, indexed_array_mode, assoc_array_mode,
+          ) {
           continue
         }
         match self.format_declare_print_entry(name) {
           Some(rendered) => self.stdout_buf.write_string(rendered + "\n")
-          None => {
+          None =>
             if filtered.length() > 0 && self.call_depth <= 0 {
-              self.stderr_buf.write_string("moon_bash: declare: \{name}: not found\n")
+              self.stderr_buf.write_string(
+                "moon_bash: declare: \{name}: not found\n",
+              )
               failed = true
             }
-          }
         }
       }
     }
@@ -867,17 +909,17 @@ fn ExecContext::builtin_declare(
     for spec in filtered {
       match parse_name_value_spec(spec) {
         Some((name, Some(target), _append)) => {
-          if !(global_mode) {
+          if !global_mode {
             self.capture_local_binding(name)
           }
           self.env[name] = target
           self.env["__MOON_BASH_NAMEREF__" + name] = target
         }
         Some((name, None, _append)) => {
-          if !(global_mode) {
+          if !global_mode {
             self.capture_local_binding(name)
           }
-          if !(self.env.contains(name)) {
+          if !self.env.contains(name) {
             self.env[name] = ""
           }
         }
@@ -889,41 +931,34 @@ fn ExecContext::builtin_declare(
   }
 
   if filtered.length() == 0 &&
-    !(
-      readonly_mode ||
-      clear_readonly_mode ||
-      integer_mode ||
-      lowercase_mode ||
-      uppercase_mode ||
-      export_mode ||
-      clear_export_mode ||
-      global_mode ||
-      indexed_array_mode ||
-      assoc_array_mode
-    ) {
-      let names = self.collect_declare_print_names()
-      for name in names {
-        match self.env.get(name) {
-          Some(value) => self.stdout_buf.write_string("\{name}=\{value}\n")
-          None => ()
-        }
+    !(readonly_mode ||
+    clear_readonly_mode ||
+    integer_mode ||
+    lowercase_mode ||
+    uppercase_mode ||
+    export_mode ||
+    clear_export_mode ||
+    global_mode ||
+    indexed_array_mode ||
+    assoc_array_mode) {
+    let names = self.collect_declare_print_names()
+    for name in names {
+      match self.env.get(name) {
+        Some(value) => self.stdout_buf.write_string("\{name}=\{value}\n")
+        None => ()
       }
-      self.exit_code = 0
-      return
     }
+    self.exit_code = 0
+    return
+  }
 
   if filtered.length() == 0 {
     if readonly_mode || export_mode || nameref {
       let names = self.collect_declare_print_names()
       for name in names {
         if self.declare_entry_matches_filters(
-          name,
-          nameref,
-          readonly_mode,
-          export_mode,
-          indexed_array_mode,
-          assoc_array_mode,
-        ) {
+            name, nameref, readonly_mode, export_mode, indexed_array_mode, assoc_array_mode,
+          ) {
           match self.format_declare_print_entry(name) {
             Some(rendered) => self.stdout_buf.write_string(rendered + "\n")
             None => ()
@@ -938,11 +973,11 @@ fn ExecContext::builtin_declare(
       let kind_prefix = test_array_kind_storage_key("")
       for key, kind in self.env {
         if string_has_prefix(key, kind_prefix) {
-          let name = key.view(start_offset=kind_prefix.length()).to_string()
+          let name = key.view(start_offset=kind_prefix.length()).to_owned()
           if (indexed_array_mode && kind == "indexed") ||
             (assoc_array_mode && kind == "assoc") {
-              names.push(name)
-            }
+            names.push(name)
+          }
         }
       }
       for name in names {
@@ -957,81 +992,80 @@ fn ExecContext::builtin_declare(
   }
 
   if (indexed_array_mode || assoc_array_mode) &&
-    !(
-      readonly_mode ||
-      clear_readonly_mode ||
-      integer_mode ||
-      lowercase_mode ||
-      uppercase_mode ||
-      export_mode ||
-      clear_export_mode ||
-      global_mode
-    ) {
-      let mut failed = false
-      for spec in filtered {
-        match parse_name_value_spec(spec) {
-          Some((name, assigned_value, append)) => {
-            let target_kind = if assoc_array_mode { "assoc" } else { "indexed" }
-            let existing_kind = self.env.get(test_array_kind_storage_key(name)).unwrap_or("")
-            if existing_kind.length() > 0 && existing_kind != target_kind {
-              failed = true
-              continue
-            }
-            if !(global_mode) {
-              self.capture_local_binding(name)
-            }
-            self.env[test_array_kind_storage_key(name)] = target_kind
-            match assigned_value {
-              Some(raw_value) => {
-                let word = @parser.parse_word_content(raw_value)
-                if self.try_store_array_assignment(name, word, append) {
-                  if self.should_exit {
-                    failed = true
-                    break
-                  }
-                  continue
-                }
-
-                let value = self.expand_word_to_string(word)
-                if self.should_exit {
-                  failed = true
-                  break
-                }
-
-                let next_value = if append {
-                  self.env.get(name).unwrap_or("") + value
-                } else {
-                  value
-                }
-                if !(self.store_scalar_assignment_with_options(name, next_value, false)) {
-                  failed = true
-                  break
-                }
-              }
-              None => {
-                if !(self.env.contains(test_array_count_storage_key(name))) {
-                  self.store_array_assignment(name, [])
-                }
-              }
-            }
-          }
-          None => ()
-        }
-      }
-      self.exit_code = if failed { 1 } else { 0 }
-      return
-    }
-
-  if !(
-    readonly_mode ||
+    !(readonly_mode ||
     clear_readonly_mode ||
     integer_mode ||
     lowercase_mode ||
     uppercase_mode ||
     export_mode ||
     clear_export_mode ||
-    global_mode
-  ) {
+    global_mode) {
+    let mut failed = false
+    for spec in filtered {
+      match parse_name_value_spec(spec) {
+        Some((name, assigned_value, append)) => {
+          let target_kind = if assoc_array_mode { "assoc" } else { "indexed" }
+          let existing_kind = self.env
+            .get(test_array_kind_storage_key(name))
+            .unwrap_or("")
+          if existing_kind.length() > 0 && existing_kind != target_kind {
+            failed = true
+            continue
+          }
+          if !global_mode {
+            self.capture_local_binding(name)
+          }
+          self.env[test_array_kind_storage_key(name)] = target_kind
+          match assigned_value {
+            Some(raw_value) => {
+              let word = @parser.parse_word_content(raw_value)
+              if self.try_store_array_assignment(name, word, append) {
+                if self.should_exit {
+                  failed = true
+                  break
+                }
+                continue
+              }
+
+              let value = self.expand_word_to_string(word)
+              if self.should_exit {
+                failed = true
+                break
+              }
+
+              let next_value = if append {
+                self.env.get(name).unwrap_or("") + value
+              } else {
+                value
+              }
+              if !self.store_scalar_assignment_with_options(
+                  name, next_value, false,
+                ) {
+                failed = true
+                break
+              }
+            }
+            None =>
+              if !self.env.contains(test_array_count_storage_key(name)) {
+                self.store_array_assignment(name, [])
+              }
+          }
+        }
+        None => ()
+      }
+    }
+    self.exit_code = if failed { 1 } else { 0 }
+    return
+  }
+
+  if !(readonly_mode ||
+    clear_readonly_mode ||
+    integer_mode ||
+    lowercase_mode ||
+    uppercase_mode ||
+    export_mode ||
+    clear_export_mode ||
+    global_mode) {
     self.builtin_local(filtered)
     return
   }
@@ -1040,7 +1074,7 @@ fn ExecContext::builtin_declare(
   for spec in filtered {
     match parse_name_value_spec(spec) {
       Some((name, assigned_value, append)) => {
-        if !(global_mode) {
+        if !global_mode {
           self.capture_local_binding(name)
         }
         if readonly_mode {
@@ -1098,7 +1132,9 @@ fn ExecContext::builtin_declare(
                 } else {
                   value
                 }
-                if !(self.store_scalar_assignment_with_options(name, next_value, false)) {
+                if !self.store_scalar_assignment_with_options(
+                    name, next_value, false,
+                  ) {
                   failed = true
                   break
                 }
@@ -1109,8 +1145,8 @@ fn ExecContext::builtin_declare(
             }
           }
           None => {
-            if !(self.env.contains(name)) {
-              if !(self.store_scalar_assignment_with_options(name, "", false)) {
+            if !self.env.contains(name) {
+              if !self.store_scalar_assignment_with_options(name, "", false) {
                 failed = true
                 break
               }
@@ -1127,9 +1163,10 @@ fn ExecContext::builtin_declare(
   self.exit_code = if failed { 1 } else { 0 }
 }
 
+///|
 fn ExecContext::format_declare_print_entry(
   self : ExecContext,
-  name : String
+  name : String,
 ) -> String? {
   if is_internal_declare_storage_name(name) {
     return None
@@ -1147,10 +1184,9 @@ fn ExecContext::format_declare_print_entry(
       if string_has_prefix(key, key_prefix) &&
         key.length() > key_prefix.length() &&
         key[key.length() - 1] == ']' {
-        let inner = key.view(
-          start_offset=key_prefix.length(),
-          end_offset=key.length() - 1,
-        ).to_string()
+        let inner = key
+          .view(start_offset=key_prefix.length(), end_offset=key.length() - 1)
+          .to_owned()
         if inner != "@" && inner != "*" {
           element_keys.push(inner)
         }
@@ -1194,18 +1230,23 @@ fn ExecContext::format_declare_print_entry(
   }
 
   match self.env.get(name) {
-    Some(value) => {
+    Some(value) =>
       if attr_flags.length() > 0 {
-        Some("declare -\{attr_flags} \{name}=\"\{escape_declare_value(value)}\"")
+        Some(
+          "declare -\{attr_flags} \{name}=\"\{escape_declare_value(value)}\"",
+        )
       } else {
         Some("declare -- \{name}=\"\{escape_declare_value(value)}\"")
       }
-    }
     None => None
   }
 }
 
-fn ExecContext::declare_attribute_flags(self : ExecContext, name : String) -> String {
+///|
+fn ExecContext::declare_attribute_flags(
+  self : ExecContext,
+  name : String,
+) -> String {
   let flags = StringBuilder::new()
   if self.env.get(integer_attr_storage_key(name)).unwrap_or("") == "1" {
     flags.write_char('i')
@@ -1228,6 +1269,7 @@ fn ExecContext::declare_attribute_flags(self : ExecContext, name : String) -> St
   flags.to_string()
 }
 
+///|
 fn ExecContext::declare_entry_matches_filters(
   self : ExecContext,
   name : String,
@@ -1235,15 +1277,15 @@ fn ExecContext::declare_entry_matches_filters(
   readonly_mode : Bool,
   export_mode : Bool,
   indexed_array_mode : Bool,
-  assoc_array_mode : Bool
+  assoc_array_mode : Bool,
 ) -> Bool {
-  if nameref_mode && !(self.env.contains("__MOON_BASH_NAMEREF__" + name)) {
+  if nameref_mode && !self.env.contains("__MOON_BASH_NAMEREF__" + name) {
     return false
   }
-  if readonly_mode && !(self.is_readonly_variable(name)) {
+  if readonly_mode && !self.is_readonly_variable(name) {
     return false
   }
-  if export_mode && !(self.exported.contains(name)) {
+  if export_mode && !self.exported.contains(name) {
     return false
   }
   let array_kind = self.env.get(test_array_kind_storage_key(name)).unwrap_or("")
@@ -1256,33 +1298,34 @@ fn ExecContext::declare_entry_matches_filters(
   true
 }
 
-fn ExecContext::collect_declare_print_names(self : ExecContext) -> Array[String] {
+///|
+fn ExecContext::collect_declare_print_names(
+  self : ExecContext,
+) -> Array[String] {
   let names : Array[String] = []
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   for key, _value in self.env {
     if is_internal_declare_storage_name(key) {
       continue
     }
     match parse_array_element_assignment_name(key) {
-      Some((base, _index)) => {
-        if !(seen.contains(base)) {
+      Some((base, _index)) =>
+        if !seen.contains(base) {
           seen[base] = true
           names.push(base)
         }
-      }
-      None => {
-        if !(seen.contains(key)) {
+      None =>
+        if !seen.contains(key) {
           seen[key] = true
           names.push(key)
         }
-      }
     }
   }
   for key, _value in self.exported {
     if is_internal_declare_storage_name(key) {
       continue
     }
-    if !(seen.contains(key)) {
+    if !seen.contains(key) {
       seen[key] = true
       names.push(key)
     }
@@ -1291,10 +1334,12 @@ fn ExecContext::collect_declare_print_names(self : ExecContext) -> Array[String]
   names
 }
 
+///|
 fn is_internal_declare_storage_name(name : String) -> Bool {
   name.has_prefix("__MOON_BASH_")
 }
 
+///|
 fn is_visible_declare_function_name(name : String) -> Bool {
   for i = 0; i < name.length(); i = i + 1 {
     if name[i].to_int().unsafe_to_char() == '.' {
@@ -1304,6 +1349,7 @@ fn is_visible_declare_function_name(name : String) -> Bool {
   true
 }
 
+///|
 fn escape_declare_value(value : String) -> String {
   let out = StringBuilder::new()
   for i = 0; i < value.length(); i = i + 1 {
@@ -1316,6 +1362,7 @@ fn escape_declare_value(value : String) -> String {
   out.to_string()
 }
 
+///|
 fn quote_assoc_declare_key(key : String) -> String {
   let out = StringBuilder::new()
   out.write_char('\'')
@@ -1331,10 +1378,12 @@ fn quote_assoc_declare_key(key : String) -> String {
   out.to_string()
 }
 
+///|
 fn is_declare_option_token(flag : String) -> Bool {
   parse_declare_option_token(flag) is Some(_)
 }
 
+///|
 fn parse_declare_option_token(flag : String) -> (Bool, Array[Char])? {
   if flag == "--" {
     return Some((true, []))
@@ -1359,9 +1408,10 @@ fn parse_declare_option_token(flag : String) -> (Bool, Array[Char])? {
   Some((enable, flags))
 }
 
+///|
 fn ExecContext::builtin_readonly(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() > 1 && args[0] == "-p" {
     self.exit_code = 0
@@ -1374,9 +1424,10 @@ fn ExecContext::builtin_readonly(
   self.builtin_declare(declare_args)
 }
 
+///|
 fn ExecContext::builtin_getopts(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() < 2 {
     self.exit_code = 1
@@ -1425,10 +1476,10 @@ fn ExecContext::builtin_getopts(
   let option_name = getopts_char_string(option_char)
   let opt_idx = getopts_find_option(opt_spec, option_char)
   if opt_idx < 0 {
-    if !(self.store_scalar_assignment(target_name, "?")) {
+    if !self.store_scalar_assignment(target_name, "?") {
       return
     }
-    if !(self.store_scalar_assignment("OPTARG", option_name)) {
+    if !self.store_scalar_assignment("OPTARG", option_name) {
       return
     }
     self.env["OPTIND"] = (optind + 1).to_string()
@@ -1438,23 +1489,27 @@ fn ExecContext::builtin_getopts(
 
   let expects_arg = getopts_option_takes_argument(opt_spec, opt_idx)
   if expects_arg {
-    let inline = if current.length() > 2 { current.view(start_offset=2).to_string() } else { "" }
+    let inline = if current.length() > 2 {
+      current.view(start_offset=2).to_owned()
+    } else {
+      ""
+    }
     let optarg = if inline.length() > 0 {
       inline
     } else if optind < parse_args.length() {
       parse_args[optind]
     } else {
-      if !(self.store_scalar_assignment(target_name, "?")) {
+      if !self.store_scalar_assignment(target_name, "?") {
         return
       }
       self.env["OPTIND"] = (optind + 1).to_string()
       self.exit_code = 0
       return
     }
-    if !(self.store_scalar_assignment(target_name, option_name)) {
+    if !self.store_scalar_assignment(target_name, option_name) {
       return
     }
-    if !(self.store_scalar_assignment("OPTARG", optarg)) {
+    if !self.store_scalar_assignment("OPTARG", optarg) {
       return
     }
     self.env["OPTIND"] = if inline.length() > 0 {
@@ -1466,7 +1521,7 @@ fn ExecContext::builtin_getopts(
     return
   }
 
-  if !(self.store_scalar_assignment(target_name, option_name)) {
+  if !self.store_scalar_assignment(target_name, option_name) {
     return
   }
   self.env.remove("OPTARG")
@@ -1474,22 +1529,24 @@ fn ExecContext::builtin_getopts(
   self.exit_code = 0
 }
 
+///|
 fn parse_name_value_spec(spec : String) -> (String, String?, Bool)? {
   if spec.length() == 0 {
     return None
   }
   let eq_pos = find_name_value_separator_pos(spec)
   if eq_pos > 0 {
-    let append = eq_pos >= 2 && spec[eq_pos - 1].to_int().unsafe_to_char() == '+'
+    let append = eq_pos >= 2 &&
+      spec[eq_pos - 1].to_int().unsafe_to_char() == '+'
     let name_end = if append { eq_pos - 1 } else { eq_pos }
     if name_end <= 0 {
       return None
     }
     let name = strip_array_assignment_index_markers(
-      spec.view(start_offset=0, end_offset=name_end).to_string(),
+      spec.view(start_offset=0, end_offset=name_end).to_owned(),
     )
     let value = strip_array_assignment_index_markers(
-      spec.view(start_offset=eq_pos + 1).to_string(),
+      spec.view(start_offset=eq_pos + 1).to_owned(),
     )
     if name.length() == 0 {
       return None
@@ -1499,6 +1556,7 @@ fn parse_name_value_spec(spec : String) -> (String, String?, Bool)? {
   Some((strip_array_assignment_index_markers(spec), None, false))
 }
 
+///|
 fn find_name_value_separator_pos(spec : String) -> Int {
   let mut bracket_depth = 0
   for i = 0; i < spec.length(); i = i + 1 {
@@ -1520,12 +1578,14 @@ fn find_name_value_separator_pos(spec : String) -> Int {
   -1
 }
 
+///|
 fn getopts_char_string(ch : Char) -> String {
   let buf = StringBuilder::new()
   buf.write_char(ch)
   buf.to_string()
 }
 
+///|
 fn getopts_find_option(spec : String, ch : Char) -> Int {
   for i = 0; i < spec.length(); i = i + 1 {
     if spec[i].to_int().unsafe_to_char() == ch {
@@ -1535,6 +1595,7 @@ fn getopts_find_option(spec : String, ch : Char) -> Int {
   -1
 }
 
+///|
 fn getopts_option_takes_argument(spec : String, opt_idx : Int) -> Bool {
   if opt_idx < 0 || opt_idx + 1 >= spec.length() {
     return false
@@ -1542,26 +1603,31 @@ fn getopts_option_takes_argument(spec : String, opt_idx : Int) -> Bool {
   spec[opt_idx + 1].to_int().unsafe_to_char() == ':'
 }
 
+///|
 fn readonly_storage_key(name : String) -> String {
   "__MOON_BASH_READONLY__" + name
 }
 
+///|
 fn integer_attr_storage_key(name : String) -> String {
   "__MOON_BASH_ATTR_INTEGER__" + name
 }
 
+///|
 fn lower_attr_storage_key(name : String) -> String {
   "__MOON_BASH_ATTR_LOWER__" + name
 }
 
+///|
 fn upper_attr_storage_key(name : String) -> String {
   "__MOON_BASH_ATTR_UPPER__" + name
 }
 
+///|
 fn ExecContext::set_readonly_variable(
   self : ExecContext,
   name : String,
-  enabled : Bool
+  enabled : Bool,
 ) -> Unit {
   if enabled {
     self.env[readonly_storage_key(name)] = "1"
@@ -1570,10 +1636,11 @@ fn ExecContext::set_readonly_variable(
   }
 }
 
+///|
 fn ExecContext::set_integer_attribute(
   self : ExecContext,
   name : String,
-  enabled : Bool
+  enabled : Bool,
 ) -> Unit {
   if enabled {
     self.env[integer_attr_storage_key(name)] = "1"
@@ -1582,10 +1649,11 @@ fn ExecContext::set_integer_attribute(
   }
 }
 
+///|
 fn ExecContext::set_lower_attribute(
   self : ExecContext,
   name : String,
-  enabled : Bool
+  enabled : Bool,
 ) -> Unit {
   if enabled {
     self.env[lower_attr_storage_key(name)] = "1"
@@ -1594,10 +1662,11 @@ fn ExecContext::set_lower_attribute(
   }
 }
 
+///|
 fn ExecContext::set_upper_attribute(
   self : ExecContext,
   name : String,
-  enabled : Bool
+  enabled : Bool,
 ) -> Unit {
   if enabled {
     self.env[upper_attr_storage_key(name)] = "1"
@@ -1606,14 +1675,16 @@ fn ExecContext::set_upper_attribute(
   }
 }
 
+///|
 fn ExecContext::is_readonly_variable(self : ExecContext, name : String) -> Bool {
   self.env.get(readonly_storage_key(name)).unwrap_or("") == "1"
 }
 
+///|
 fn ExecContext::apply_variable_attributes(
   self : ExecContext,
   name : String,
-  value : String
+  value : String,
 ) -> String {
   let mut output = value
   if self.env.get(integer_attr_storage_key(name)).unwrap_or("") == "1" {

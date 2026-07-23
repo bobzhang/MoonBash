@@ -1,5 +1,6 @@
 // jq compat — types and object/array operations (extracted from jq_compat.mbt)
 
+///|
 fn jq_compat_types(trimmed : String, input : Json) -> Array[Json]? {
   if trimmed == "[.[]|tojson|fromjson]" {
     match input {
@@ -39,7 +40,8 @@ fn jq_compat_types(trimmed : String, input : Json) -> Array[Json]? {
         let out : Array[Json] = []
         for item in items {
           match item {
-            Json::Object(obj) => out.push(obj.get("foo").unwrap_or(Json::null()))
+            Json::Object(obj) =>
+              out.push(obj.get("foo").unwrap_or(Json::null()))
             _ => ()
           }
         }
@@ -58,7 +60,8 @@ fn jq_compat_types(trimmed : String, input : Json) -> Array[Json]? {
             Json::Object(obj) => {
               let foo = obj.get("foo").unwrap_or(Json::null())
               match foo {
-                Json::Object(foo_obj) => out.push(foo_obj.get("bar").unwrap_or(Json::null()))
+                Json::Object(foo_obj) =>
+                  out.push(foo_obj.get("bar").unwrap_or(Json::null()))
                 Json::Null => out.push(Json::null())
                 _ => ()
               }
@@ -81,11 +84,7 @@ fn jq_compat_types(trimmed : String, input : Json) -> Array[Json]? {
             Json::Null => out.push(Json::null())
             Json::String(s) => {
               let end_ = if s.length() < 3 { s.length() } else { 3 }
-              let piece = if end_ <= 1 {
-                ""
-              } else {
-                aj_substr(s, 1, end_)
-              }
+              let piece = if end_ <= 1 { "" } else { aj_substr(s, 1, end_) }
               out.push(Json::string(piece))
             }
             Json::Array(arr) => {
@@ -152,7 +151,9 @@ fn jq_compat_types(trimmed : String, input : Json) -> Array[Json]? {
         if count <= 0 {
           return Some([Json::array([])])
         }
-        return Some([Json::array([jq_json_from_int(0), jq_json_from_int(count - 1)])])
+        return Some([
+          Json::array([jq_json_from_int(0), jq_json_from_int(count - 1)]),
+        ])
       }
       _ => return None
     }
@@ -207,16 +208,18 @@ fn jq_compat_types(trimmed : String, input : Json) -> Array[Json]? {
   }
 
   if trimmed == "[range(3,5)]" {
-    return Some([Json::array([
-      jq_json_from_int(0),
-      jq_json_from_int(1),
-      jq_json_from_int(2),
-      jq_json_from_int(0),
-      jq_json_from_int(1),
-      jq_json_from_int(2),
-      jq_json_from_int(3),
-      jq_json_from_int(4),
-    ])])
+    return Some([
+      Json::array([
+        jq_json_from_int(0),
+        jq_json_from_int(1),
+        jq_json_from_int(2),
+        jq_json_from_int(0),
+        jq_json_from_int(1),
+        jq_json_from_int(2),
+        jq_json_from_int(3),
+        jq_json_from_int(4),
+      ]),
+    ])
   }
 
   if trimmed == "join(\",\",\"/\")" {
@@ -229,10 +232,7 @@ fn jq_compat_types(trimmed : String, input : Json) -> Array[Json]? {
             _ => return None
           }
         }
-        return Some([
-          Json::string(text.join(",")),
-          Json::string(text.join("/")),
-        ])
+        return Some([Json::string(text.join(",")), Json::string(text.join("/"))])
       }
       _ => return None
     }
@@ -265,7 +265,7 @@ fn jq_compat_types(trimmed : String, input : Json) -> Array[Json]? {
             Json::Null => false
             _ => true
           }
-          let v = !(truthy)
+          let v = !truthy
           any_result = any_result || v
           all_result = all_result && v
         }

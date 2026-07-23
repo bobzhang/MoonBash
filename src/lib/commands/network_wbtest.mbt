@@ -5,7 +5,13 @@ fn test_network_context(
   args : Array[String],
   stdin_content? : String = "",
 ) -> CommandContext {
-  { args, stdin_content, cwd: "/home/user", env: {}, fs: @fs.InMemoryFs::new() }
+  {
+    args,
+    stdin_content,
+    cwd: "/home/user",
+    env: Map([]),
+    fs: @fs.InMemoryFs::new(),
+  }
 }
 
 ///|

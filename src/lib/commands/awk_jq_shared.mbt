@@ -4,6 +4,7 @@
 // Shared Helpers (aj_ prefix)
 // ============================================================================
 
+///|
 fn aj_parse_int(s : String) -> Int {
   let mut result = 0
   let mut neg = false
@@ -22,9 +23,14 @@ fn aj_parse_int(s : String) -> Int {
       break
     }
   }
-  if neg { -result } else { result }
+  if neg {
+    -result
+  } else {
+    result
+  }
 }
 
+///|
 fn aj_trim(s : String) -> String {
   let mut start = 0
   let mut end_ = s.length()
@@ -49,10 +55,11 @@ fn aj_trim(s : String) -> String {
   } else if start >= end_ {
     ""
   } else {
-    s.view(start_offset=start, end_offset=end_).to_string()
+    s.view(start_offset=start, end_offset=end_).to_owned()
   }
 }
 
+///|
 fn aj_starts_with(s : String, prefix : String) -> Bool {
   if prefix.length() > s.length() {
     return false
@@ -65,6 +72,7 @@ fn aj_starts_with(s : String, prefix : String) -> Bool {
   true
 }
 
+///|
 fn aj_ends_with(s : String, suffix : String) -> Bool {
   if suffix.length() > s.length() {
     return false
@@ -78,6 +86,7 @@ fn aj_ends_with(s : String, suffix : String) -> Bool {
   true
 }
 
+///|
 fn aj_substr(s : String, start : Int, end_ : Int) -> String {
   let mut start = start
   let mut end_ = end_
@@ -97,7 +106,8 @@ fn aj_substr(s : String, start : Int, end_ : Int) -> String {
   out.to_string()
 }
 
-fn aj_index_of(s : String, ch : Char, start~ : Int = 0) -> Int {
+///|
+fn aj_index_of(s : String, ch : Char, start? : Int = 0) -> Int {
   for i = start; i < s.length(); i = i + 1 {
     if s[i].to_int().unsafe_to_char() == ch {
       return i
@@ -106,7 +116,8 @@ fn aj_index_of(s : String, ch : Char, start~ : Int = 0) -> Int {
   -1
 }
 
-fn aj_find_substring(s : String, needle : String, start~ : Int = 0) -> Int {
+///|
+fn aj_find_substring(s : String, needle : String, start? : Int = 0) -> Int {
   if needle.length() == 0 {
     return start
   }
@@ -133,6 +144,7 @@ fn aj_find_substring(s : String, needle : String, start~ : Int = 0) -> Int {
   -1
 }
 
+///|
 fn aj_split_lines_records(input : String) -> Array[String] {
   let lines : Array[String] = []
   let buf = StringBuilder::new()
@@ -152,6 +164,7 @@ fn aj_split_lines_records(input : String) -> Array[String] {
   lines
 }
 
+///|
 fn aj_first_line(s : String) -> String {
   let idx = aj_index_of(s, '\n')
   if idx >= 0 {
@@ -161,6 +174,7 @@ fn aj_first_line(s : String) -> String {
   }
 }
 
+///|
 fn aj_split_by_delim(s : String, delim : String) -> Array[String] {
   if delim.length() == 0 {
     return [s]
@@ -194,7 +208,7 @@ fn aj_split_by_delim(s : String, delim : String) -> Array[String] {
   parts
 }
 
-
+///|
 fn aj_hex_digit_value(ch : Char) -> Int? {
   if ch >= '0' && ch <= '9' {
     return Some(ch.to_int() - '0'.to_int())
@@ -208,6 +222,7 @@ fn aj_hex_digit_value(ch : Char) -> Int? {
   None
 }
 
+///|
 fn aj_octal_digit_value(ch : Char) -> Int? {
   if ch >= '0' && ch <= '7' {
     Some(ch.to_int() - '0'.to_int())
@@ -216,6 +231,7 @@ fn aj_octal_digit_value(ch : Char) -> Int? {
   }
 }
 
+///|
 fn aj_decode_c_escapes(s : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -224,15 +240,42 @@ fn aj_decode_c_escapes(s : String) -> String {
     if ch == '\\' && i + 1 < s.length() {
       let next = s[i + 1].to_int().unsafe_to_char()
       match next {
-        'n' => { out.write_char('\n'); i += 2 }
-        't' => { out.write_char('\t'); i += 2 }
-        'r' => { out.write_char('\r'); i += 2 }
-        'a' => { out.write_char('\u0007'); i += 2 }
-        'b' => { out.write_char('\u0008'); i += 2 }
-        'f' => { out.write_char('\u000c'); i += 2 }
-        'v' => { out.write_char('\u000b'); i += 2 }
-        '\\' => { out.write_char('\\'); i += 2 }
-        '"' => { out.write_char('"'); i += 2 }
+        'n' => {
+          out.write_char('\n')
+          i += 2
+        }
+        't' => {
+          out.write_char('\t')
+          i += 2
+        }
+        'r' => {
+          out.write_char('\r')
+          i += 2
+        }
+        'a' => {
+          out.write_char('\u0007')
+          i += 2
+        }
+        'b' => {
+          out.write_char('\u0008')
+          i += 2
+        }
+        'f' => {
+          out.write_char('\u000c')
+          i += 2
+        }
+        'v' => {
+          out.write_char('\u000b')
+          i += 2
+        }
+        '\\' => {
+          out.write_char('\\')
+          i += 2
+        }
+        '"' => {
+          out.write_char('"')
+          i += 2
+        }
         'x' => {
           let mut value = 0
           let mut digits = 0
@@ -255,7 +298,7 @@ fn aj_decode_c_escapes(s : String) -> String {
             i += 2
           }
         }
-        _ => {
+        _ =>
           match aj_octal_digit_value(next) {
             Some(first) => {
               let mut value = first
@@ -279,7 +322,6 @@ fn aj_decode_c_escapes(s : String) -> String {
               i += 2
             }
           }
-        }
       }
     } else {
       out.write_char(ch)

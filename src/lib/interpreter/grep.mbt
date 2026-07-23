@@ -1,14 +1,16 @@
 // moon_bash Interpreter - Grep Builtin
 
+///|
 priv struct GrepTarget {
   display_path : String
   content : String
 }
 
+///|
 fn grep_recursive_display_path(
   raw_root : String,
   resolved_root : String,
-  full_path : String
+  full_path : String,
 ) -> String {
   let mut suffix = ""
   if full_path == resolved_root {
@@ -16,7 +18,7 @@ fn grep_recursive_display_path(
   } else {
     let prefix = resolved_root + "/"
     if full_path.has_prefix(prefix) {
-      suffix = full_path.view(start_offset=prefix.length()).to_string()
+      suffix = full_path.view(start_offset=prefix.length()).to_owned()
     } else {
       // Fallback for unexpected path shapes.
       return full_path
@@ -33,6 +35,7 @@ fn grep_recursive_display_path(
   }
 }
 
+///|
 fn grep_sort_paths(paths : Array[String]) -> Unit {
   paths.sort_by(fn(a, b) {
     let min_len = if a.length() < b.length() { a.length() } else { b.length() }
@@ -54,6 +57,7 @@ fn grep_sort_paths(paths : Array[String]) -> Unit {
   })
 }
 
+///|
 fn path_basename(path : String) -> String {
   let mut slash = -1
   for i = 0; i < path.length(); i = i + 1 {
@@ -66,15 +70,16 @@ fn path_basename(path : String) -> String {
   } else if slash + 1 >= path.length() {
     ""
   } else {
-    path.view(start_offset=slash + 1).to_string()
+    path.view(start_offset=slash + 1).to_owned()
   }
 }
 
+///|
 fn grep_output_prefix(
   display_path : String,
   line_number : Int,
   show_filename : Bool,
-  show_line_number : Bool
+  show_line_number : Bool,
 ) -> String {
   if show_filename && show_line_number {
     display_path + ":" + line_number.to_string() + ":"
@@ -87,12 +92,13 @@ fn grep_output_prefix(
   }
 }
 
+///|
 fn filter_word_ranges(
   ranges : Array[(Int, Int)],
   line : String,
-  word_match : Bool
+  word_match : Bool,
 ) -> Array[(Int, Int)] {
-  if !(word_match) {
+  if !word_match {
     return ranges
   }
   let filtered : Array[(Int, Int)] = []
@@ -104,20 +110,22 @@ fn filter_word_ranges(
   filtered
 }
 
+///|
 fn is_word_boundary(line : String, start : Int, end : Int) -> Bool {
   let left_ok = if start <= 0 {
     true
   } else {
-    !(is_word_char(line[start - 1].to_int().unsafe_to_char()))
+    !is_word_char(line[start - 1].to_int().unsafe_to_char())
   }
   let right_ok = if end >= line.length() {
     true
   } else {
-    !(is_word_char(line[end].to_int().unsafe_to_char()))
+    !is_word_char(line[end].to_int().unsafe_to_char())
   }
   left_ok && right_ok
 }
 
+///|
 fn is_word_char(ch : Char) -> Bool {
   (ch >= 'a' && ch <= 'z') ||
   (ch >= 'A' && ch <= 'Z') ||
@@ -125,10 +133,8 @@ fn is_word_char(ch : Char) -> Bool {
   ch == '_'
 }
 
-fn ExecContext::builtin_grep(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_grep(self : ExecContext, args : Array[String]) -> Unit {
   let mut invert = false
   let mut count_only = false
   let mut ignore_case = false
@@ -154,7 +160,7 @@ fn ExecContext::builtin_grep(
   while i < args.length() {
     let arg = args[i]
     if arg.has_prefix("--include=") {
-      include_globs.push(arg.view(start_offset=10).to_string())
+      include_globs.push(arg.view(start_offset=10).to_owned())
     } else if arg == "--include" && i + 1 < args.length() {
       i += 1
       include_globs.push(args[i])
@@ -200,11 +206,11 @@ fn ExecContext::builtin_grep(
       before_context = ctx
       after_context = ctx
     } else if arg.has_prefix("-A") && arg.length() > 2 {
-      after_context = parse_int32_str(arg.view(start_offset=2).to_string())
+      after_context = parse_int32_str(arg.view(start_offset=2).to_owned())
     } else if arg.has_prefix("-B") && arg.length() > 2 {
-      before_context = parse_int32_str(arg.view(start_offset=2).to_string())
+      before_context = parse_int32_str(arg.view(start_offset=2).to_owned())
     } else if arg.has_prefix("-C") && arg.length() > 2 {
-      let ctx = parse_int32_str(arg.view(start_offset=2).to_string())
+      let ctx = parse_int32_str(arg.view(start_offset=2).to_owned())
       before_context = ctx
       after_context = ctx
     } else if arg.length() > 1 && arg[0] == '-' {
@@ -234,7 +240,9 @@ fn ExecContext::builtin_grep(
           'F' => fixed = true
           'A' => {
             if j + 1 < arg.length() {
-              after_context = parse_int32_str(arg.view(start_offset=j + 1).to_string())
+              after_context = parse_int32_str(
+                arg.view(start_offset=j + 1).to_owned(),
+              )
             } else if i + 1 < args.length() {
               i += 1
               after_context = parse_int32_str(args[i])
@@ -243,7 +251,9 @@ fn ExecContext::builtin_grep(
           }
           'B' => {
             if j + 1 < arg.length() {
-              before_context = parse_int32_str(arg.view(start_offset=j + 1).to_string())
+              before_context = parse_int32_str(
+                arg.view(start_offset=j + 1).to_owned(),
+              )
             } else if i + 1 < args.length() {
               i += 1
               before_context = parse_int32_str(args[i])
@@ -252,7 +262,7 @@ fn ExecContext::builtin_grep(
           }
           'C' => {
             let ctx = if j + 1 < arg.length() {
-              parse_int32_str(arg.view(start_offset=j + 1).to_string())
+              parse_int32_str(arg.view(start_offset=j + 1).to_owned())
             } else if i + 1 < args.length() {
               i += 1
               parse_int32_str(args[i])
@@ -273,7 +283,7 @@ fn ExecContext::builtin_grep(
       i += 1
       pattern = args[i]
       pattern_set = true
-    } else if !(pattern_set) {
+    } else if !pattern_set {
       pattern = arg
       pattern_set = true
     } else {
@@ -282,20 +292,18 @@ fn ExecContext::builtin_grep(
     i += 1
   }
 
-  if !(pattern_set) {
+  if !pattern_set {
     self.stderr_buf.write_string("grep: missing pattern\n")
     self.exit_code = 2
     return
   }
 
-  let matcher = try {
-    @regex.compile_grep_matcher(
-      pattern,
-      extended~,
-      fixed~,
-      ignore_case~,
-    )
-  } catch {
+  let matcher = @regex.compile_grep_matcher(
+    pattern,
+    extended~,
+    fixed~,
+    ignore_case~,
+  ) catch {
     _ => {
       self.stderr_buf.write_string("grep: invalid regular expression\n")
       self.exit_code = 2
@@ -309,15 +317,13 @@ fn ExecContext::builtin_grep(
     targets.push({ display_path: "", content: self.stdin_buf })
   } else {
     for raw_path in file_args {
-      let resolved = try {
-        @fs.resolve_path(self.cwd, raw_path)
-      } catch {
+      let resolved = @fs.resolve_path(self.cwd, raw_path) catch {
         _ => raw_path
       }
       match self.fs.entries.get(resolved) {
         Some(@fs.FsEntry::Directory(_)) if recursive => {
           let mut prefix = resolved
-          if !(prefix.has_suffix("/")) {
+          if !prefix.has_suffix("/") {
             prefix = prefix + "/"
           }
           let matched_paths : Array[String] = []
@@ -331,7 +337,9 @@ fn ExecContext::builtin_grep(
           }
           grep_sort_paths(matched_paths)
           for full_path in matched_paths {
-            let display = grep_recursive_display_path(raw_path, resolved, full_path)
+            let display = grep_recursive_display_path(
+              raw_path, resolved, full_path,
+            )
             if include_globs.length() > 0 {
               let base = path_basename(display)
               let mut include_match = false
@@ -341,7 +349,7 @@ fn ExecContext::builtin_grep(
                   break
                 }
               }
-              if !(include_match) {
+              if !include_match {
                 continue
               }
             }
@@ -357,9 +365,7 @@ fn ExecContext::builtin_grep(
           had_io_error = true
         }
         _ => {
-          let content = try {
-            self.fs.read_file(resolved)
-          } catch {
+          let content = self.fs.read_file(resolved) catch {
             @fs.FsError(msg) => {
               self.stderr_buf.write_string("grep: \{msg}\n")
               had_io_error = true
@@ -372,7 +378,7 @@ fn ExecContext::builtin_grep(
     }
   }
 
-  let show_filename = !(no_filename) && (targets.length() > 1 || recursive)
+  let show_filename = !no_filename && (targets.length() > 1 || recursive)
   let mut total_selected = 0
   let mut listed_file_count = 0
 
@@ -389,7 +395,7 @@ fn ExecContext::builtin_grep(
       let word_ranges = filter_word_ranges(raw_ranges, line, word_match)
       let ranges = filter_whole_line_ranges(word_ranges, line, whole_line)
       let has_match = ranges.length() > 0
-      let selected = if invert { !(has_match) } else { has_match }
+      let selected = if invert { !has_match } else { has_match }
       line_matches.push(ranges)
       selected_lines.push(selected)
       if selected {
@@ -432,7 +438,7 @@ fn ExecContext::builtin_grep(
 
     if only_matching {
       for line_idx = 0; line_idx < lines.length(); line_idx = line_idx + 1 {
-        if !(selected_lines[line_idx]) || invert {
+        if !selected_lines[line_idx] || invert {
           continue
         }
         let line = lines[line_idx]
@@ -476,7 +482,7 @@ fn ExecContext::builtin_grep(
     }
 
     for line_idx = 0; line_idx < lines.length(); line_idx = line_idx + 1 {
-      if !(print_mask[line_idx]) {
+      if !print_mask[line_idx] {
         continue
       }
       let prefix = grep_output_prefix(
@@ -498,12 +504,13 @@ fn ExecContext::builtin_grep(
   }
 }
 
+///|
 fn filter_whole_line_ranges(
   ranges : Array[(Int, Int)],
   line : String,
-  whole_line : Bool
+  whole_line : Bool,
 ) -> Array[(Int, Int)] {
-  if !(whole_line) {
+  if !whole_line {
     return ranges
   }
   let filtered : Array[(Int, Int)] = []

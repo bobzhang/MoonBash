@@ -1,6 +1,7 @@
 // moon_bash Commands - Shell builtins
 // echo, true, false, cd, pwd
 
+///|
 /// echo: print arguments to stdout
 fn cmd_echo(ctx : CommandContext) -> @ast.ExecResult {
   let buf = StringBuilder::new()
@@ -40,12 +41,13 @@ fn cmd_echo(ctx : CommandContext) -> @ast.ExecResult {
       buf.write_string(ctx.args[i])
     }
   }
-  if !(no_newline) {
+  if !no_newline {
     buf.write_char('\n')
   }
   @ast.ExecResult::ok(buf.to_string())
 }
 
+///|
 /// Process escape sequences for echo -e
 fn process_echo_escapes(s : String) -> String {
   let buf = StringBuilder::new()
@@ -55,15 +57,42 @@ fn process_echo_escapes(s : String) -> String {
     if ch == '\\' && i + 1 < s.length() {
       let next = s[i + 1].to_int().unsafe_to_char()
       match next {
-        'n' => { buf.write_char('\n'); i += 2 }
-        't' => { buf.write_char('\t'); i += 2 }
-        'r' => { buf.write_char('\r'); i += 2 }
-        '\\' => { buf.write_char('\\'); i += 2 }
-        'a' => { buf.write_char('\u0007'); i += 2 }
-        'b' => { buf.write_char('\u0008'); i += 2 }
-        'f' => { buf.write_char('\u000C'); i += 2 }
-        'v' => { buf.write_char('\u000B'); i += 2 }
-        _ => { buf.write_char(ch); i += 1 }
+        'n' => {
+          buf.write_char('\n')
+          i += 2
+        }
+        't' => {
+          buf.write_char('\t')
+          i += 2
+        }
+        'r' => {
+          buf.write_char('\r')
+          i += 2
+        }
+        '\\' => {
+          buf.write_char('\\')
+          i += 2
+        }
+        'a' => {
+          buf.write_char('\u0007')
+          i += 2
+        }
+        'b' => {
+          buf.write_char('\u0008')
+          i += 2
+        }
+        'f' => {
+          buf.write_char('\u000C')
+          i += 2
+        }
+        'v' => {
+          buf.write_char('\u000B')
+          i += 2
+        }
+        _ => {
+          buf.write_char(ch)
+          i += 1
+        }
       }
     } else {
       buf.write_char(ch)
@@ -73,16 +102,19 @@ fn process_echo_escapes(s : String) -> String {
   buf.to_string()
 }
 
+///|
 /// true: return success
 fn cmd_true(_ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(exit_code=0)
 }
 
+///|
 /// false: return failure
 fn cmd_false(_ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(exit_code=1)
 }
 
+///|
 /// cd: change directory
 fn cmd_cd(ctx : CommandContext) -> @ast.ExecResult {
   let target = if ctx.args.length() == 0 {
@@ -92,9 +124,7 @@ fn cmd_cd(ctx : CommandContext) -> @ast.ExecResult {
   } else {
     ctx.args[0]
   }
-  let resolved = try {
-    @fs.resolve_path(ctx.cwd, target)
-  } catch {
+  let resolved = @fs.resolve_path(ctx.cwd, target) catch {
     @fs.FsError(msg) => return @ast.ExecResult::err("cd: \{msg}\n")
   }
   // Verify the directory exists
@@ -108,6 +138,7 @@ fn cmd_cd(ctx : CommandContext) -> @ast.ExecResult {
   }
 }
 
+///|
 /// pwd: print working directory
 fn cmd_pwd(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::ok(ctx.cwd + "\n")

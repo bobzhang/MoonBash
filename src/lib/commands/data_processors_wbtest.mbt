@@ -5,7 +5,13 @@ fn test_data_processors_context(
   args : Array[String],
   stdin_content? : String = "",
 ) -> CommandContext {
-  { args, stdin_content, cwd: "/home/user", env: {}, fs: @fs.InMemoryFs::new() }
+  {
+    args,
+    stdin_content,
+    cwd: "/home/user",
+    env: Map([]),
+    fs: @fs.InMemoryFs::new(),
+  }
 }
 
 ///|
@@ -15,7 +21,9 @@ fn test_data_processors_csv() -> String {
 
 ///|
 test "xan slice parses start and length options" {
-  let config = xan_slice_parse_args(["slice", "-i", "1", "-l", "2", "scores.csv"])
+  let config = xan_slice_parse_args([
+    "slice", "-i", "1", "-l", "2", "scores.csv",
+  ])
   assert_eq(config.start, 1)
   assert_eq(config.length, Some(2))
   assert_eq(config.file_path, Some("scores.csv"))
@@ -49,7 +57,9 @@ test "xan slice reads from stdin" {
 
 ///|
 test "xan slice reads from file" {
-  let ctx = test_data_processors_context(["slice", "-i", "0", "-l", "2", "scores.csv"])
+  let ctx = test_data_processors_context([
+    "slice", "-i", "0", "-l", "2", "scores.csv",
+  ])
   ctx.fs.write_file("/home/user/scores.csv", test_data_processors_csv())
   let result = xan_slice(ctx)
   assert_eq(result.stderr, "")
