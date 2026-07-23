@@ -73,7 +73,7 @@ import {
   type TransformPlugin,
   type TransformResult,
   type WriteFileOptions,
-} from "../../../src/wrapper/index";
+} from "../../../wrapper/index";
 
 const bytes: ByteString = encodeUtf8ToBytes("hello");
 const emptyBytes: ByteString = EMPTY_BYTES;

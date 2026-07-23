@@ -3,4 +3,4 @@ export {
   getJavaScriptCommandNames,
   getNetworkCommandNames,
   getPythonCommandNames,
-} from "../../../src/wrapper/index.ts";
+} from "../../../wrapper/index.ts";

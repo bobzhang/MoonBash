@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
-import * as moonBash from "../../../src/wrapper/index.ts";
+import * as moonBash from "../../../wrapper/index.ts";
 import {
   JUST_BASH_3_COMMAND_NAMES,
   JUST_BASH_3_JAVASCRIPT_COMMAND_NAMES,
   JUST_BASH_3_NETWORK_COMMAND_NAMES,
   JUST_BASH_3_PYTHON_COMMAND_NAMES,
   JUST_BASH_3_ROOT_EXPORTS,
-} from "../../../src/wrapper/compat/just-bash-3.ts";
+} from "../../../wrapper/compat/just-bash-3.ts";
 
 describe("just-bash 3 public API surface", () => {
   it("exports every runtime root symbol required by just-bash 3.0.1", () => {

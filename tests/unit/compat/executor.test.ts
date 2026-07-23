@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { Bash } from "../Bash.js";
-import { createExecutor, parseToolArgs } from "../../../src/wrapper/executor.ts";
+import { createExecutor, parseToolArgs } from "../../../wrapper/executor.ts";
 
 describe("just-bash executor companion compatibility", () => {
   it("parses tool args JSON like @just-bash/executor", () => {

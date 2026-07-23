@@ -27,7 +27,7 @@ Low scope, high confidence, blocks `test:safe` tail stages.
 - `tests/security/fuzzing/__tests__/fuzz-coverage.test.ts`
 
 ### Likely code/files
-- `src/lib/interpreter/interpreter_execution.mbt` (if stderr/redirect behavior adjustment is needed)
+- `lib/interpreter/interpreter_execution.mbt` (if stderr/redirect behavior adjustment is needed)
 - `tests/security/fuzzing/generators/malformed-generator.ts` (fast-check API adaptation)
 - `tests/security/fuzzing/__tests__/fuzz-coverage.test.ts` (coverage gate/corpus bootstrap)
 
@@ -46,8 +46,8 @@ Low scope, high confidence, blocks `test:safe` tail stages.
 - invalid-regex error parity
 
 ### Likely code/files
-- `src/lib/interpreter/grep.mbt`
-- `src/lib/regex/regex.mbt`
+- `lib/interpreter/grep.mbt`
+- `lib/regex/regex.mbt`
 
 ## Priority 3: JQ Compatibility
 ### Why third
@@ -59,10 +59,10 @@ Low scope, high confidence, blocks `test:safe` tail stages.
 - format handlers (`@urid`, etc.)
 
 ### Likely code/files
-- `src/lib/commands/jq_cmd.mbt`
-- `src/lib/commands/jq_normalize.mbt`
-- `src/lib/commands/jq_compat.mbt`
-- `src/lib/commands/jq_rewrite.mbt`
+- `lib/commands/jq_cmd.mbt`
+- `lib/commands/jq_normalize.mbt`
+- `lib/commands/jq_compat.mbt`
+- `lib/commands/jq_rewrite.mbt`
 
 ## Priority 4: Bash Spec Backlog (Chunked)
 ### Why last

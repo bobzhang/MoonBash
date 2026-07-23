@@ -4,7 +4,7 @@ import {
   decodeBytesToUtf8,
   InMemoryFs,
   latin1FromBytes,
-} from "../../../src/wrapper/index.ts";
+} from "../../../wrapper/index.ts";
 
 describe("InMemoryFs compatibility", () => {
   it("reads, writes, appends, and stats files asynchronously", async () => {

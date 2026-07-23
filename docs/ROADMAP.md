@@ -556,15 +556,15 @@ Migrated from handwritten evaluator to `bobzhang/moonjq` (MoonBit creator's pack
 
 - [x] Browser-specific build path (`vp run build:website`)
 - [x] Static website demo (`examples/website/`) replicating the `justbash.dev` full-screen terminal style
-- [x] MoonBit frontend mount package (`src/website/`) for browser UI bootstrapping
-- [x] Browser wrapper entry scaffold (`src/wrapper/browser.ts`)
+- [x] MoonBit frontend mount package (`website/`) for browser UI bootstrapping
+- [x] Browser wrapper entry scaffold (`wrapper/browser.ts`)
 - [ ] IndexedDB-backed persistent VFS
 - [ ] xterm.js integration example
 - [ ] Web Worker support (off-main-thread execution)
 - [ ] CSP-compatible (no eval, no dynamic imports)
 
 Current status note (2026-04-18): the browser demo is real and locally runnable today, but the npm package export surface is still primarily Node-oriented. The website build bundles directly from source plus compiled MoonBit JS, which is sufficient to demonstrate browser usability and embedability.
-Update (2026-04-18): the browser website runtime has since been refactored toward MoonBit. The demo still uses a thin JS bootstrap, but DOM construction, browser state, async command execution, history/completion, and autoplay verification now live in `src/website/*.mbt`.
+Update (2026-04-18): the browser website runtime has since been refactored toward MoonBit. The demo still uses a thin JS bootstrap, but DOM construction, browser state, async command execution, history/completion, and autoplay verification now live in `website/*.mbt`.
 
 ### 5.3 Interactive Shell (REPL)
 

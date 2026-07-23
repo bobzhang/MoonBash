@@ -7,7 +7,7 @@
     "declarationMap": false,
     "sourceMap": false,
     "outDir": "dist",
-    "rootDir": "src/wrapper",
+    "rootDir": "wrapper",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -17,6 +17,6 @@
     "isolatedModules": true,
     "ignoreDeprecations": "6.0"
   },
-  "include": ["src/wrapper/**/*.ts", "src/wrapper/**/*.d.ts"],
+  "include": ["wrapper/**/*.ts", "wrapper/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
