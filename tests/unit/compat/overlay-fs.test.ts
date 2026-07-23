@@ -13,7 +13,7 @@ import { join } from "node:path";
 import {
   latin1FromBytes,
   OverlayFs,
-} from "../../../src/wrapper/index.ts";
+} from "../../../wrapper/index.ts";
 
 const roots: string[] = [];
 

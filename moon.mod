@@ -43,6 +43,5 @@ options(
     "**/pkg.generated.mbti",
     "**/*_test.mbt",
     "**/*_wbtest.mbt",
-    "**/*.mbt.md",
   ],
 )

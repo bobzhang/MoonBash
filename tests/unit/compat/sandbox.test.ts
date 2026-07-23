@@ -10,7 +10,7 @@ import { join } from "node:path";
 import {
   InMemoryFs,
   Sandbox,
-} from "../../../src/wrapper/index.ts";
+} from "../../../wrapper/index.ts";
 
 const roots: string[] = [];
 

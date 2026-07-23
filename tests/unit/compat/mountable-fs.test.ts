@@ -3,7 +3,7 @@ import {
   InMemoryFs,
   latin1FromBytes,
   MountableFs,
-} from "../../../src/wrapper/index.ts";
+} from "../../../wrapper/index.ts";
 
 describe("MountableFs compatibility", () => {
   it("routes file operations to the longest matching mount", async () => {

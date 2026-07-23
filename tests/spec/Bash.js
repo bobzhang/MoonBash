@@ -1,2 +1,2 @@
-export { Bash } from "../../src/wrapper/index.ts";
+export { Bash } from "../../wrapper/index.ts";
 

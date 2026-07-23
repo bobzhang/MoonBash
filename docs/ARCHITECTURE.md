@@ -602,14 +602,14 @@ A complete trace of `echo "hello $USER" > output.txt`:
 ```
 MoonBit Source (.mbt)
        │
-       ├── src/lib/*            (core shell engine)
-       └── src/website/*        (browser demo mount package)
+       ├── lib/*            (core shell engine)
+       └── website/*        (browser demo mount package)
        │
        ▼
 moon build --target js --release
        │
        ▼
-Pure JavaScript packages under src/_build/js/release/build/*
+Pure JavaScript packages under _build/js/release/build/*
        │
        ├── lib/entry/entry.js   (core execution bridge)
        └── website/website.js   (browser demo mount bridge)
@@ -617,7 +617,7 @@ Pure JavaScript packages under src/_build/js/release/build/*
        ▼
 TypeScript / JS integration layer
        │
-       ├── src/wrapper/*.ts     (library wrapper)
+       ├── wrapper/*.ts     (library wrapper)
        └── examples/website/main.js   (thin config/bootstrap bridge)
        │
        ▼
@@ -633,8 +633,8 @@ npm publish moon-bash / serve website demo
 
 The browser demo path is intentionally separate from the npm package build:
 
-- library packaging still centers on the TypeScript wrapper under `src/wrapper/`
-- browser demo packaging uses `examples/website/main.js` plus the compiled MoonBit package in `src/website/`
+- library packaging still centers on the TypeScript wrapper under `wrapper/`
+- browser demo packaging uses `examples/website/main.js` plus the compiled MoonBit package in `website/`
 - the website runtime itself now lives primarily in MoonBit (`config.mbt`, `dom_helpers.mbt`, `app.mbt`, `website.mbt`)
 - JS is retained mainly for host bootstrap/config injection and the minimum browser interop surface needed by the MoonBit package
 - this keeps the demo close to real browser constraints without pushing presentation logic back into the shell core or a large JS frontend

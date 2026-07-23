@@ -5,15 +5,15 @@
 - `tests/` is the main executable asset today, split into `unit/`, `comparison/`, `spec/`, `security/`, and `agent-examples/`.
 - `tests/` content is copied from `just-bash` and treated as imported reference assets by default.
 - `tests/comparison/fixtures/` stores recorded Bash outputs used for deterministic cross-platform comparisons.
-- Core implementation lives under `src/lib/` (MoonBit engine) and `src/wrapper/` (TypeScript facade).
+- Core implementation lives under `lib/` (MoonBit engine) and `wrapper/` (TypeScript facade).
 
 ## Build, Test, and Development Commands
-- `moon -C src build --target js` - compile MoonBit core to JavaScript.
-- `moon -C src check --target js` - type-check MoonBit code.
+- `moon build --target js` - compile MoonBit core to JavaScript.
+- `moon check --target js` - type-check MoonBit code.
 - `vp run test:safe` - recommended default; runs the batched Vitest workflow with single worker, bounded heap, and `--no-cache` to avoid OOM/stale artifacts.
 - `MOONBASH_TEST_HEAP_MB=1536 MOONBASH_TEST_SKIP_FUZZ=1 vp run test:safe` - low-memory/local quick mode (skip fuzzing suites).
-- `moon -C src build --target js && vp test` - one-shot full Vitest run after refreshing generated MoonBit JS.
-- `moon -C src build --target js && vp test run tests/comparison/` - run comparison tests directly.
+- `moon build --target js && vp test` - one-shot full Vitest run after refreshing generated MoonBit JS.
+- `moon build --target js && vp test run tests/comparison/` - run comparison tests directly.
 - `vp run build` - full library build (`moon build` + `vp pack`).
 - `vp run build:website` - build the browser demo bundle.
 - `vp run serve:website` - serve the browser demo locally.
@@ -30,7 +30,7 @@
 ## Testing Guidelines
 - Framework: Vitest for TypeScript suites.
 - Default test workflow: use `vp run test:safe` to avoid machine freezes from Node OOM during full-suite runs.
-- Use `moon -C src build --target js && vp test` only when you explicitly need the one-shot full run and have enough memory.
+- Use `moon build --target js && vp test` only when you explicitly need the one-shot full run and have enough memory.
 - Do not modify files under `tests/` unless explicitly requested for this repository.
 - If test adaptation is explicitly requested, update files in the closest suite (`unit`, `comparison`, `security`, or `spec`) and keep attribution context intact.
 - When changing comparison behavior, commit both the test file and updated fixture JSON.
@@ -51,9 +51,9 @@
 
 所有与"物理 I/O"无关的纯计算、纯解析任务，100% 收敛回 MoonBit 内部，实现零外部依赖。
 
-- **Layer 1 - MoonBit 巨核** (`src/lib/`): Lexer → Parser (recursive descent → ADT-based AST) → Interpreter (tree-walking evaluator). 包含 50+ built-in commands、InMemoryFs (HashMap-based VFS)、awk/sed/jq 微型解释器等全部纯计算逻辑。编译后经 DCE 优化产出 <200 KB 无依赖 JS。
-- **Layer 2 - FFI 薄壳** (`src/lib/ffi/` + `src/wrapper/`): 仅桥接 4 个系统原语 — 物理网络 (`fetch`)、事件循环 (`setTimeout`/`Date.now()`)、巨型异构 VM (`python`/`sqlite3`)、物理磁盘 (`OverlayFs`)。不含任何业务逻辑。
-- **Layer 3 - TypeScript API Facade** (`src/wrapper/`): `Bash` class and `Sandbox` class providing identical API to just-bash. Entry point is `Bash.exec()`.
+- **Layer 1 - MoonBit 巨核** (`lib/`): Lexer → Parser (recursive descent → ADT-based AST) → Interpreter (tree-walking evaluator). 包含 50+ built-in commands、InMemoryFs (HashMap-based VFS)、awk/sed/jq 微型解释器等全部纯计算逻辑。编译后经 DCE 优化产出 <200 KB 无依赖 JS。
+- **Layer 2 - FFI 薄壳** (`lib/ffi/` + `wrapper/`): 仅桥接 4 个系统原语 — 物理网络 (`fetch`)、事件循环 (`setTimeout`/`Date.now()`)、巨型异构 VM (`python`/`sqlite3`)、物理磁盘 (`OverlayFs`)。不含任何业务逻辑。
+- **Layer 3 - TypeScript API Facade** (`wrapper/`): `Bash` class and `Sandbox` class providing identical API to just-bash. Entry point is `Bash.exec()`.
 
 ## Test Suite Details
 - `tests/spec/bash/`: Bash spec tests using `## TESTNAME` / `## STDOUT:` / `## END` block format.
@@ -120,7 +120,7 @@
   - Runtime: 10K commands, 10K loop iterations, call depth 100, string size 10MB
 - Expansion order: Brace -> Tilde -> Parameter -> Command substitution -> Arithmetic -> Word splitting -> Pathname -> Quote removal.
 - Command lookup order: Aliases -> Functions -> Builtins -> Registered commands.
-- Module layout under `src/lib/`: `ast/`, `lexer/`, `parser/`, `interpreter/`, `commands/`, `fs/`, `regex/`, `ffi/`, `entry/`.
+- Module layout under `lib/`: `ast/`, `lexer/`, `parser/`, `interpreter/`, `commands/`, `fs/`, `regex/`, `ffi/`, `entry/`.
 
 ## MoonBit Language Skills（必读）
 

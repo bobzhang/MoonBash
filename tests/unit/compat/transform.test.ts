@@ -6,7 +6,7 @@ import {
   parse,
   serialize,
   TeePlugin,
-} from "../../../src/wrapper/index.ts";
+} from "../../../wrapper/index.ts";
 
 describe("Transform compatibility", () => {
   it("parses and serializes simple commands in just-bash AST shape", () => {

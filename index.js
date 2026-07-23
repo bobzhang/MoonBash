@@ -1,1 +1,1 @@
-export * from "./src/wrapper/index.ts";
+export * from "./wrapper/index.ts";

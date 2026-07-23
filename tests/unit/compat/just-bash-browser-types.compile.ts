@@ -39,7 +39,7 @@ import {
   type NetworkConfig,
   type RmOptions,
   type SymlinkEntry,
-} from "../../../src/wrapper/browser";
+} from "../../../wrapper/browser";
 
 const logger: BashLogger = {
   info: (message: string) => String(message),

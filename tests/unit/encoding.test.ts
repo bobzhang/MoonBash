@@ -9,7 +9,7 @@ import {
   stdoutKind,
   textOutput,
   unsafeBytesFromLatin1,
-} from "../../src/wrapper/index.ts";
+} from "../../wrapper/index.ts";
 
 describe("ByteString compatibility helpers", () => {
   it("round-trips UTF-8 text through byte helpers", () => {

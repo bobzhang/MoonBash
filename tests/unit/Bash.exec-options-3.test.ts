@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { Bash, latin1FromBytes, unsafeBytesFromLatin1 } from "../../src/wrapper/index.ts";
+import { Bash, latin1FromBytes, unsafeBytesFromLatin1 } from "../../wrapper/index.ts";
 
 describe("just-bash 3 ExecOptions compatibility", () => {
   it("replaceEnv starts with an empty environment plus provided env", async () => {

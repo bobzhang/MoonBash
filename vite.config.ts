@@ -10,11 +10,11 @@ export default defineConfig({
     alias: [
       {
         find: "../../index.js",
-        replacement: resolve(rootDir, "src/wrapper/index.ts"),
+        replacement: resolve(rootDir, "wrapper/index.ts"),
       },
       {
         find: /^fast-check$/,
-        replacement: resolve(rootDir, "src/wrapper/fast-check-compat.ts"),
+        replacement: resolve(rootDir, "wrapper/fast-check-compat.ts"),
       },
       {
         find: /^fast-check-real$/,
@@ -29,9 +29,9 @@ export default defineConfig({
   },
   pack: {
     entry: {
-      index: "src/wrapper/index.ts",
-      browser: "src/wrapper/browser.ts",
-      executor: "src/wrapper/executor.ts",
+      index: "wrapper/index.ts",
+      browser: "wrapper/browser.ts",
+      executor: "wrapper/executor.ts",
     },
     dts: true,
     format: ["esm", "cjs"],
@@ -45,10 +45,10 @@ export default defineConfig({
       "docs/**",
       "examples/**",
       "tests/**",
-      "src/.mooncakes/**",
-      "src/_build/**",
-      "src/lib/**",
-      "src/website/**",
+      ".mooncakes/**",
+      "_build/**",
+      "lib/**",
+      "website/**",
       "AGENTS.md",
       "CLAUDE.md",
       "pnpm-workspace.yaml",
@@ -61,10 +61,10 @@ export default defineConfig({
       "docs/**",
       "examples/**",
       "tests/**",
-      "src/.mooncakes/**",
-      "src/_build/**",
-      "src/lib/**",
-      "src/website/**",
+      ".mooncakes/**",
+      "_build/**",
+      "lib/**",
+      "website/**",
     ],
     options: {
       typeAware: true,

@@ -4,4 +4,4 @@ export type {
   LazyCommand,
   CommandContext,
   ExecResult,
-} from "../../src/wrapper/types.ts";
+} from "../../wrapper/types.ts";

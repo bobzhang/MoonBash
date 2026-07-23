@@ -39,9 +39,9 @@ echo "[vercel-build] vp path: $(command -v vp)"
 
 cd "${ROOT_DIR}"
 echo "[vercel-build] Updating MoonBit registry index..."
-moon -C src update
+moon update
 
-run_logged "MoonBit build" moon -C src build --target js --release
+run_logged "MoonBit build" moon build --target js --release
 
 echo "[vercel-build] Building website bundle..."
 vp build -c vite.website.config.ts

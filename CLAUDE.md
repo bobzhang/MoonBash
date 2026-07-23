@@ -11,12 +11,12 @@ MoonBash is a zero-dependency, pure-memory POSIX Shell sandbox written in MoonBi
 ## Build Commands
 
 ```bash
-moon -C src build --target js      # Compile MoonBit to JS
-moon -C src check --target js      # Type-check without building
+moon build --target js      # Compile MoonBit to JS
+moon check --target js      # Type-check without building
 vp run test:safe                   # Recommended default: batched, heap-bounded, no-cache
 MOONBASH_TEST_HEAP_MB=1536 MOONBASH_TEST_SKIP_FUZZ=1 vp run test:safe  # Low-memory local mode
-moon -C src build --target js && vp test  # One-shot full run (can OOM on low-memory machines)
-moon -C src build --target js && vp test run tests/comparison/  # Run comparison tests
+moon build --target js && vp test  # One-shot full run (can OOM on low-memory machines)
+moon build --target js && vp test run tests/comparison/  # Run comparison tests
 ```
 
 Build pipeline: MoonBit (.mbt) → `moon build --target js` → Pure JS → TypeScript wrapper → `vp pack` → npm package
@@ -25,11 +25,11 @@ Build pipeline: MoonBit (.mbt) → `moon build --target js` → Pure JS → Type
 
 所有与"物理 I/O"无关的纯计算、纯解析任务，100% 收敛回 MoonBit 内部，实现零外部依赖。
 
-1. **Layer 1 - MoonBit 巨核** (`src/lib/`): Lexer → Parser (recursive descent → ADT-based AST) → Interpreter (tree-walking evaluator). 包含 50+ built-in commands、InMemoryFs (HashMap-based VFS)、awk/sed/jq 微型解释器、tar 字节解包、diff 算法等全部纯计算逻辑。编译后经 DCE 优化产出 <200 KB 无依赖 JS。
+1. **Layer 1 - MoonBit 巨核** (`lib/`): Lexer → Parser (recursive descent → ADT-based AST) → Interpreter (tree-walking evaluator). 包含 50+ built-in commands、InMemoryFs (HashMap-based VFS)、awk/sed/jq 微型解释器、tar 字节解包、diff 算法等全部纯计算逻辑。编译后经 DCE 优化产出 <200 KB 无依赖 JS。
 
-2. **Layer 2 - FFI 薄壳** (`src/lib/ffi/` + `src/wrapper/`): 仅桥接 4 个系统原语 — 物理网络 (`fetch`)、事件循环 (`setTimeout`/`Date.now()`)、巨型异构 VM (`python`/`sqlite3`)、物理磁盘 (`OverlayFs`)。不含任何业务逻辑。
+2. **Layer 2 - FFI 薄壳** (`lib/ffi/` + `wrapper/`): 仅桥接 4 个系统原语 — 物理网络 (`fetch`)、事件循环 (`setTimeout`/`Date.now()`)、巨型异构 VM (`python`/`sqlite3`)、物理磁盘 (`OverlayFs`)。不含任何业务逻辑。
 
-3. **Layer 3 - TypeScript API Facade** (`src/wrapper/`): `Bash` class and `Sandbox` class providing identical API to just-bash. Entry point is `Bash.exec()`.
+3. **Layer 3 - TypeScript API Facade** (`wrapper/`): `Bash` class and `Sandbox` class providing identical API to just-bash. Entry point is `Bash.exec()`.
 
 ## Test Suite Structure
 
@@ -48,7 +48,7 @@ All TypeScript tests use Vitest and the `Bash` class.
 - Default to `vp run test:safe` for routine validation; it splits suites into isolated batches and disables Vitest cache.
 - `test:safe` runs with single-worker fork mode and bounded heap (`MOONBASH_TEST_HEAP_MB`, default `4096`).
 - Set `MOONBASH_TEST_SKIP_FUZZ=1` when iterating locally to skip the heaviest fuzzing suites.
-- Use `moon -C src build --target js && vp test` only on high-memory environments when you explicitly want one-shot full execution.
+- Use `moon build --target js && vp test` only on high-memory environments when you explicitly want one-shot full execution.
 
 ## Key Design Documents
 
@@ -126,7 +126,7 @@ All in `docs/`:
 - **Execution limits:** Parser limits (10MB input, 100K tokens, depth 100) and runtime limits (10K commands, 10K loop iterations, 100 call depth, 10MB strings).
 - **Expansion order:** Brace → Tilde → Parameter → Command substitution → Arithmetic → Word splitting → Pathname → Quote removal.
 - **Command lookup order:** Aliases → Functions → Builtins → Registered commands.
-- Module layout: MoonBit source in `src/lib/` with subpackages: `ast/`, `lexer/`, `parser/`, `interpreter/`, `commands/`, `fs/`, `regex/`, `ffi/`, `entry/`.
+- Module layout: MoonBit source in `lib/` with subpackages: `ast/`, `lexer/`, `parser/`, `interpreter/`, `commands/`, `fs/`, `regex/`, `ffi/`, `entry/`.
 
 ## MoonBit Language Skills（必读）
 

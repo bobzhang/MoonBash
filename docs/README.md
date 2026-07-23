@@ -17,7 +17,7 @@ MoonBash is a complete rewrite of [vercel-labs/just-bash](https://github.com/ver
 | WASM Required | No | No |
 | API Surface Compatible | N/A | 100% drop-in replacement |
 
-Status note (as of 2026-04-20): command coverage is complete (`87/87`) and comparison tests are at `523/523` (`100%`). Security test suites are fully passing, gzip/gunzip/zcat use real DEFLATE compression via `gmlewis/gzip`, and the browser website demo now ships under `examples/website/` with MoonBit owning the runtime flow in `src/website/*.mbt`. Spec compatibility hardening remains in progress. See `docs/ROADMAP.md`.
+Status note (as of 2026-04-20): command coverage is complete (`87/87`) and comparison tests are at `523/523` (`100%`). Security test suites are fully passing, gzip/gunzip/zcat use real DEFLATE compression via `gmlewis/gzip`, and the browser website demo now ships under `examples/website/` with MoonBit owning the runtime flow in `website/*.mbt`. Spec compatibility hardening remains in progress. See `docs/ROADMAP.md`.
 
 ## Package Size
 
@@ -69,8 +69,8 @@ console.log(result.exitCode); // 0
 
 MoonBash currently has three distinct build outputs:
 
-- **npm package** - `vp run build` runs `moon -C src build --target js --release && vp pack`, bundling [`src/wrapper/index.ts`](../src/wrapper/index.ts) into an ESM package at `dist/`. `vp run build:publish` uses the same release build but enables `vp pack` minification via `MOONBASH_PACK_MINIFY=1`. The published entrypoints are `dist/index.mjs` and `dist/index.d.mts`; sourcemaps are not shipped in the npm package.
-- **MoonBit / mooncakes package** - the pure MoonBit runtime is packaged from `src/` using [`src/moon.mod.json`](../src/moon.mod.json). The TypeScript wrapper and browser demo are excluded from that package, and MoonBit publish artifacts are produced under `src/_build/publish/`.
+- **npm package** - `vp run build` runs `moon build --target js --release && vp pack`, bundling [`wrapper/index.ts`](../wrapper/index.ts) into an ESM package at `dist/`. `vp run build:publish` uses the same release build but enables `vp pack` minification via `MOONBASH_PACK_MINIFY=1`. The published entrypoints are `dist/index.mjs` and `dist/index.d.mts`; sourcemaps are not shipped in the npm package.
+- **MoonBit / mooncakes package** - the pure MoonBit runtime is packaged from `src/` using [`moon.mod.json`](../moon.mod.json). The TypeScript wrapper and browser demo are excluded from that package, and MoonBit publish artifacts are produced under `_build/publish/`.
 - **Browser demo** - `vp run build:website` builds the static site into `examples/website/dist/`.
 
 Useful commands:
@@ -84,9 +84,9 @@ Useful commands:
 Build pipeline in practice:
 
 ```text
-MoonBit (.mbt) -> moon -C src build --target js --release -> generated JS in src/_build/...
-                -> src/wrapper/index.ts -> vp pack -> dist/index.mjs + dist/index.d.mts
-                -> examples/website/main.js + src/website -> vp build -c vite.website.config.ts -> examples/website/dist/
+MoonBit (.mbt) -> moon build --target js --release -> generated JS in _build/...
+                -> wrapper/index.ts -> vp pack -> dist/index.mjs + dist/index.d.mts
+                -> examples/website/main.js + website -> vp build -c vite.website.config.ts -> examples/website/dist/
 ```
 
 ## Browser Demo
@@ -95,8 +95,8 @@ MoonBash now includes a browser demo that recreates the `justbash.dev` terminal 
 
 Key pieces:
 
-- `src/website/` - MoonBit package for DOM creation, browser state, async command flow, and verification playback
-- `src/wrapper/browser.ts` - browser-friendly wrapper exports exposing `Bash`, `defineCommand`, and related APIs
+- `website/` - MoonBit package for DOM creation, browser state, async command flow, and verification playback
+- `wrapper/browser.ts` - browser-friendly wrapper exports exposing `Bash`, `defineCommand`, and related APIs
 - `examples/website/main.js` - thin bootstrap that injects config/data into `globalThis`
 - `examples/website/` - static website assets and bundle output
 

@@ -4,9 +4,9 @@ import architectureText from "../../docs/ARCHITECTURE.md?raw";
 import apiText from "../../docs/API.md?raw";
 import roadmapText from "../../docs/ROADMAP.md?raw";
 import agentsText from "../../AGENTS.md?raw";
-import moonMod from "../../src/moon.mod.json";
-import { Bash, defineCommand, getCommandNames } from "../../src/wrapper/browser.ts";
-import { mount_demo } from "../../src/_build/js/release/build/website/website.js";
+import moonModText from "../../moon.mod?raw";
+import { Bash, defineCommand, getCommandNames } from "../../wrapper/browser.ts";
+import { mount_demo } from "../../_build/js/release/build/website/website.js";
 
 const GITHUB_URL = "https://github.com/Haoxincode/MoonBash";
 const DOCS_URL = `${GITHUB_URL}/tree/main/docs`;
@@ -176,7 +176,7 @@ globalThis.__moonbash_demo_config_json = JSON.stringify({
     "/home/user/ROADMAP.md": roadmapText,
     "/home/user/AGENTS.md": agentsText,
     "/home/user/package.json": JSON.stringify(packageInfo, null, 2) + "\n",
-    "/home/user/src/moon.mod.json": JSON.stringify(moonMod, null, 2) + "\n",
+    "/home/user/moon.mod": moonModText,
     "/home/user/wtf-is-this.md": WTF_TEXT,
     "/home/user/links/github.txt": `${GITHUB_URL}\n`,
     "/demo/logs/app.log": DEMO_APP_LOG,

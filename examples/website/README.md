@@ -15,13 +15,13 @@ This demo recreates the `justbash.dev` terminal experience with MoonBash running
 
 The demo is split into three pieces:
 
-- `src/website/*.mbt` - MoonBit-led website runtime:
+- `website/*.mbt` - MoonBit-led website runtime:
   - `config.mbt` parses injected config and builds verification plans
   - `dom_helpers.mbt` creates and updates DOM with `tiye/dom-ffi`
   - `app.mbt` owns shell state, history, tab completion, autoplay verification, and async flow
   - `website.mbt` is the mount entry point
-- `src/website/bridge.mbt` - thin host bridge for `Bash` runtime creation and the few browser APIs not yet wrapped ergonomically
-- `src/wrapper/browser.ts` - browser-facing wrapper exports used by the demo bundle
+- `website/bridge.mbt` - thin host bridge for `Bash` runtime creation and the few browser APIs not yet wrapped ergonomically
+- `wrapper/browser.ts` - browser-facing wrapper exports used by the demo bundle
 - `examples/website/main.js` - thin bootstrap that injects config, docs, files, and wrapper exports into `globalThis`
 
 Build output lands in `examples/website/dist/`.
