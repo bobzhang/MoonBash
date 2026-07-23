@@ -1,6 +1,7 @@
 // moon_bash Commands - Custom command bridge
 // Executes wrapper-provided custom commands through JS FFI.
 
+///|
 priv struct CustomExecResponse {
   handled : Bool
   stdout : String
@@ -11,6 +12,7 @@ priv struct CustomExecResponse {
   files : Array[(String, String)]
 }
 
+///|
 fn custom_hex_digit(n : Int) -> Char {
   if n < 10 {
     (n + 48).unsafe_to_char()
@@ -19,6 +21,7 @@ fn custom_hex_digit(n : Int) -> Char {
   }
 }
 
+///|
 fn custom_json_escape_string(s : String) -> String {
   let out = StringBuilder::new()
   out.write_char('"')
@@ -46,6 +49,7 @@ fn custom_json_escape_string(s : String) -> String {
   out.to_string()
 }
 
+///|
 fn custom_args_to_json(args : Array[String]) -> String {
   let out = StringBuilder::new()
   out.write_char('[')
@@ -59,20 +63,13 @@ fn custom_args_to_json(args : Array[String]) -> String {
   out.to_string()
 }
 
+///|
 fn custom_env_to_json(env : Map[String, String]) -> String {
   let keys : Array[String] = []
   for key, _value in env {
     keys.push(key)
   }
-  keys.sort_by(fn(a, b) {
-    if a < b {
-      -1
-    } else if a > b {
-      1
-    } else {
-      0
-    }
-  })
+  keys.sort_by(fn(a, b) { if a < b { -1 } else if a > b { 1 } else { 0 } })
   let out = StringBuilder::new()
   out.write_char('{')
   for i = 0; i < keys.length(); i = i + 1 {
@@ -89,6 +86,7 @@ fn custom_env_to_json(env : Map[String, String]) -> String {
   out.to_string()
 }
 
+///|
 fn custom_files_to_json(fs : @fs.InMemoryFs) -> String {
   let keys : Array[String] = []
   for path, entry in fs.entries {
@@ -97,15 +95,7 @@ fn custom_files_to_json(fs : @fs.InMemoryFs) -> String {
       _ => ()
     }
   }
-  keys.sort_by(fn(a, b) {
-    if a < b {
-      -1
-    } else if a > b {
-      1
-    } else {
-      0
-    }
-  })
+  keys.sort_by(fn(a, b) { if a < b { -1 } else if a > b { 1 } else { 0 } })
   let out = StringBuilder::new()
   out.write_char('{')
   for i = 0; i < keys.length(); i = i + 1 {
@@ -125,10 +115,11 @@ fn custom_files_to_json(fs : @fs.InMemoryFs) -> String {
   out.to_string()
 }
 
+///|
 fn custom_build_request_json(
   name : String,
   args : Array[String],
-  ctx : CommandContext
+  ctx : CommandContext,
 ) -> String {
   let out = StringBuilder::new()
   out.write_char('{')
@@ -148,6 +139,7 @@ fn custom_build_request_json(
   out.to_string()
 }
 
+///|
 fn custom_parse_int(s : String) -> Int {
   if s.length() == 0 {
     return 0
@@ -172,10 +164,11 @@ fn custom_parse_int(s : String) -> Int {
   value * sign
 }
 
+///|
 fn custom_json_get_bool(
   obj : Map[String, Json],
   key : String,
-  default_value : Bool
+  default_value : Bool,
 ) -> Bool {
   match obj.get(key) {
     Some(Json::True) => true
@@ -186,10 +179,11 @@ fn custom_json_get_bool(
   }
 }
 
+///|
 fn custom_json_get_string(
   obj : Map[String, Json],
   key : String,
-  default_value : String
+  default_value : String,
 ) -> String {
   match obj.get(key) {
     Some(Json::String(s)) => s
@@ -201,10 +195,11 @@ fn custom_json_get_string(
   }
 }
 
+///|
 fn custom_json_get_int(
   obj : Map[String, Json],
   key : String,
-  default_value : Int
+  default_value : Int,
 ) -> Int {
   match obj.get(key) {
     Some(Json::Number(n, ..)) => n.to_int()
@@ -213,8 +208,9 @@ fn custom_json_get_int(
   }
 }
 
+///|
 fn custom_json_get_files(
-  obj : Map[String, Json]
+  obj : Map[String, Json],
 ) -> (Bool, Array[(String, String)]) {
   match obj.get("files") {
     Some(Json::Object(files_obj)) => {
@@ -245,10 +241,11 @@ fn custom_json_get_files(
   }
 }
 
-fn custom_parse_response(json_str : String) -> Result[CustomExecResponse, String] {
-  let parsed = try {
-    @json.parse(json_str[:])
-  } catch {
+///|
+fn custom_parse_response(
+  json_str : String,
+) -> Result[CustomExecResponse, String] {
+  let parsed = @json.parse(json_str[:]) catch {
     _ => return Err("custom command bridge returned invalid JSON")
   }
   match parsed {
@@ -272,20 +269,20 @@ fn custom_parse_response(json_str : String) -> Result[CustomExecResponse, String
   }
 }
 
+///|
 fn custom_apply_file_updates(
   fs : @fs.InMemoryFs,
-  files : Array[(String, String)]
+  files : Array[(String, String)],
 ) -> Unit {
   for i = 0; i < files.length(); i = i + 1 {
     let (path, content) = files[i]
-    try {
-      fs.write_file(path, content)
-    } catch {
+    fs.write_file(path, content) catch {
       _ => ()
     }
   }
 }
 
+///|
 fn custom_stderr_with_newline(stderr : String) -> String {
   if stderr.length() == 0 {
     return ""
@@ -298,6 +295,7 @@ fn custom_stderr_with_newline(stderr : String) -> String {
   }
 }
 
+///|
 fn cmd_custom_bridge(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
     return {
@@ -313,20 +311,21 @@ fn cmd_custom_bridge(ctx : CommandContext) -> @ast.ExecResult {
     forwarded_args.push(ctx.args[i])
   }
 
-  let request_json = custom_build_request_json(command_name, forwarded_args, ctx)
+  let request_json = custom_build_request_json(
+    command_name, forwarded_args, ctx,
+  )
   let raw = @ffi.custom_command_sync(request_json)
   let response = match custom_parse_response(raw) {
     Ok(resp) => resp
-    Err(msg) => {
+    Err(msg) =>
       return {
         stdout: "",
         stderr: "__moon_bash_custom__: \{msg}\n",
         exit_code: 1,
       }
-    }
   }
 
-  if !(response.handled) {
+  if !response.handled {
     return {
       stdout: "",
       stderr: "moon_bash: \{command_name}: command not found\n",
@@ -347,7 +346,11 @@ fn cmd_custom_bridge(ctx : CommandContext) -> @ast.ExecResult {
     return {
       stdout: response.stdout,
       stderr: err.to_string(),
-      exit_code: if response.exit_code == 0 { 1 } else { response.exit_code },
+      exit_code: if response.exit_code == 0 {
+        1
+      } else {
+        response.exit_code
+      },
     }
   }
 

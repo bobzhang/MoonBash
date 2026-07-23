@@ -1,13 +1,16 @@
 // moon_bash Commands - jq filter rewriting
 
+///|
 fn jq_is_ident_start(ch : Char) -> Bool {
   (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
 }
 
+///|
 fn jq_is_ident_char(ch : Char) -> Bool {
   jq_is_ident_start(ch) || (ch >= '0' && ch <= '9')
 }
 
+///|
 fn jq_starts_with_at(s : String, pos : Int, needle : String) -> Bool {
   if pos < 0 || pos + needle.length() > s.length() {
     return false
@@ -20,15 +23,17 @@ fn jq_starts_with_at(s : String, pos : Int, needle : String) -> Bool {
   true
 }
 
+///|
 fn jq_is_ws(ch : Char) -> Bool {
   ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }
 
+///|
 fn jq_prev_non_ws_char(s : String, pos : Int) -> Char? {
   let mut i = pos - 1
   while i >= 0 {
     let ch = s[i].to_int().unsafe_to_char()
-    if !(jq_is_ws(ch)) {
+    if !jq_is_ws(ch) {
       return Some(ch)
     }
     i -= 1
@@ -36,11 +41,12 @@ fn jq_prev_non_ws_char(s : String, pos : Int) -> Char? {
   None
 }
 
+///|
 fn jq_next_non_ws_char(s : String, pos : Int) -> Char? {
   let mut i = pos
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()
-    if !(jq_is_ws(ch)) {
+    if !jq_is_ws(ch) {
       return Some(ch)
     }
     i += 1
@@ -48,11 +54,12 @@ fn jq_next_non_ws_char(s : String, pos : Int) -> Char? {
   None
 }
 
+///|
 fn jq_prev_non_ws_index(s : String, pos : Int) -> Int {
   let mut i = pos - 1
   while i >= 0 {
     let ch = s[i].to_int().unsafe_to_char()
-    if !(jq_is_ws(ch)) {
+    if !jq_is_ws(ch) {
       return i
     }
     i -= 1
@@ -60,11 +67,12 @@ fn jq_prev_non_ws_index(s : String, pos : Int) -> Int {
   -1
 }
 
+///|
 fn jq_next_non_ws_index(s : String, pos : Int) -> Int {
   let mut i = pos
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()
-    if !(jq_is_ws(ch)) {
+    if !jq_is_ws(ch) {
       return i
     }
     i += 1
@@ -72,21 +80,23 @@ fn jq_next_non_ws_index(s : String, pos : Int) -> Int {
   -1
 }
 
+///|
 fn jq_is_plain_ident(text : String) -> Bool {
   if text.length() == 0 {
     return false
   }
-  if !(jq_is_ident_start(text[0].to_int().unsafe_to_char())) {
+  if !jq_is_ident_start(text[0].to_int().unsafe_to_char()) {
     return false
   }
   for i = 1; i < text.length(); i = i + 1 {
-    if !(jq_is_ident_char(text[i].to_int().unsafe_to_char())) {
+    if !jq_is_ident_char(text[i].to_int().unsafe_to_char()) {
       return false
     }
   }
   true
 }
 
+///|
 fn jq_parse_quoted_ident_at(filter : String, quote_pos : Int) -> (String, Int)? {
   if quote_pos < 0 || quote_pos >= filter.length() {
     return None
@@ -115,6 +125,7 @@ fn jq_parse_quoted_ident_at(filter : String, quote_pos : Int) -> (String, Int)? 
   None
 }
 
+///|
 fn jq_rewrite_quoted_member_access(filter : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -157,7 +168,7 @@ fn jq_rewrite_quoted_member_access(filter : String) -> String {
             i + 2 < filter.length() &&
             filter[i + 2].to_int().unsafe_to_char() == '"' {
             match jq_parse_quoted_ident_at(filter, i + 2) {
-              Some((name, end_pos)) => {
+              Some((name, end_pos)) =>
                 if end_pos < filter.length() &&
                   filter[end_pos].to_int().unsafe_to_char() == ']' {
                   out.write_char('.')
@@ -165,7 +176,6 @@ fn jq_rewrite_quoted_member_access(filter : String) -> String {
                   i = end_pos + 1
                   continue
                 }
-              }
               None => ()
             }
           }
@@ -179,6 +189,7 @@ fn jq_rewrite_quoted_member_access(filter : String) -> String {
   out.to_string()
 }
 
+///|
 fn jq_is_binary_plus_minus(filter : String, pos : Int) -> Bool {
   if pos < 0 || pos >= filter.length() {
     return false
@@ -202,9 +213,21 @@ fn jq_is_binary_plus_minus(filter : String, pos : Int) -> Bool {
     return false
   }
   let prev = filter[prev_idx].to_int().unsafe_to_char()
-  if prev == '(' || prev == '[' || prev == '{' || prev == ',' || prev == ':' ||
-    prev == '|' || prev == ';' || prev == '+' || prev == '-' || prev == '*' ||
-    prev == '/' || prev == '%' || prev == '<' || prev == '>' || prev == '=' ||
+  if prev == '(' ||
+    prev == '[' ||
+    prev == '{' ||
+    prev == ',' ||
+    prev == ':' ||
+    prev == '|' ||
+    prev == ';' ||
+    prev == '+' ||
+    prev == '-' ||
+    prev == '*' ||
+    prev == '/' ||
+    prev == '%' ||
+    prev == '<' ||
+    prev == '>' ||
+    prev == '=' ||
     prev == '!' {
     return false
   }
@@ -214,13 +237,18 @@ fn jq_is_binary_plus_minus(filter : String, pos : Int) -> Bool {
     return false
   }
   let next = filter[next_idx].to_int().unsafe_to_char()
-  if next == ')' || next == ']' || next == '}' || next == ',' || next == '|' ||
+  if next == ')' ||
+    next == ']' ||
+    next == '}' ||
+    next == ',' ||
+    next == '|' ||
     next == ';' {
     return false
   }
   true
 }
 
+///|
 fn jq_rewrite_binary_plus_minus(filter : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -252,15 +280,15 @@ fn jq_rewrite_binary_plus_minus(filter : String) -> String {
           continue
         }
 
-        if (ch == '+' || ch == '-') &&
-          jq_is_binary_plus_minus(filter, i) {
+        if (ch == '+' || ch == '-') && jq_is_binary_plus_minus(filter, i) {
           match last_out {
-            Some(last_ch) => if !(jq_is_ws(last_ch)) {
-              out.write_char(' ')
-              last_out = Some(' ')
-            } else {
-              ()
-            }
+            Some(last_ch) =>
+              if !jq_is_ws(last_ch) {
+                out.write_char(' ')
+                last_out = Some(' ')
+              } else {
+                ()
+              }
             None => ()
           }
           out.write_char(ch)
@@ -269,7 +297,7 @@ fn jq_rewrite_binary_plus_minus(filter : String) -> String {
           let next_idx = jq_next_non_ws_index(filter, i + 1)
           if next_idx >= 0 {
             let next = filter[next_idx].to_int().unsafe_to_char()
-            if !(jq_is_ws(next)) {
+            if !jq_is_ws(next) {
               out.write_char(' ')
               last_out = Some(' ')
             }
@@ -287,8 +315,10 @@ fn jq_rewrite_binary_plus_minus(filter : String) -> String {
   out.to_string()
 }
 
+///|
 fn jq_find_matching_paren(filter : String, open_pos : Int) -> Int {
-  if open_pos < 0 || open_pos >= filter.length() ||
+  if open_pos < 0 ||
+    open_pos >= filter.length() ||
     filter[open_pos].to_int().unsafe_to_char() != '(' {
     return -1
   }
@@ -326,6 +356,7 @@ fn jq_find_matching_paren(filter : String, open_pos : Int) -> Int {
   -1
 }
 
+///|
 fn jq_split_top_level_semicolon(text : String) -> (String, String)? {
   let mut i = 0
   let mut quote : Char? = None
@@ -344,7 +375,7 @@ fn jq_split_top_level_semicolon(text : String) -> (String, String)? {
           quote = None
         }
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
         } else if ch == '(' {
@@ -363,18 +394,20 @@ fn jq_split_top_level_semicolon(text : String) -> (String, String)? {
           paren_depth == 0 &&
           bracket_depth == 0 &&
           brace_depth == 0 {
-          return Some((
-            aj_trim(aj_substr(text, 0, i)),
-            aj_trim(aj_substr(text, i + 1, text.length())),
-          ))
+          return Some(
+            (
+              aj_trim(aj_substr(text, 0, i)),
+              aj_trim(aj_substr(text, i + 1, text.length())),
+            ),
+          )
         }
-      }
     }
     i += 1
   }
   None
 }
 
+///|
 fn jq_rewrite_compat_function_calls(filter : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -404,13 +437,13 @@ fn jq_rewrite_compat_function_calls(filter : String) -> String {
           let start = i
           i += 1
           while i < filter.length() &&
-            jq_is_ident_char(filter[i].to_int().unsafe_to_char()) {
+                jq_is_ident_char(filter[i].to_int().unsafe_to_char()) {
             i += 1
           }
           let ident = aj_substr(filter, start, i)
           let mut next_pos = i
           while next_pos < filter.length() &&
-            jq_is_ws(filter[next_pos].to_int().unsafe_to_char()) {
+                jq_is_ws(filter[next_pos].to_int().unsafe_to_char()) {
             next_pos += 1
           }
           if next_pos < filter.length() &&
@@ -481,6 +514,7 @@ fn jq_rewrite_compat_function_calls(filter : String) -> String {
   out.to_string()
 }
 
+///|
 fn jq_rewrite_keys_builtin(filter : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -511,13 +545,13 @@ fn jq_rewrite_keys_builtin(filter : String) -> String {
           let left_ok = if i == 0 {
             true
           } else {
-            !(jq_is_ident_char(filter[i - 1].to_int().unsafe_to_char()))
+            !jq_is_ident_char(filter[i - 1].to_int().unsafe_to_char())
           }
           let right_pos = i + 4
           let right_ok = if right_pos >= filter.length() {
             true
           } else {
-            !(jq_is_ident_char(filter[right_pos].to_int().unsafe_to_char()))
+            !jq_is_ident_char(filter[right_pos].to_int().unsafe_to_char())
           }
           if left_ok && right_ok {
             let prev_sig = jq_prev_non_ws_char(filter, i)
@@ -532,20 +566,19 @@ fn jq_rewrite_keys_builtin(filter : String) -> String {
               None => false
             }
             let is_object_shorthand = match prev_sig {
-              Some(prev) => if prev == '{' || prev == ',' {
-                match next_sig {
-                  Some(next) => next == '}' || next == ','
-                  None => false
+              Some(prev) =>
+                if prev == '{' || prev == ',' {
+                  match next_sig {
+                    Some(next) => next == '}' || next == ','
+                    None => false
+                  }
+                } else {
+                  false
                 }
-              } else {
-                false
-              }
               None => false
             }
 
-            if !(is_member_or_var) &&
-              !(is_object_key) &&
-              !(is_object_shorthand) {
+            if !is_member_or_var && !is_object_key && !is_object_shorthand {
               out.write_string("(keys|sort)")
               i += 4
               continue
@@ -560,4 +593,3 @@ fn jq_rewrite_keys_builtin(filter : String) -> String {
   }
   out.to_string()
 }
-

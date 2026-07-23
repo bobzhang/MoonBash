@@ -1,9 +1,10 @@
 // moon_bash Interpreter - compgen Builtin
 
+///|
 fn ExecContext::run_compgen_function(
   self : ExecContext,
   func_name : String,
-  query : String
+  query : String,
 ) -> Int {
   self.clear_named_array_storage("COMPREPLY")
   self.store_array_assignment("COMP_WORDS", [])
@@ -24,9 +25,10 @@ fn ExecContext::run_compgen_function(
   status
 }
 
+///|
 fn ExecContext::expand_compgen_words(
   self : ExecContext,
-  raw : String
+  raw : String,
 ) -> (Array[String], Int) {
   if raw.length() == 0 {
     return ([], 0)
@@ -49,7 +51,9 @@ fn ExecContext::expand_compgen_words(
       trimmed[0].to_int().unsafe_to_char() == '$' &&
       trimmed[1].to_int().unsafe_to_char() == '(' &&
       trimmed[trimmed.length() - 1].to_int().unsafe_to_char() == ')' {
-      let inner = trimmed.view(start_offset=2, end_offset=trimmed.length() - 1).to_string()
+      let inner = trimmed
+        .view(start_offset=2, end_offset=trimmed.length() - 1)
+        .to_owned()
       let saved_exit = self.exit_code
       let expanded = self.expand_command_sub(inner)
       let sub_exit = self.exit_code
@@ -72,9 +76,10 @@ fn ExecContext::expand_compgen_words(
   (compgen_split_words_by_ifs(raw, ifs, true), 0)
 }
 
+///|
 fn ExecContext::builtin_compgen(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let actions : Array[String] = []
   let option_o : Array[String] = []
@@ -96,7 +101,7 @@ fn ExecContext::builtin_compgen(
       continue
     }
     if parse_opts && arg == "-A" {
-      if i + 1 >= args.length() || !(completion_is_valid_action(args[i + 1])) {
+      if i + 1 >= args.length() || !completion_is_valid_action(args[i + 1]) {
         self.exit_code = 2
         return
       }
@@ -179,7 +184,7 @@ fn ExecContext::builtin_compgen(
       continue
     }
     if parse_opts && arg == "-o" {
-      if i + 1 >= args.length() || !(completion_is_valid_compopt(args[i + 1])) {
+      if i + 1 >= args.length() || !completion_is_valid_compopt(args[i + 1]) {
         self.exit_code = 2
         return
       }
@@ -199,7 +204,7 @@ fn ExecContext::builtin_compgen(
   let mut had_generator = false
   let mut user_action = false
   let candidates : Array[String] = []
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
 
   for action in actions {
     had_generator = true
@@ -280,7 +285,7 @@ fn ExecContext::builtin_compgen(
       }
       "file" => {
         let (names, ok) = self.collect_path_completion_candidates(query, false)
-        if !(ok) {
+        if !ok {
           self.exit_code = 1
           return
         }
@@ -290,7 +295,7 @@ fn ExecContext::builtin_compgen(
       }
       "directory" => {
         let (names, ok) = self.collect_path_completion_candidates(query, true)
-        if !(ok) {
+        if !ok {
           self.exit_code = 1
           return
         }
@@ -322,7 +327,7 @@ fn ExecContext::builtin_compgen(
   match func_name {
     Some(name) => {
       had_generator = true
-      if !(self.functions.contains(name)) {
+      if !self.functions.contains(name) {
         self.exit_code = 1
         return
       }
@@ -359,7 +364,7 @@ fn ExecContext::builtin_compgen(
     had_generator = true
     if opt == "plusdirs" || opt == "dirnames" {
       let (names, ok) = self.collect_path_completion_candidates(query, true)
-      if !(ok) {
+      if !ok {
         self.exit_code = 1
         return
       }
@@ -368,7 +373,7 @@ fn ExecContext::builtin_compgen(
       }
     } else if opt == "default" {
       let (names, ok) = self.collect_path_completion_candidates(query, false)
-      if !(ok) {
+      if !ok {
         self.exit_code = 1
         return
       }
@@ -378,25 +383,23 @@ fn ExecContext::builtin_compgen(
     }
   }
 
-  if !(had_generator) {
+  if !had_generator {
     self.exit_code = 2
     return
   }
 
   let filtered : Array[String] = []
   match filter_pattern {
-    Some(pattern) => {
+    Some(pattern) =>
       for value in candidates {
         if compgen_should_keep_after_filter(value, pattern) {
           filtered.push(value)
         }
       }
-    }
-    None => {
+    None =>
       for value in candidates {
         filtered.push(value)
       }
-    }
   }
 
   if filtered.length() == 0 {

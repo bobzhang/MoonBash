@@ -1,5 +1,6 @@
 // moon_bash Interpreter - Directory Stack Builtins (dirs, pushd, popd)
 
+///|
 fn ExecContext::get_directory_stack(self : ExecContext) -> Array[String] {
   let stack : Array[String] = []
   let raw = self.env.get(dir_stack_storage_key).unwrap_or("")
@@ -17,9 +18,10 @@ fn ExecContext::get_directory_stack(self : ExecContext) -> Array[String] {
   stack
 }
 
+///|
 fn ExecContext::set_directory_stack(
   self : ExecContext,
-  stack_input : Array[String]
+  stack_input : Array[String],
 ) -> Unit {
   let stack : Array[String] = []
   for path in stack_input {
@@ -39,6 +41,7 @@ fn ExecContext::set_directory_stack(
   self.env[dir_stack_storage_key] = buf.to_string()
 }
 
+///|
 fn ExecContext::sync_directory_stack_with_cwd(self : ExecContext) -> Unit {
   let stack = self.get_directory_stack()
   if stack.length() == 0 {
@@ -49,12 +52,13 @@ fn ExecContext::sync_directory_stack_with_cwd(self : ExecContext) -> Unit {
   self.set_directory_stack(stack)
 }
 
+///|
 fn ExecContext::render_directory_stack(
   self : ExecContext,
   stack : Array[String],
   long_format : Bool,
   one_per_line : Bool,
-  numbered : Bool
+  numbered : Bool,
 ) -> Unit {
   let home = self.env.get("HOME").unwrap_or("")
   if numbered {
@@ -96,10 +100,8 @@ fn ExecContext::render_directory_stack(
   self.stdout_buf.write_string(buf.to_string() + "\n")
 }
 
-fn ExecContext::builtin_dirs(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_dirs(self : ExecContext, args : Array[String]) -> Unit {
   self.sync_directory_stack_with_cwd()
   let mut long_format = false
   let mut one_per_line = false
@@ -115,7 +117,9 @@ fn ExecContext::builtin_dirs(
       i += 1
       continue
     }
-    if parse_flags && arg.length() > 1 && arg[0].to_int().unsafe_to_char() == '-' {
+    if parse_flags &&
+      arg.length() > 1 &&
+      arg[0].to_int().unsafe_to_char() == '-' {
       for j = 1; j < arg.length(); j = j + 1 {
         let ch = arg[j].to_int().unsafe_to_char()
         match ch {
@@ -148,10 +152,8 @@ fn ExecContext::builtin_dirs(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_pushd(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_pushd(self : ExecContext, args : Array[String]) -> Unit {
   self.sync_directory_stack_with_cwd()
   let operands : Array[String] = []
   let mut parse_flags = true
@@ -161,7 +163,9 @@ fn ExecContext::builtin_pushd(
       parse_flags = false
       continue
     }
-    if parse_flags && arg.length() > 0 && arg[0].to_int().unsafe_to_char() == '-' {
+    if parse_flags &&
+      arg.length() > 0 &&
+      arg[0].to_int().unsafe_to_char() == '-' {
       self.exit_code = 2
       return
     }
@@ -193,9 +197,7 @@ fn ExecContext::builtin_pushd(
   }
 
   let target = operands[0]
-  let resolved = try {
-    @fs.resolve_path(self.cwd, target)
-  } catch {
+  let resolved = @fs.resolve_path(self.cwd, target) catch {
     _ => {
       self.exit_code = 1
       return
@@ -220,10 +222,8 @@ fn ExecContext::builtin_pushd(
   }
 }
 
-fn ExecContext::builtin_popd(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_popd(self : ExecContext, args : Array[String]) -> Unit {
   self.sync_directory_stack_with_cwd()
   let mut parse_flags = true
   let operands : Array[String] = []
@@ -232,7 +232,9 @@ fn ExecContext::builtin_popd(
       parse_flags = false
       continue
     }
-    if parse_flags && arg.length() > 0 && arg[0].to_int().unsafe_to_char() == '-' {
+    if parse_flags &&
+      arg.length() > 0 &&
+      arg[0].to_int().unsafe_to_char() == '-' {
       self.exit_code = 2
       return
     }

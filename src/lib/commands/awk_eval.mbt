@@ -1,5 +1,6 @@
 // moon_bash Commands - awk atom evaluation, tokenizer, function execution, comparison
 
+///|
 fn awk_eval_atom(
   atom : String,
   line : String,
@@ -7,7 +8,7 @@ fn awk_eval_atom(
   nr : Int,
   nf : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> String {
   let t = aj_trim(atom)
   if t.length() == 0 {
@@ -67,15 +68,7 @@ fn awk_eval_atom(
 
   match awk_parse_array_ref(t) {
     Some((arr_name, idx_expr)) => {
-      let idx = awk_eval_expr(
-        idx_expr,
-        line,
-        fields,
-        nr,
-        nf,
-        vars,
-        array_vars,
-      )
+      let idx = awk_eval_expr(idx_expr, line, fields, nr, nf, vars, array_vars)
       return array_vars.get(awk_array_key(arr_name, idx)).unwrap_or("")
     }
     None => ()
@@ -92,6 +85,7 @@ fn awk_eval_atom(
   ""
 }
 
+///|
 fn awk_tokenize_expr(expr : String) -> Array[String] {
   let tokens : Array[String] = []
   let buf = StringBuilder::new()
@@ -107,7 +101,7 @@ fn awk_tokenize_expr(expr : String) -> Array[String] {
           quote = None
         }
       }
-      None => {
+      None =>
         if ch == '"' || ch == '\'' {
           quote = Some(ch)
           buf.write_char(ch)
@@ -140,7 +134,6 @@ fn awk_tokenize_expr(expr : String) -> Array[String] {
         } else {
           buf.write_char(ch)
         }
-      }
     }
   }
   let last = buf.to_string()
@@ -150,6 +143,7 @@ fn awk_tokenize_expr(expr : String) -> Array[String] {
   tokens
 }
 
+///|
 fn awk_execute_function_body(
   body : String,
   line : String,
@@ -157,16 +151,19 @@ fn awk_execute_function_body(
   nr : Int,
   vars : Map[String, String],
   array_vars : Map[String, String],
-  out : StringBuilder
+  out : StringBuilder,
 ) -> Unit {
   let statements = awk_parse_action_ast(body)
-  awk_execute_function_statements(statements, line, fields, nr, vars, array_vars, out)
+  awk_execute_function_statements(
+    statements, line, fields, nr, vars, array_vars, out,
+  )
 }
 
+///|
 fn awk_sync_fields_from_record_for_function(
   record : String,
   fields : Array[String],
-  vars : Map[String, String]
+  vars : Map[String, String],
 ) -> Unit {
   let current_fs = awk_current_fs(vars.get("FS").unwrap_or(" "), vars)
   let next_fields = awk_split_fields(record, current_fs)
@@ -183,6 +180,7 @@ fn awk_sync_fields_from_record_for_function(
   vars["NF"] = fields.length().to_string()
 }
 
+///|
 fn awk_apply_getline_target_for_function(
   target : AwkGetlineTarget,
   line_value : String,
@@ -190,7 +188,7 @@ fn awk_apply_getline_target_for_function(
   fields : Array[String],
   nr : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> Unit {
   match target {
     Var(name) => vars[name] = line_value
@@ -235,6 +233,7 @@ fn awk_apply_getline_target_for_function(
   }
 }
 
+///|
 fn awk_execute_function_statements(
   statements : Array[AwkStmt],
   line : String,
@@ -242,7 +241,7 @@ fn awk_execute_function_statements(
   nr : Int,
   vars : Map[String, String],
   array_vars : Map[String, String],
-  out : StringBuilder
+  out : StringBuilder,
 ) -> Unit {
   for stmt in statements {
     if vars.contains(awk_ctrl_exit_key) ||
@@ -259,7 +258,15 @@ fn awk_execute_function_statements(
         let code = match code_ast {
           Some(expr_ast) =>
             awk_parse_number(
-              awk_eval_expr_ast(expr_ast, line, fields, nr, fields.length(), vars, array_vars),
+              awk_eval_expr_ast(
+                expr_ast,
+                line,
+                fields,
+                nr,
+                fields.length(),
+                vars,
+                array_vars,
+              ),
             ).to_int()
           None => 0
         }
@@ -269,7 +276,15 @@ fn awk_execute_function_statements(
       Return(value_ast) => {
         let value = match value_ast {
           Some(expr_ast) =>
-            awk_eval_expr_ast(expr_ast, line, fields, nr, fields.length(), vars, array_vars)
+            awk_eval_expr_ast(
+              expr_ast,
+              line,
+              fields,
+              nr,
+              fields.length(),
+              vars,
+              array_vars,
+            )
           None => ""
         }
         vars[awk_ctrl_return_key] = "1"
@@ -288,16 +303,10 @@ fn awk_execute_function_statements(
         )
         let line_from_cmd = awk_eval_getline_command_line(command)
         awk_apply_getline_target_for_function(
-          target,
-          line_from_cmd,
-          line,
-          fields,
-          nr,
-          vars,
-          array_vars,
+          target, line_from_cmd, line, fields, nr, vars, array_vars,
         )
       }
-      Getline(target, path_ast) => {
+      Getline(target, path_ast) =>
         match path_ast {
           // Function executor has no CommandContext/FS handle for path reads.
           Some(_) => {
@@ -305,25 +314,17 @@ fn awk_execute_function_statements(
             vars[awk_ctrl_exit_key] = "1"
             break
           }
-          None => {
+          None =>
             awk_apply_getline_target_for_function(
-              target,
-              line,
-              line,
-              fields,
-              nr,
-              vars,
-              array_vars,
+              target, line, line, fields, nr, vars, array_vars,
             )
-          }
         }
-      }
       SystemStmt => {
         vars[awk_ctrl_error_key] = "system() is not supported"
         vars[awk_ctrl_exit_key] = "1"
         break
       }
-      SubstituteStmt(is_gsub, args_ast) => {
+      SubstituteStmt(is_gsub, args_ast) =>
         if args_ast.length() >= 2 {
           let pattern = awk_eval_sub_pattern_ast(
             args_ast[0],
@@ -385,13 +386,29 @@ fn awk_execute_function_statements(
             awk_sync_fields_from_record_for_function(updated, fields, vars)
           }
         }
-      }
-      ExprStmt(expr_ast) => {
-        ignore(awk_eval_expr_ast(expr_ast, line, fields, nr, fields.length(), vars, array_vars))
-      }
+      ExprStmt(expr_ast) =>
+        ignore(
+          awk_eval_expr_ast(
+            expr_ast,
+            line,
+            fields,
+            nr,
+            fields.length(),
+            vars,
+            array_vars,
+          ),
+        )
       CompoundAssignStmt(lhs_target, op, rhs_ast) => {
         let right = awk_parse_number(
-          awk_eval_expr_ast(rhs_ast, line, fields, nr, fields.length(), vars, array_vars),
+          awk_eval_expr_ast(
+            rhs_ast,
+            line,
+            fields,
+            nr,
+            fields.length(),
+            vars,
+            array_vars,
+          ),
         )
         match lhs_target {
           Var(name) => {
@@ -406,7 +423,15 @@ fn awk_execute_function_statements(
             vars[name] = awk_number_to_string(value)
           }
           ArrayElem(arr_name, idx_ast) => {
-            let idx = awk_eval_expr_ast(idx_ast, line, fields, nr, fields.length(), vars, array_vars)
+            let idx = awk_eval_expr_ast(
+              idx_ast,
+              line,
+              fields,
+              nr,
+              fields.length(),
+              vars,
+              array_vars,
+            )
             let key = awk_array_key(arr_name, idx)
             let left = awk_parse_number(array_vars.get(key).unwrap_or(""))
             let value = match op {
@@ -421,42 +446,79 @@ fn awk_execute_function_statements(
         }
       }
       AssignStmt(lhs_target, rhs_ast) => {
-        let value = awk_eval_expr_ast(rhs_ast, line, fields, nr, fields.length(), vars, array_vars)
+        let value = awk_eval_expr_ast(
+          rhs_ast,
+          line,
+          fields,
+          nr,
+          fields.length(),
+          vars,
+          array_vars,
+        )
         match lhs_target {
           Var(name) => vars[name] = value
           ArrayElem(arr_name, idx_ast) => {
-            let idx = awk_eval_expr_ast(idx_ast, line, fields, nr, fields.length(), vars, array_vars)
+            let idx = awk_eval_expr_ast(
+              idx_ast,
+              line,
+              fields,
+              nr,
+              fields.length(),
+              vars,
+              array_vars,
+            )
             array_vars[awk_array_key(arr_name, idx)] = value
           }
         }
       }
       FieldAssignStmt(idx_ast, rhs_ast) => {
-        let value = awk_eval_expr_ast(rhs_ast, line, fields, nr, fields.length(), vars, array_vars)
+        let value = awk_eval_expr_ast(
+          rhs_ast,
+          line,
+          fields,
+          nr,
+          fields.length(),
+          vars,
+          array_vars,
+        )
         let field_idx = awk_parse_number(
-          awk_eval_expr_ast(idx_ast, line, fields, nr, fields.length(), vars, array_vars),
+          awk_eval_expr_ast(
+            idx_ast,
+            line,
+            fields,
+            nr,
+            fields.length(),
+            vars,
+            array_vars,
+          ),
         ).to_int()
         if field_idx == 0 {
           // Function executor has no mutable `line` slot, so only refresh field view.
           awk_sync_fields_from_record_for_function(value, fields, vars)
-        } else {
-          if field_idx > 0 {
-            while fields.length() < field_idx {
-              fields.push("")
-            }
-            fields[field_idx - 1] = value
-            vars["NF"] = fields.length().to_string()
+        } else if field_idx > 0 {
+          while fields.length() < field_idx {
+            fields.push("")
           }
+          fields[field_idx - 1] = value
+          vars["NF"] = fields.length().to_string()
         }
       }
-      Delete(arr_name, idx_ast) => {
+      Delete(arr_name, idx_ast) =>
         match idx_ast {
           Some(expr_ast) => {
-            let idx = awk_eval_expr_ast(expr_ast, line, fields, nr, fields.length(), vars, array_vars)
+            let idx = awk_eval_expr_ast(
+              expr_ast,
+              line,
+              fields,
+              nr,
+              fields.length(),
+              vars,
+              array_vars,
+            )
             array_vars.remove(awk_array_key(arr_name, idx))
           }
           None => awk_remove_array_namespace(array_vars, arr_name)
         }
-      }
       Printf(fmt_ast, arg_asts, _target_ast, _append) => {
         let fmt_value = awk_eval_expr_ast(
           fmt_ast,
@@ -483,18 +545,12 @@ fn awk_execute_function_statements(
         }
         out.write_string(awk_format_printf(fmt_value, fmt_args))
       }
-      Print(value_asts, _target_ast, _append, _has_pipe) => {
+      Print(value_asts, _target_ast, _append, _has_pipe) =>
         out.write_string(
           awk_render_print_output_ast(
-            value_asts,
-            line,
-            fields,
-            nr,
-            vars,
-            array_vars,
+            value_asts, line, fields, nr, vars, array_vars,
           ),
         )
-      }
       ForIn(loop_var, arr_name, body_stmts) => {
         let key_prefix = arr_name + "#"
         let indices : Array[String] = []
@@ -511,13 +567,17 @@ fn awk_execute_function_statements(
           }
           vars[loop_var] = idx_value
           if body_stmts.length() > 0 {
-            awk_execute_function_statements(body_stmts, line, fields, nr, vars, array_vars, out)
+            awk_execute_function_statements(
+              body_stmts, line, fields, nr, vars, array_vars, out,
+            )
           }
         }
       }
       For(init_stmts, cond_ast, _cond_getline, update_stmts, body_stmts) => {
         if init_stmts.length() > 0 {
-          awk_execute_function_statements(init_stmts, line, fields, nr, vars, array_vars, out)
+          awk_execute_function_statements(
+            init_stmts, line, fields, nr, vars, array_vars, out,
+          )
         }
         let mut loop_count = 0
         while true {
@@ -527,9 +587,8 @@ fn awk_execute_function_statements(
             break
           }
           match cond_ast {
-            Some(cond_expr_ast) => {
-              if !(
-                awk_eval_condition_ast(
+            Some(cond_expr_ast) =>
+              if !awk_eval_condition_ast(
                   cond_expr_ast,
                   line,
                   fields,
@@ -537,15 +596,15 @@ fn awk_execute_function_statements(
                   fields.length(),
                   vars,
                   array_vars,
-                ),
-              ) {
+                ) {
                 break
               }
-            }
             None => ()
           }
           if body_stmts.length() > 0 {
-            awk_execute_function_statements(body_stmts, line, fields, nr, vars, array_vars, out)
+            awk_execute_function_statements(
+              body_stmts, line, fields, nr, vars, array_vars, out,
+            )
           }
           if vars.contains(awk_ctrl_exit_key) ||
             vars.contains(awk_ctrl_next_key) ||
@@ -553,7 +612,9 @@ fn awk_execute_function_statements(
             break
           }
           if update_stmts.length() > 0 {
-            awk_execute_function_statements(update_stmts, line, fields, nr, vars, array_vars, out)
+            awk_execute_function_statements(
+              update_stmts, line, fields, nr, vars, array_vars, out,
+            )
           }
           loop_count += 1
           if loop_count > awk_loop_guard_limit {
@@ -569,8 +630,7 @@ fn awk_execute_function_statements(
             vars.contains(awk_ctrl_return_key) {
             break
           }
-          if !(
-            awk_eval_condition_ast(
+          if !awk_eval_condition_ast(
               cond_ast,
               line,
               fields,
@@ -578,12 +638,13 @@ fn awk_execute_function_statements(
               fields.length(),
               vars,
               array_vars,
-            ),
-          ) {
+            ) {
             break
           }
           if body_stmts.length() > 0 {
-            awk_execute_function_statements(body_stmts, line, fields, nr, vars, array_vars, out)
+            awk_execute_function_statements(
+              body_stmts, line, fields, nr, vars, array_vars, out,
+            )
           }
           if vars.contains(awk_ctrl_exit_key) ||
             vars.contains(awk_ctrl_next_key) ||
@@ -596,29 +657,33 @@ fn awk_execute_function_statements(
           }
         }
       }
-      If(cond_ast, _cond_getline, then_stmts, else_stmts) => {
+      If(cond_ast, _cond_getline, then_stmts, else_stmts) =>
         if awk_eval_condition_ast(
-          cond_ast,
-          line,
-          fields,
-          nr,
-          fields.length(),
-          vars,
-          array_vars,
-        ) {
-          awk_execute_function_statements(then_stmts, line, fields, nr, vars, array_vars, out)
+            cond_ast,
+            line,
+            fields,
+            nr,
+            fields.length(),
+            vars,
+            array_vars,
+          ) {
+          awk_execute_function_statements(
+            then_stmts, line, fields, nr, vars, array_vars, out,
+          )
         } else {
           match else_stmts {
             Some(else_branch) =>
-              awk_execute_function_statements(else_branch, line, fields, nr, vars, array_vars, out)
+              awk_execute_function_statements(
+                else_branch, line, fields, nr, vars, array_vars, out,
+              )
             None => ()
           }
         }
-      }
     }
   }
 }
 
+///|
 fn awk_eval_user_function(
   fn_name : String,
   arg_exprs : Array[String],
@@ -628,7 +693,7 @@ fn awk_eval_user_function(
   nf : Int,
   vars : Map[String, String],
   array_vars : Map[String, String],
-  out : StringBuilder
+  out : StringBuilder,
 ) -> String {
   ignore(nf)
   let fn_def = match awk_get_function(vars, fn_name) {
@@ -643,7 +708,8 @@ fn awk_eval_user_function(
     saved_scalars.push((param, vars.get(param)))
     if i < arg_exprs.length() {
       let arg_expr = aj_trim(arg_exprs[i])
-      if awk_is_identifier(arg_expr) && awk_function_param_is_array(fn_def, param) {
+      if awk_is_identifier(arg_expr) &&
+        awk_function_param_is_array(fn_def, param) {
         array_bindings.push((param, arg_expr))
         awk_copy_array_namespace(array_vars, arg_expr, param)
         vars[param] = ""
@@ -665,7 +731,15 @@ fn awk_eval_user_function(
 
   vars.remove(awk_ctrl_return_key)
   vars.remove(awk_ctrl_return_value_key)
-  awk_execute_function_body(fn_def.body, line, fields, nr, vars, array_vars, out)
+  awk_execute_function_body(
+    fn_def.body,
+    line,
+    fields,
+    nr,
+    vars,
+    array_vars,
+    out,
+  )
   let return_value = vars.get(awk_ctrl_return_value_key).unwrap_or("")
   vars.remove(awk_ctrl_return_key)
   vars.remove(awk_ctrl_return_value_key)
@@ -688,12 +762,22 @@ fn awk_eval_user_function(
   return_value
 }
 
+///|
 fn awk_bool_to_string(value : Bool) -> String {
-  if value { "1" } else { "0" }
+  if value {
+    "1"
+  } else {
+    "0"
+  }
 }
 
+///|
 fn awk_compare_strings(left : String, right : String) -> Int {
-  let shared = if left.length() < right.length() { left.length() } else { right.length() }
+  let shared = if left.length() < right.length() {
+    left.length()
+  } else {
+    right.length()
+  }
   for i = 0; i < shared; i = i + 1 {
     let lch = left[i].to_int().unsafe_to_char()
     let rch = right[i].to_int().unsafe_to_char()
@@ -713,6 +797,7 @@ fn awk_compare_strings(left : String, right : String) -> Int {
   }
 }
 
+///|
 fn awk_compare_values(left : String, right : String, op : String) -> Bool {
   if awk_is_numeric_string(left) && awk_is_numeric_string(right) {
     let lnum = awk_parse_number(left)
@@ -740,6 +825,7 @@ fn awk_compare_values(left : String, right : String, op : String) -> Bool {
   }
 }
 
+///|
 fn awk_value_truthy(value : String) -> Bool {
   if awk_is_numeric_string(value) {
     awk_parse_number(value) != 0.0
@@ -748,6 +834,7 @@ fn awk_value_truthy(value : String) -> Bool {
   }
 }
 
+///|
 fn awk_assign_reference(
   target : String,
   value : String,
@@ -756,7 +843,7 @@ fn awk_assign_reference(
   nr : Int,
   nf : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> Bool {
   if awk_is_identifier(target) {
     vars[target] = value
@@ -772,6 +859,7 @@ fn awk_assign_reference(
   }
 }
 
+///|
 fn awk_mutate_numeric_reference(
   target : String,
   delta : Double,
@@ -781,13 +869,19 @@ fn awk_mutate_numeric_reference(
   nr : Int,
   nf : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> String? {
   if awk_is_identifier(target) {
     let old = awk_parse_number(vars.get(target).unwrap_or(""))
     let updated = old + delta
     vars[target] = awk_number_to_string(updated)
-    return Some(if return_new { vars[target] } else { awk_number_to_string(old) })
+    return Some(
+      if return_new {
+        vars[target]
+      } else {
+        awk_number_to_string(old)
+      },
+    )
   }
   if aj_starts_with(target, "$") && target.length() > 1 {
     let key_expr = aj_substr(target, 1, target.length())
@@ -804,7 +898,13 @@ fn awk_mutate_numeric_reference(
       let old = awk_parse_number(fields[idx - 1])
       let updated = old + delta
       fields[idx - 1] = awk_number_to_string(updated)
-      return Some(if return_new { fields[idx - 1] } else { awk_number_to_string(old) })
+      return Some(
+        if return_new {
+          fields[idx - 1]
+        } else {
+          awk_number_to_string(old)
+        },
+      )
     }
   }
   match awk_parse_array_ref(target) {
@@ -814,7 +914,13 @@ fn awk_mutate_numeric_reference(
       let old = awk_parse_number(array_vars.get(key).unwrap_or(""))
       let updated = old + delta
       array_vars[key] = awk_number_to_string(updated)
-      Some(if return_new { array_vars.get(key).unwrap_or("") } else { awk_number_to_string(old) })
+      Some(
+        if return_new {
+          array_vars.get(key).unwrap_or("")
+        } else {
+          awk_number_to_string(old)
+        },
+      )
     }
     None => None
   }

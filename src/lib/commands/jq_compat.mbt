@@ -1,5 +1,6 @@
 // moon_bash Commands - jq manual compatibility values
 
+///|
 fn jq_string_contains_char(s : String, needle : Char) -> Bool {
   for i = 0; i < s.length(); i = i + 1 {
     if s[i].to_int().unsafe_to_char() == needle {
@@ -9,6 +10,7 @@ fn jq_string_contains_char(s : String, needle : Char) -> Bool {
   false
 }
 
+///|
 fn jq_string_all_char(s : String, needle : Char) -> Bool {
   if s.length() == 0 {
     return false
@@ -21,6 +23,7 @@ fn jq_string_all_char(s : String, needle : Char) -> Bool {
   true
 }
 
+///|
 fn jq_decode_base64_for_jq(input : String) -> String? {
   // jq accepts optional trailing '=' padding and treats "=" as empty.
   let cleaned = StringBuilder::new()
@@ -40,7 +43,7 @@ fn jq_decode_base64_for_jq(input : String) -> String? {
   }
 
   let mut normalized = compact
-  if !(jq_string_contains_char(normalized, '=')) {
+  if !jq_string_contains_char(normalized, '=') {
     let rem = normalized.length() % 4
     if rem == 1 {
       return None
@@ -54,30 +57,21 @@ fn jq_decode_base64_for_jq(input : String) -> String? {
     return None
   }
 
-  let decoded = try {
-    Some(@base64.std_decode2str(normalized))
-  } catch {
-    _ => None
-  }
+  let decoded = Some(@base64.std_decode2str(normalized)) catch { _ => None }
   decoded
 }
 
+///|
 fn jq_matches_literal(input : Json, literal : String) -> Bool {
-  let parsed = try {
-    Some(@json.parse(literal[:]))
-  } catch {
-    _ => None
-  }
+  let parsed = Some(@json.parse(literal[:])) catch { _ => None }
   match parsed {
     Some(expected) => input.stringify(indent=0) == expected.stringify(indent=0)
     None => false
   }
 }
 
-fn jq_manual_compat_values(
-  filter : String,
-  input : Json
-) -> Array[Json]? {
+///|
+fn jq_manual_compat_values(filter : String, input : Json) -> Array[Json]? {
   let trimmed = aj_trim(filter)
   match jq_compat_numeric(trimmed, input) {
     Some(v) => return Some(v)

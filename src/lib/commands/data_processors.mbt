@@ -1,17 +1,16 @@
 // moon_bash Commands - Data Processors
 // yq (YAML processor), xan/csvlook (CSV processors)
 
+///|
 /// Convert a Yaml value to a JSON string
 fn yaml_to_json_string(y : @yaml.Yaml) -> String {
   y.to_json().stringify()
 }
 
+///|
 /// Apply a yq filter expression to a Yaml value.
 /// Supports: ".", ".key", ".key.subkey", ".[N]", ".[]"
-fn yq_apply_filter(
-  y : @yaml.Yaml,
-  filter : String
-) -> (@yaml.Yaml, Bool) {
+fn yq_apply_filter(y : @yaml.Yaml, filter : String) -> (@yaml.Yaml, Bool) {
   // identity filter
   if filter == "." {
     return (y, false)
@@ -27,7 +26,7 @@ fn yq_apply_filter(
         // don't descend further, handled in output
         break
       }
-      _ => {
+      _ =>
         // Check if it's an array index like [N]
         if seg.has_prefix("[") && seg.has_suffix("]") {
           let idx_str = cmd_substr_slice(seg, 1, seg.length() - 1)
@@ -39,7 +38,7 @@ fn yq_apply_filter(
               } else {
                 current = @yaml.Yaml::Null
               }
-            _ => { current = @yaml.Yaml::Null }
+            _ => current = @yaml.Yaml::Null
           }
         } else {
           // Map key access
@@ -47,17 +46,17 @@ fn yq_apply_filter(
             @yaml.Yaml::Map(m) =>
               match m.get(seg) {
                 Some(v) => current = v
-                None => { current = @yaml.Yaml::Null }
+                None => current = @yaml.Yaml::Null
               }
-            _ => { current = @yaml.Yaml::Null }
+            _ => current = @yaml.Yaml::Null
           }
         }
-      }
     }
   }
   (current, iterate_array)
 }
 
+///|
 /// Parse a filter string like ".key.subkey.[0].[]" into segments
 fn yq_parse_filter(filter : String) -> Array[String] {
   let segments : Array[String] = []
@@ -110,6 +109,7 @@ fn yq_parse_filter(filter : String) -> Array[String] {
   segments
 }
 
+///|
 /// Format a Yaml value for output, with optional raw mode
 fn yq_format_output(y : @yaml.Yaml, raw : Bool) -> String {
   if raw {
@@ -123,6 +123,7 @@ fn yq_format_output(y : @yaml.Yaml, raw : Bool) -> String {
   }
 }
 
+///|
 /// yq: YAML processor command
 fn cmd_yq(ctx : CommandContext) -> @ast.ExecResult {
   let config = yq_parse_args(ctx.args)
@@ -130,14 +131,10 @@ fn cmd_yq(ctx : CommandContext) -> @ast.ExecResult {
   // Read input
   let content = match config.file_path {
     Some(p) => {
-      let resolved = try {
-        @fs.resolve_path(ctx.cwd, p)
-      } catch {
+      let resolved = @fs.resolve_path(ctx.cwd, p) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("yq: \{msg}\n")
       }
-      try {
-        ctx.fs.read_file(resolved)
-      } catch {
+      ctx.fs.read_file(resolved) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("yq: \{msg}\n")
       }
     }
@@ -149,10 +146,11 @@ fn cmd_yq(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   // Parse YAML
-  let docs : Array[@yaml.Yaml] = try {
-    @yaml.Yaml::load_from_string(content[:])
-  } catch {
-    @yaml.YamlError(_) as e => return @ast.ExecResult::err("yq: \{e}\n")
+  let docs : Array[@yaml.Yaml] = @yaml.Yaml::load_from_string(content[:]) catch {
+    @yaml.YamlError(mark~, info~) =>
+      return @ast.ExecResult::err(
+        "yq: \{info} at line \{mark.line}, column \{mark.col}\n",
+      )
   }
 
   if docs.length() == 0 {
@@ -183,6 +181,7 @@ fn cmd_yq(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::ok(out.to_string())
 }
 
+///|
 /// xan: CSV processor command
 fn cmd_xan(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
@@ -205,14 +204,10 @@ fn cmd_xan(ctx : CommandContext) -> @ast.ExecResult {
     "count" => xan_count(ctx)
     _ => {
       // Treat first arg as a file, default to view
-      let resolved = try {
-        @fs.resolve_path(ctx.cwd, subcmd)
-      } catch {
+      let resolved = @fs.resolve_path(ctx.cwd, subcmd) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("xan: \{msg}\n")
       }
-      let content = try {
-        ctx.fs.read_file(resolved)
-      } catch {
+      let content = ctx.fs.read_file(resolved) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("xan: \{msg}\n")
       }
       let csv = @nyacsv.CSV::parse_string(content)
@@ -221,26 +216,22 @@ fn cmd_xan(ctx : CommandContext) -> @ast.ExecResult {
   }
 }
 
+///|
 /// csvlook: pretty-print CSV as a table (xan view-compatible).
 fn cmd_csvlook(ctx : CommandContext) -> @ast.ExecResult {
   let config = csvlook_parse_args(ctx.args)
   let content = match config.file_path {
-    Some(path) => {
+    Some(path) =>
       if path == "-" {
         ctx.stdin_content
       } else {
-        let resolved = try {
-          @fs.resolve_path(ctx.cwd, path)
-        } catch {
+        let resolved = @fs.resolve_path(ctx.cwd, path) catch {
           @fs.FsError(msg) => return @ast.ExecResult::err("csvlook: \{msg}\n")
         }
-        try {
-          ctx.fs.read_file(resolved)
-        } catch {
+        ctx.fs.read_file(resolved) catch {
           @fs.FsError(msg) => return @ast.ExecResult::err("csvlook: \{msg}\n")
         }
       }
-    }
     None => ctx.stdin_content
   }
 
@@ -252,6 +243,7 @@ fn cmd_csvlook(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::ok(xan_view(csv))
 }
 
+///|
 /// xan headers: list column names one per line
 fn xan_headers(ctx : CommandContext) -> @ast.ExecResult {
   let content = xan_get_input(ctx, 1)
@@ -270,6 +262,7 @@ fn xan_headers(ctx : CommandContext) -> @ast.ExecResult {
   }
 }
 
+///|
 /// xan select COL1,COL2 file.csv: select specific columns
 fn xan_select(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() < 2 {
@@ -328,19 +321,16 @@ fn xan_select(ctx : CommandContext) -> @ast.ExecResult {
   }
 }
 
+///|
 /// xan slice -i START -l LENGTH file.csv: slice rows
 fn xan_slice(ctx : CommandContext) -> @ast.ExecResult {
   let config = xan_slice_parse_args(ctx.args)
   let content = match config.file_path {
     Some(path) => {
-      let resolved = try {
-        @fs.resolve_path(ctx.cwd, path)
-      } catch {
+      let resolved = @fs.resolve_path(ctx.cwd, path) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("xan slice: \{msg}\n")
       }
-      try {
-        ctx.fs.read_file(resolved)
-      } catch {
+      ctx.fs.read_file(resolved) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("xan slice: \{msg}\n")
       }
     }
@@ -352,7 +342,11 @@ fn xan_slice(ctx : CommandContext) -> @ast.ExecResult {
   let end = match config.length {
     Some(l) => {
       let e = config.start + l
-      if e > rows.length() { rows.length() } else { e }
+      if e > rows.length() {
+        rows.length()
+      } else {
+        e
+      }
     }
     None => rows.length()
   }
@@ -375,6 +369,7 @@ fn xan_slice(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::ok(out.to_string())
 }
 
+///|
 /// xan view: pretty-print CSV as a table
 fn xan_view_cmd(ctx : CommandContext) -> @ast.ExecResult {
   let content = xan_get_input(ctx, 1)
@@ -387,6 +382,7 @@ fn xan_view_cmd(ctx : CommandContext) -> @ast.ExecResult {
   }
 }
 
+///|
 /// xan count: count data rows
 fn xan_count(ctx : CommandContext) -> @ast.ExecResult {
   let content = xan_get_input(ctx, 1)
@@ -400,21 +396,21 @@ fn xan_count(ctx : CommandContext) -> @ast.ExecResult {
   }
 }
 
+///|
 /// Helper: get input for xan subcommands (file arg at position arg_start, or stdin)
-fn xan_get_input(ctx : CommandContext, arg_start : Int) -> Result[String, String] {
+fn xan_get_input(
+  ctx : CommandContext,
+  arg_start : Int,
+) -> Result[String, String] {
   if arg_start < ctx.args.length() {
     let path = ctx.args[arg_start]
     if path == "-" {
       return Ok(ctx.stdin_content)
     }
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, path)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, path) catch {
       @fs.FsError(msg) => return Err("xan: \{msg}\n")
     }
-    let data = try {
-      ctx.fs.read_file(resolved)
-    } catch {
+    let data = ctx.fs.read_file(resolved) catch {
       @fs.FsError(msg) => return Err("xan: \{msg}\n")
     }
     Ok(data)
@@ -423,6 +419,7 @@ fn xan_get_input(ctx : CommandContext, arg_start : Int) -> Result[String, String
   }
 }
 
+///|
 /// Split comma-separated column spec (e.g. "a,b,c") into column names.
 fn xan_split_col_spec(spec : String) -> Array[String] {
   let parts : Array[String] = []
@@ -440,6 +437,7 @@ fn xan_split_col_spec(spec : String) -> Array[String] {
   parts
 }
 
+///|
 /// Pretty-print a CSV as an aligned table
 fn xan_view(csv : @nyacsv.CSV) -> String {
   let headers = csv.header()
@@ -494,6 +492,7 @@ fn xan_view(csv : @nyacsv.CSV) -> String {
   out.to_string()
 }
 
+///|
 /// Draw a table border line
 fn xan_draw_border(out : StringBuilder, widths : Array[Int]) -> Unit {
   out.write_char('+')
@@ -506,6 +505,7 @@ fn xan_draw_border(out : StringBuilder, widths : Array[Int]) -> Unit {
   out.write_char('\n')
 }
 
+///|
 /// Write padding spaces
 fn xan_pad(out : StringBuilder, count : Int) -> Unit {
   for _i = 0; _i < count; _i = _i + 1 {

@@ -4,6 +4,7 @@
 // Simple Commands
 // ============================================================================
 
+///|
 test "tokenize simple command" {
   let tokens = tokenize("echo hello world")
   assert_eq(tokens.length(), 4)
@@ -13,12 +14,14 @@ test "tokenize simple command" {
   assert_eq(tokens[3], @ast.Token::EOF)
 }
 
+///|
 test "tokenize empty input" {
   let tokens = tokenize("")
   assert_eq(tokens.length(), 1)
   assert_eq(tokens[0], @ast.Token::EOF)
 }
 
+///|
 test "tokenize whitespace only" {
   let tokens = tokenize("   \t  ")
   assert_eq(tokens.length(), 1)
@@ -29,6 +32,7 @@ test "tokenize whitespace only" {
 // Quoted Strings
 // ============================================================================
 
+///|
 test "tokenize single quoted string" {
   let tokens = tokenize("echo 'hello world'")
   assert_eq(tokens.length(), 3)
@@ -37,6 +41,7 @@ test "tokenize single quoted string" {
   assert_eq(tokens[2], @ast.Token::EOF)
 }
 
+///|
 test "tokenize double quoted string" {
   let tokens = tokenize("echo \"hello world\"")
   assert_eq(tokens.length(), 3)
@@ -45,6 +50,7 @@ test "tokenize double quoted string" {
   assert_eq(tokens[2], @ast.Token::EOF)
 }
 
+///|
 test "tokenize double quoted with dollar" {
   let tokens = tokenize("echo \"hello $USER\"")
   assert_eq(tokens.length(), 3)
@@ -53,6 +59,7 @@ test "tokenize double quoted with dollar" {
   assert_eq(tokens[2], @ast.Token::EOF)
 }
 
+///|
 test "tokenize legacy arithmetic expansion word" {
   let tokens = tokenize("echo $[3 * 4]")
   assert_eq(tokens.length(), 3)
@@ -65,6 +72,7 @@ test "tokenize legacy arithmetic expansion word" {
 // Pipes
 // ============================================================================
 
+///|
 test "tokenize pipe" {
   let tokens = tokenize("cmd1 | cmd2")
   assert_eq(tokens.length(), 4)
@@ -74,6 +82,7 @@ test "tokenize pipe" {
   assert_eq(tokens[3], @ast.Token::EOF)
 }
 
+///|
 test "tokenize pipe-and" {
   let tokens = tokenize("cmd1 |& cmd2")
   assert_eq(tokens.length(), 4)
@@ -87,6 +96,7 @@ test "tokenize pipe-and" {
 // Redirections
 // ============================================================================
 
+///|
 test "tokenize redirect out" {
   let tokens = tokenize("echo hi > file")
   assert_eq(tokens.length(), 5)
@@ -97,47 +107,56 @@ test "tokenize redirect out" {
   assert_eq(tokens[4], @ast.Token::EOF)
 }
 
+///|
 test "tokenize redirect append" {
   let tokens = tokenize("echo hi >> file")
   assert_eq(tokens[2], @ast.Token::RedirectAppend)
 }
 
+///|
 test "tokenize redirect in" {
   let tokens = tokenize("cmd < input")
   assert_eq(tokens[1], @ast.Token::RedirectIn)
 }
 
+///|
 test "tokenize heredoc" {
   let tokens = tokenize("cmd << EOF")
   assert_eq(tokens[1], @ast.Token::HereDoc)
 }
 
+///|
 test "tokenize herestring" {
   let tokens = tokenize("cmd <<< word")
   assert_eq(tokens[1], @ast.Token::HereString)
 }
 
+///|
 test "tokenize fd redirect" {
   let tokens = tokenize("cmd 2> file")
   assert_eq(tokens[1], @ast.Token::FdNumber(2))
   assert_eq(tokens[2], @ast.Token::RedirectOut)
 }
 
+///|
 test "tokenize redirect clobber" {
   let tokens = tokenize("cmd >| file")
   assert_eq(tokens[1], @ast.Token::RedirectClobber)
 }
 
+///|
 test "tokenize dup output" {
   let tokens = tokenize("cmd >& 2")
   assert_eq(tokens[1], @ast.Token::DupOut)
 }
 
+///|
 test "tokenize and-redirect" {
   let tokens = tokenize("cmd &> file")
   assert_eq(tokens[1], @ast.Token::RedirectAndOut)
 }
 
+///|
 test "tokenize and-redirect-append" {
   let tokens = tokenize("cmd &>> file")
   assert_eq(tokens[1], @ast.Token::RedirectAndAppend)
@@ -147,21 +166,25 @@ test "tokenize and-redirect-append" {
 // Operators
 // ============================================================================
 
+///|
 test "tokenize and-list" {
   let tokens = tokenize("cmd1 && cmd2")
   assert_eq(tokens[1], @ast.Token::And)
 }
 
+///|
 test "tokenize or-list" {
   let tokens = tokenize("cmd1 || cmd2")
   assert_eq(tokens[1], @ast.Token::Or)
 }
 
+///|
 test "tokenize semicolon" {
   let tokens = tokenize("cmd1 ; cmd2")
   assert_eq(tokens[1], @ast.Token::Semi)
 }
 
+///|
 test "tokenize background" {
   let tokens = tokenize("cmd &")
   assert_eq(tokens[1], @ast.Token::Ampersand)
@@ -171,6 +194,7 @@ test "tokenize background" {
 // Grouping
 // ============================================================================
 
+///|
 test "tokenize parens" {
   let tokens = tokenize("(cmd)")
   assert_eq(tokens[0], @ast.Token::LeftParen)
@@ -178,6 +202,7 @@ test "tokenize parens" {
   assert_eq(tokens[2], @ast.Token::RightParen)
 }
 
+///|
 test "tokenize braces" {
   let tokens = tokenize("{ cmd; }")
   assert_eq(tokens[0], @ast.Token::LeftBrace)
@@ -190,46 +215,55 @@ test "tokenize braces" {
 // Assignment
 // ============================================================================
 
+///|
 test "tokenize assignment" {
   let tokens = tokenize("VAR=value")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("VAR", "value", false))
 }
 
+///|
 test "tokenize assignment empty value" {
   let tokens = tokenize("VAR=")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("VAR", "", false))
 }
 
+///|
 test "tokenize assignment append" {
   let tokens = tokenize("VAR+=value")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("VAR", "value", true))
 }
 
+///|
 test "tokenize array assignment with nested index expression" {
   let tokens = tokenize("a[i[0]]=x")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[i[0]]", "x", false))
 }
 
+///|
 test "tokenize array assignment with spaces in index expression" {
   let tokens = tokenize("a[ 1 + 2 ]=z")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[ 1 + 2 ]", "z", false))
 }
 
+///|
 test "tokenize array assignment append with nested index expression" {
   let tokens = tokenize("a[i[0]]+=x")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[i[0]]", "x", true))
 }
 
+///|
 test "tokenize array assignment with equals in index expression" {
   let tokens = tokenize("a[a[0]=1]=X")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[a[0]=1]", "X", false))
 }
 
+///|
 test "tokenize array assignment append with equals in index expression" {
   let tokens = tokenize("a[a[0]+=1]+=X")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[a[0]+=1]", "X", true))
 }
 
+///|
 test "tokenize array assignment with empty subscript" {
   let tokens = tokenize("a[]=42")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[]", "42", false))
@@ -239,6 +273,7 @@ test "tokenize array assignment with empty subscript" {
 // Comments
 // ============================================================================
 
+///|
 test "tokenize with comment" {
   let tokens = tokenize("echo hi # comment")
   assert_eq(tokens.length(), 3)
@@ -247,6 +282,7 @@ test "tokenize with comment" {
   assert_eq(tokens[2], @ast.Token::EOF)
 }
 
+///|
 test "tokenize only comment" {
   let tokens = tokenize("# just a comment")
   assert_eq(tokens.length(), 1)
@@ -257,6 +293,7 @@ test "tokenize only comment" {
 // Reserved Words
 // ============================================================================
 
+///|
 test "tokenize if-then-fi" {
   let tokens = tokenize("if true; then echo yes; fi")
   assert_eq(tokens[0], @ast.Token::If)
@@ -270,6 +307,7 @@ test "tokenize if-then-fi" {
   assert_eq(tokens[8], @ast.Token::EOF)
 }
 
+///|
 test "tokenize for-in-do-done" {
   let tokens = tokenize("for x in a b; do echo; done")
   assert_eq(tokens[0], @ast.Token::For)
@@ -285,11 +323,13 @@ test "tokenize for-in-do-done" {
   assert_eq(tokens[10], @ast.Token::EOF)
 }
 
+///|
 test "tokenize while-do-done" {
   let tokens = tokenize("while true; do echo; done")
   assert_eq(tokens[0], @ast.Token::While)
 }
 
+///|
 test "tokenize case-in-esac" {
   let tokens = tokenize("case x in esac")
   assert_eq(tokens[0], @ast.Token::Case)
@@ -297,6 +337,7 @@ test "tokenize case-in-esac" {
   assert_eq(tokens[3], @ast.Token::Esac)
 }
 
+///|
 test "tokenize function" {
   let tokens = tokenize("function foo")
   assert_eq(tokens[0], @ast.Token::Function)
@@ -306,6 +347,7 @@ test "tokenize function" {
 // Newlines
 // ============================================================================
 
+///|
 test "tokenize newlines" {
   let tokens = tokenize("cmd1\ncmd2")
   assert_eq(tokens[0], @ast.Token::Word("cmd1"))
@@ -318,6 +360,7 @@ test "tokenize newlines" {
 // Escape Sequences
 // ============================================================================
 
+///|
 test "tokenize backslash escape" {
   let tokens = tokenize("echo hello\\ world")
   assert_eq(tokens.length(), 3)
@@ -330,21 +373,19 @@ test "tokenize backslash escape" {
 // Error Cases
 // ============================================================================
 
+///|
 test "unterminated single quote" {
   let mut got_error = false
-  try {
-    tokenize("echo 'hello") |> ignore
-  } catch {
+  try tokenize("echo 'hello") |> ignore catch {
     @ast.BashError(_) => got_error = true
   }
   assert_true(got_error)
 }
 
+///|
 test "unterminated double quote" {
   let mut got_error = false
-  try {
-    tokenize("echo \"hello") |> ignore
-  } catch {
+  try tokenize("echo \"hello") |> ignore catch {
     @ast.BashError(_) => got_error = true
   }
   assert_true(got_error)

@@ -1,6 +1,7 @@
 // moon_bash Commands - VM Bridge
 // python3, sqlite3
 
+///|
 priv struct VmExecResponse {
   stdout : String
   stderr : String
@@ -10,6 +11,7 @@ priv struct VmExecResponse {
   files : Array[(String, String)]
 }
 
+///|
 fn vm_hex_digit(n : Int) -> Char {
   if n < 10 {
     (n + 48).unsafe_to_char()
@@ -18,6 +20,7 @@ fn vm_hex_digit(n : Int) -> Char {
   }
 }
 
+///|
 fn vm_json_escape_string(s : String) -> String {
   let out = StringBuilder::new()
   out.write_char('"')
@@ -45,6 +48,7 @@ fn vm_json_escape_string(s : String) -> String {
   out.to_string()
 }
 
+///|
 fn vm_args_to_json(args : Array[String]) -> String {
   let out = StringBuilder::new()
   out.write_char('[')
@@ -58,20 +62,13 @@ fn vm_args_to_json(args : Array[String]) -> String {
   out.to_string()
 }
 
+///|
 fn vm_env_to_json(env : Map[String, String]) -> String {
   let keys : Array[String] = []
   for key, _value in env {
     keys.push(key)
   }
-  keys.sort_by(fn(a, b) {
-    if a < b {
-      -1
-    } else if a > b {
-      1
-    } else {
-      0
-    }
-  })
+  keys.sort_by(fn(a, b) { if a < b { -1 } else if a > b { 1 } else { 0 } })
   let out = StringBuilder::new()
   out.write_char('{')
   for i = 0; i < keys.length(); i = i + 1 {
@@ -88,6 +85,7 @@ fn vm_env_to_json(env : Map[String, String]) -> String {
   out.to_string()
 }
 
+///|
 fn vm_files_to_json(fs : @fs.InMemoryFs) -> String {
   let keys : Array[String] = []
   for path, entry in fs.entries {
@@ -96,15 +94,7 @@ fn vm_files_to_json(fs : @fs.InMemoryFs) -> String {
       _ => ()
     }
   }
-  keys.sort_by(fn(a, b) {
-    if a < b {
-      -1
-    } else if a > b {
-      1
-    } else {
-      0
-    }
-  })
+  keys.sort_by(fn(a, b) { if a < b { -1 } else if a > b { 1 } else { 0 } })
   let out = StringBuilder::new()
   out.write_char('{')
   for i = 0; i < keys.length(); i = i + 1 {
@@ -124,10 +114,8 @@ fn vm_files_to_json(fs : @fs.InMemoryFs) -> String {
   out.to_string()
 }
 
-fn vm_build_request_json(
-  runtime_name : String,
-  ctx : CommandContext
-) -> String {
+///|
+fn vm_build_request_json(runtime_name : String, ctx : CommandContext) -> String {
   let out = StringBuilder::new()
   out.write_char('{')
   out.write_string("\"runtime\":")
@@ -146,10 +134,11 @@ fn vm_build_request_json(
   out.to_string()
 }
 
+///|
 fn vm_json_get_string(
   obj : Map[String, Json],
   key : String,
-  default_value : String
+  default_value : String,
 ) -> String {
   match obj.get(key) {
     Some(Json::String(s)) => s
@@ -161,10 +150,11 @@ fn vm_json_get_string(
   }
 }
 
+///|
 fn vm_json_get_int(
   obj : Map[String, Json],
   key : String,
-  default_value : Int
+  default_value : Int,
 ) -> Int {
   match obj.get(key) {
     Some(Json::Number(n, ..)) => n.to_int()
@@ -173,8 +163,9 @@ fn vm_json_get_int(
   }
 }
 
+///|
 fn vm_json_get_files(
-  obj : Map[String, Json]
+  obj : Map[String, Json],
 ) -> (Bool, Array[(String, String)]) {
   match obj.get("files") {
     Some(Json::Object(files_obj)) => {
@@ -205,24 +196,22 @@ fn vm_json_get_files(
   }
 }
 
+///|
 fn vm_apply_file_updates(
   fs : @fs.InMemoryFs,
-  files : Array[(String, String)]
+  files : Array[(String, String)],
 ) -> Unit {
   for i = 0; i < files.length(); i = i + 1 {
     let (path, content) = files[i]
-    try {
-      fs.write_file(path, content)
-    } catch {
+    fs.write_file(path, content) catch {
       _ => ()
     }
   }
 }
 
+///|
 fn vm_parse_response(json_str : String) -> Result[VmExecResponse, String] {
-  let parsed = try {
-    @json.parse(json_str[:])
-  } catch {
+  let parsed = @json.parse(json_str[:]) catch {
     _ => return Err("vm bridge returned invalid JSON")
   }
   match parsed {
@@ -246,6 +235,7 @@ fn vm_parse_response(json_str : String) -> Result[VmExecResponse, String] {
   }
 }
 
+///|
 fn vm_stderr_with_newline(stderr : String) -> String {
   if stderr.length() == 0 {
     return ""
@@ -258,18 +248,14 @@ fn vm_stderr_with_newline(stderr : String) -> String {
   }
 }
 
+///|
 fn vm_run(runtime_name : String, ctx : CommandContext) -> @ast.ExecResult {
   let request_json = vm_build_request_json(runtime_name, ctx)
   let raw = @ffi.vm_sync(request_json)
   let response = match vm_parse_response(raw) {
     Ok(resp) => resp
-    Err(msg) => {
-      return {
-        stdout: "",
-        stderr: "\{runtime_name}: \{msg}\n",
-        exit_code: 1,
-      }
-    }
+    Err(msg) =>
+      return { stdout: "", stderr: "\{runtime_name}: \{msg}\n", exit_code: 1 }
   }
   if response.error.length() > 0 {
     let err = StringBuilder::new()
@@ -280,7 +266,11 @@ fn vm_run(runtime_name : String, ctx : CommandContext) -> @ast.ExecResult {
     return {
       stdout: response.stdout,
       stderr: err.to_string(),
-      exit_code: if response.exit_code == 0 { 1 } else { response.exit_code },
+      exit_code: if response.exit_code == 0 {
+        1
+      } else {
+        response.exit_code
+      },
     }
   }
   if response.has_files {
@@ -293,22 +283,21 @@ fn vm_run(runtime_name : String, ctx : CommandContext) -> @ast.ExecResult {
   }
 }
 
+///|
 fn cmd_python3(ctx : CommandContext) -> @ast.ExecResult {
   vm_run("python3", ctx)
 }
 
+///|
 fn cmd_js_exec_placeholder(ctx : CommandContext) -> @ast.ExecResult {
-  let display_name = if ctx.args.length() > 0 {
-    ctx.args[0]
-  } else {
-    "js-exec"
-  }
+  let display_name = if ctx.args.length() > 0 { ctx.args[0] } else { "js-exec" }
   @ast.ExecResult::new(
     stderr="\{display_name}: JavaScript runtime bridge is not implemented yet\n",
     exit_code=1,
   )
 }
 
+///|
 fn cmd_sqlite3(ctx : CommandContext) -> @ast.ExecResult {
   vm_run("sqlite3", ctx)
 }

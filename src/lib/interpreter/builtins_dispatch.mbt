@@ -1,10 +1,11 @@
 // moon_bash Interpreter - Builtin Dispatch
 // Split from builtins_core.mbt for maintainability.
 
+///|
 fn ExecContext::run_builtin(
   self : ExecContext,
   name : String,
-  args : Array[String]
+  args : Array[String],
 ) -> Bool {
   match name {
     "export" => {

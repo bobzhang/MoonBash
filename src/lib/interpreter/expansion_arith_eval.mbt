@@ -1,6 +1,10 @@
 // Shell arithmetic expansion - recursive descent parser and word splitting
 
-fn ExecContext::arith_parse_value_text(self : ExecContext, text : String) -> Int64 {
+///|
+fn ExecContext::arith_parse_value_text(
+  self : ExecContext,
+  text : String,
+) -> Int64 {
   let trimmed = arith_trim(text)
   if trimmed.length() == 0 {
     return 0L
@@ -9,7 +13,9 @@ fn ExecContext::arith_parse_value_text(self : ExecContext, text : String) -> Int
   if trimmed.length() >= 2 &&
     trimmed[0] == '(' &&
     trimmed[trimmed.length() - 1] == ')' {
-    let inner = trimmed.view(start_offset=1, end_offset=trimmed.length() - 1).to_string()
+    let inner = trimmed
+      .view(start_offset=1, end_offset=trimmed.length() - 1)
+      .to_owned()
     let parts = split_by_whitespace(inner)
     if parts.length() == 0 {
       return 0L
@@ -23,16 +29,19 @@ fn ExecContext::arith_parse_value_text(self : ExecContext, text : String) -> Int
   }
 }
 
+///|
 fn ExecContext::arith_fail(self : ExecContext) -> Unit {
   self.exit_code = 1
   self.env["__MOON_BASH_ABORT_CURRENT_COMMAND__"] = "1"
 }
 
+///|
 fn ExecContext::arith_fail_nounset(self : ExecContext) -> Unit {
   self.arith_fail()
   self.should_exit = true
 }
 
+///|
 fn ExecContext::arith_get_var_value(self : ExecContext, name : String) -> Int64 {
   let mut current = name
   let mut depth = 0
@@ -63,6 +72,7 @@ fn ExecContext::arith_get_var_value(self : ExecContext, name : String) -> Int64 
   0L
 }
 
+///|
 fn ExecContext::arith_var_is_array(self : ExecContext, name : String) -> Bool {
   if self.env.contains(test_array_count_storage_key(name)) {
     return true
@@ -73,9 +83,10 @@ fn ExecContext::arith_var_is_array(self : ExecContext, name : String) -> Bool {
   self.env.contains(name + "[0]")
 }
 
+///|
 fn ExecContext::arith_target_is_bare_array(
   self : ExecContext,
-  target : ArithTarget
+  target : ArithTarget,
 ) -> Bool {
   match target {
     Var(name) => self.arith_var_is_array(name)
@@ -83,6 +94,7 @@ fn ExecContext::arith_target_is_bare_array(
   }
 }
 
+///|
 fn arith_value_looks_like_expression(text : String) -> Bool {
   for i = 0; i < text.length(); i = i + 1 {
     let ch = text[i].to_int().unsafe_to_char()
@@ -106,10 +118,11 @@ fn arith_value_looks_like_expression(text : String) -> Bool {
   false
 }
 
+///|
 fn ExecContext::arith_get_array_elem(
   self : ExecContext,
   name : String,
-  index : Int64
+  index : Int64,
 ) -> Int64 {
   let resolved_index = if index < 0L {
     self.indexed_array_origin(name) + index
@@ -133,7 +146,9 @@ fn ExecContext::arith_get_array_elem(
   if trimmed.length() >= 2 &&
     trimmed[0] == '(' &&
     trimmed[trimmed.length() - 1] == ')' {
-    let inner = trimmed.view(start_offset=1, end_offset=trimmed.length() - 1).to_string()
+    let inner = trimmed
+      .view(start_offset=1, end_offset=trimmed.length() - 1)
+      .to_owned()
     let parts = split_by_whitespace(inner)
     if resolved_index < parts.length().to_int64() {
       return self.arith_parse_value_text(parts[resolved_index.to_int()])
@@ -155,13 +170,14 @@ fn ExecContext::arith_get_array_elem(
   0L
 }
 
+///|
 fn ExecContext::arith_set_target(
   self : ExecContext,
   target : ArithTarget,
   value : Int64,
-  execute : Bool
+  execute : Bool,
 ) -> Unit {
-  if !(execute) {
+  if !execute {
     return
   }
   if self.env.contains("__MOON_BASH_ABORT_CURRENT_COMMAND__") {
@@ -191,10 +207,11 @@ fn ExecContext::arith_set_target(
   }
 }
 
+///|
 fn ExecContext::arith_parse_primary(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   match p.peek() {
     Some(tok) => {
@@ -210,7 +227,7 @@ fn ExecContext::arith_parse_primary(
       if arith_is_identifier_text(tok) {
         if p.match_tok("[") {
           let idx_expr = self.arith_parse_comma(p, execute)
-          if !(p.match_tok("]")) {
+          if !p.match_tok("]") {
             self.arith_fail()
             return arith_plain(0L)
           }
@@ -234,10 +251,11 @@ fn ExecContext::arith_parse_primary(
   }
 }
 
+///|
 fn ExecContext::arith_parse_postfix(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut value = self.arith_parse_primary(p, execute)
 
@@ -262,14 +280,20 @@ fn ExecContext::arith_parse_postfix(
   value
 }
 
+///|
 fn ExecContext::arith_parse_unary(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   match p.peek() {
-    Some(op) => {
-      if op == "+" || op == "-" || op == "!" || op == "~" || op == "++" || op == "--" {
+    Some(op) =>
+      if op == "+" ||
+        op == "-" ||
+        op == "!" ||
+        op == "~" ||
+        op == "++" ||
+        op == "--" {
         ignore(p.advance())
         let operand = self.arith_parse_unary(p, execute)
         match op {
@@ -302,21 +326,21 @@ fn ExecContext::arith_parse_unary(
       } else {
         self.arith_parse_postfix(p, execute)
       }
-    }
     None => self.arith_parse_postfix(p, execute)
   }
 }
 
+///|
 fn ExecContext::arith_parse_mul(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_pow(p, execute)
 
   while true {
     match p.peek() {
-      Some(op) => {
+      Some(op) =>
         if op == "*" || op == "/" || op == "%" {
           ignore(p.advance())
           let right = self.arith_parse_pow(p, execute)
@@ -330,7 +354,6 @@ fn ExecContext::arith_parse_mul(
         } else {
           break
         }
-      }
       None => break
     }
   }
@@ -338,10 +361,11 @@ fn ExecContext::arith_parse_mul(
   left
 }
 
+///|
 fn ExecContext::arith_parse_pow(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_unary(p, execute)
 
@@ -358,16 +382,17 @@ fn ExecContext::arith_parse_pow(
   left
 }
 
+///|
 fn ExecContext::arith_parse_add(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_mul(p, execute)
 
   while true {
     match p.peek() {
-      Some(op) => {
+      Some(op) =>
         if op == "+" || op == "-" {
           ignore(p.advance())
           let right = self.arith_parse_mul(p, execute)
@@ -380,7 +405,6 @@ fn ExecContext::arith_parse_add(
         } else {
           break
         }
-      }
       None => break
     }
   }
@@ -388,16 +412,17 @@ fn ExecContext::arith_parse_add(
   left
 }
 
+///|
 fn ExecContext::arith_parse_shift(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_add(p, execute)
 
   while true {
     match p.peek() {
-      Some(op) => {
+      Some(op) =>
         if op == "<<" || op == ">>" {
           ignore(p.advance())
           let right = self.arith_parse_add(p, execute)
@@ -410,7 +435,6 @@ fn ExecContext::arith_parse_shift(
         } else {
           break
         }
-      }
       None => break
     }
   }
@@ -418,16 +442,17 @@ fn ExecContext::arith_parse_shift(
   left
 }
 
+///|
 fn ExecContext::arith_parse_rel(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_shift(p, execute)
 
   while true {
     match p.peek() {
-      Some(op) => {
+      Some(op) =>
         if op == "<" || op == "<=" || op == ">" || op == ">=" {
           ignore(p.advance())
           let right = self.arith_parse_shift(p, execute)
@@ -444,7 +469,6 @@ fn ExecContext::arith_parse_rel(
         } else {
           break
         }
-      }
       None => break
     }
   }
@@ -452,21 +476,21 @@ fn ExecContext::arith_parse_rel(
   left
 }
 
+///|
 fn ExecContext::arith_parse_eq(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_rel(p, execute)
 
   while true {
     match p.peek() {
-      Some(op) => {
+      Some(op) =>
         if op == "==" || op == "!=" {
           ignore(p.advance())
           let right = self.arith_parse_rel(p, execute)
-          let contains_bare_array =
-            self.arith_target_is_bare_array(left.target) ||
+          let contains_bare_array = self.arith_target_is_bare_array(left.target) ||
             self.arith_target_is_bare_array(right.target)
           let ok = if contains_bare_array {
             false
@@ -479,7 +503,6 @@ fn ExecContext::arith_parse_eq(
         } else {
           break
         }
-      }
       None => break
     }
   }
@@ -487,10 +510,11 @@ fn ExecContext::arith_parse_eq(
   left
 }
 
+///|
 fn ExecContext::arith_parse_bitand(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_eq(p, execute)
   while p.match_tok("&") {
@@ -500,10 +524,11 @@ fn ExecContext::arith_parse_bitand(
   left
 }
 
+///|
 fn ExecContext::arith_parse_bitxor(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_bitand(p, execute)
   while p.match_tok("^") {
@@ -513,10 +538,11 @@ fn ExecContext::arith_parse_bitxor(
   left
 }
 
+///|
 fn ExecContext::arith_parse_bitor(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_bitxor(p, execute)
   while p.match_tok("|") {
@@ -526,10 +552,11 @@ fn ExecContext::arith_parse_bitor(
   left
 }
 
+///|
 fn ExecContext::arith_parse_logand(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_bitor(p, execute)
 
@@ -546,10 +573,11 @@ fn ExecContext::arith_parse_logand(
   left
 }
 
+///|
 fn ExecContext::arith_parse_logor(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut left = self.arith_parse_logand(p, execute)
 
@@ -566,13 +594,14 @@ fn ExecContext::arith_parse_logor(
   left
 }
 
+///|
 fn ExecContext::arith_parse_ternary(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let cond = self.arith_parse_logor(p, execute)
-  if !(p.match_tok("?")) {
+  if !p.match_tok("?") {
     return cond
   }
 
@@ -593,17 +622,18 @@ fn ExecContext::arith_parse_ternary(
   }
 }
 
+///|
 fn ExecContext::arith_parse_assignment(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let left = self.arith_parse_ternary(p, execute)
   let op = match p.peek() {
     Some(v) => v
     None => return left
   }
-  if !(arith_is_assignment_op(op)) {
+  if !arith_is_assignment_op(op) {
     return left
   }
 
@@ -629,10 +659,11 @@ fn ExecContext::arith_parse_assignment(
   arith_plain(newv)
 }
 
+///|
 fn ExecContext::arith_parse_comma(
   self : ExecContext,
   p : ArithParser,
-  execute : Bool
+  execute : Bool,
 ) -> ArithValue {
   let mut result = self.arith_parse_assignment(p, execute)
   while p.match_tok(",") {
@@ -641,6 +672,7 @@ fn ExecContext::arith_parse_comma(
   result
 }
 
+///|
 fn arith_is_special_var_char(ch : Char) -> Bool {
   ch == '?' ||
   ch == '!' ||
@@ -651,6 +683,7 @@ fn arith_is_special_var_char(ch : Char) -> Bool {
   ch == '-'
 }
 
+///|
 fn arith_strip_line_continuations(raw : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -662,7 +695,8 @@ fn arith_strip_line_continuations(raw : String) -> String {
         i += 2
         continue
       }
-      if next == '\r' && i + 2 < raw.length() &&
+      if next == '\r' &&
+        i + 2 < raw.length() &&
         raw[i + 2].to_int().unsafe_to_char() == '\n' {
         i += 3
         continue
@@ -674,6 +708,7 @@ fn arith_strip_line_continuations(raw : String) -> String {
   out.to_string()
 }
 
+///|
 fn arith_prepare_word_for_expansion(raw : String) -> @ast.Word {
   let parsed = @parser.parse_word_content(raw)
   let normalized_parts : Array[@ast.WordPart] = []
@@ -687,6 +722,7 @@ fn arith_prepare_word_for_expansion(raw : String) -> @ast.Word {
   { parts: normalized_parts }
 }
 
+///|
 fn arith_strip_double_quotes(text : String) -> String {
   let out = StringBuilder::new()
   for i = 0; i < text.length(); i = i + 1 {
@@ -698,7 +734,11 @@ fn arith_strip_double_quotes(text : String) -> String {
   out.to_string()
 }
 
-fn ExecContext::arith_expand_dollar_refs(self : ExecContext, raw : String) -> String {
+///|
+fn ExecContext::arith_expand_dollar_refs(
+  self : ExecContext,
+  raw : String,
+) -> String {
   let out = StringBuilder::new()
   let mut i = 0
   while i < raw.length() {
@@ -707,26 +747,28 @@ fn ExecContext::arith_expand_dollar_refs(self : ExecContext, raw : String) -> St
       let next = raw[i + 1].to_int().unsafe_to_char()
       if arith_is_ident_start(next) {
         let mut j = i + 2
-        while j < raw.length() && arith_is_ident_char(raw[j].to_int().unsafe_to_char()) {
+        while j < raw.length() &&
+              arith_is_ident_char(raw[j].to_int().unsafe_to_char()) {
           j += 1
         }
-        let name = raw.view(start_offset=i + 1, end_offset=j).to_string()
+        let name = raw.view(start_offset=i + 1, end_offset=j).to_owned()
         out.write_string(self.expand_variable(name))
         i = j
         continue
       }
       if arith_is_digit(next) {
         let mut j = i + 2
-        while j < raw.length() && arith_is_digit(raw[j].to_int().unsafe_to_char()) {
+        while j < raw.length() &&
+              arith_is_digit(raw[j].to_int().unsafe_to_char()) {
           j += 1
         }
-        let name = raw.view(start_offset=i + 1, end_offset=j).to_string()
+        let name = raw.view(start_offset=i + 1, end_offset=j).to_owned()
         out.write_string(self.expand_variable(name))
         i = j
         continue
       }
       if arith_is_special_var_char(next) {
-        let name = raw.view(start_offset=i + 1, end_offset=i + 2).to_string()
+        let name = raw.view(start_offset=i + 1, end_offset=i + 2).to_owned()
         out.write_string(self.expand_variable(name))
         i += 2
         continue
@@ -738,14 +780,19 @@ fn ExecContext::arith_expand_dollar_refs(self : ExecContext, raw : String) -> St
   out.to_string()
 }
 
+///|
 fn ExecContext::eval_arith_raw(self : ExecContext, raw : String) -> Int64 {
   let normalized_raw = arith_strip_line_continuations(raw)
-  let expanded_word = self.expand_word_to_string(arith_prepare_word_for_expansion(normalized_raw))
+  let expanded_word = self.expand_word_to_string(
+    arith_prepare_word_for_expansion(normalized_raw),
+  )
   if contains_char(expanded_word, '\'') {
     self.arith_fail()
     return 0L
   }
-  let expanded = self.arith_expand_dollar_refs(arith_strip_double_quotes(expanded_word))
+  let expanded = self.arith_expand_dollar_refs(
+    arith_strip_double_quotes(expanded_word),
+  )
   let tokens = arith_tokenize(expanded)
   for i = 0; i < tokens.length(); i = i + 1 {
     if tokens[i].has_prefix("__MOON_BASH_ARITH_INVALID__") {
@@ -768,6 +815,7 @@ fn ExecContext::eval_arith_raw(self : ExecContext, raw : String) -> Int64 {
   result.value
 }
 
+///|
 fn ExecContext::eval_arith(self : ExecContext, expr : @ast.ArithExpr) -> Int64 {
   match expr {
     @ast.ArithExpr::Num(n) => n
@@ -828,10 +876,8 @@ fn ExecContext::eval_arith(self : ExecContext, expr : @ast.ArithExpr) -> Int64 {
 // Word Splitting
 // ============================================================================
 
-fn ExecContext::word_split(
-  self : ExecContext,
-  s : String
-) -> Array[String] {
+///|
+fn ExecContext::word_split(self : ExecContext, s : String) -> Array[String] {
   if s.length() == 0 {
     return []
   }
@@ -898,6 +944,7 @@ fn ExecContext::word_split(
   result
 }
 
+///|
 fn is_ifs_char(ch : Char, ifs : String) -> Bool {
   for i = 0; i < ifs.length(); i = i + 1 {
     if ifs[i].to_int().unsafe_to_char() == ch {
@@ -907,14 +954,17 @@ fn is_ifs_char(ch : Char, ifs : String) -> Bool {
   false
 }
 
+///|
 fn is_ifs_whitespace_char(ch : Char) -> Bool {
   ch == ' ' || ch == '\t' || ch == '\n'
 }
 
+///|
 fn word_split_protect_marker() -> Char {
   '\u001f'
 }
 
+///|
 fn decode_word_split_protected_text(s : String, ifs : String) -> String {
   if s.length() == 0 {
     return s

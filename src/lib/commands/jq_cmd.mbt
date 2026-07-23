@@ -1,5 +1,6 @@
 // moon_bash Commands - jq command entry point (cmd_jq)
 
+///|
 fn cmd_jq(ctx : CommandContext) -> @ast.ExecResult {
   let mut compact = false
   let mut raw = false
@@ -46,14 +47,10 @@ fn cmd_jq(ctx : CommandContext) -> @ast.ExecResult {
   } else {
     let raw_source = match input_file {
       Some(path) => {
-        let resolved = try {
-          @fs.resolve_path(ctx.cwd, path)
-        } catch {
+        let resolved = @fs.resolve_path(ctx.cwd, path) catch {
           @fs.FsError(msg) => return @ast.ExecResult::err("jq: \{msg}\n")
         }
-        try {
-          ctx.fs.read_file(resolved)
-        } catch {
+        ctx.fs.read_file(resolved) catch {
           @fs.FsError(msg) => return @ast.ExecResult::err("jq: \{msg}\n")
         }
       }
@@ -65,11 +62,7 @@ fn cmd_jq(ctx : CommandContext) -> @ast.ExecResult {
       if trimmed.length() == 0 {
         [Json::array([])]
       } else {
-        let single = try {
-          Some(@json.parse(trimmed[:]))
-        } catch {
-          _ => None
-        }
+        let single = Some(@json.parse(trimmed[:])) catch { _ => None }
         match single {
           Some(value) => [Json::array([value])]
           None => {
@@ -80,9 +73,7 @@ fn cmd_jq(ctx : CommandContext) -> @ast.ExecResult {
               if t.length() == 0 {
                 continue
               }
-              let parsed = try {
-                @json.parse(t[:])
-              } catch {
+              let parsed = @json.parse(t[:]) catch {
                 _ => return @ast.ExecResult::err("jq: invalid JSON input\n")
               }
               arr.push(parsed)
@@ -91,33 +82,29 @@ fn cmd_jq(ctx : CommandContext) -> @ast.ExecResult {
           }
         }
       }
+    } else if trimmed.length() == 0 {
+      [Json::null()]
     } else {
-      if trimmed.length() == 0 {
-        [Json::null()]
-      } else {
-        let single = try {
-          Some(@json.parse(trimmed[:]))
-        } catch {
-          _ => None
-        }
-        match single {
-          Some(value) => [value]
-          None => {
-            let lines = aj_split_lines_records(source)
-            let parsed_lines : Array[Json] = []
-            for line in lines {
-              let t = aj_trim(line)
-              if t.length() == 0 {
-                continue
-              }
-              let parsed = try {
-                @json.parse(t[:])
-              } catch {
-                _ => return @ast.ExecResult::err("jq: invalid JSON input\n")
-              }
-              parsed_lines.push(parsed)
+      let single = Some(@json.parse(trimmed[:])) catch { _ => None }
+      match single {
+        Some(value) => [value]
+        None => {
+          let lines = aj_split_lines_records(source)
+          let parsed_lines : Array[Json] = []
+          for line in lines {
+            let t = aj_trim(line)
+            if t.length() == 0 {
+              continue
             }
-            if parsed_lines.length() == 0 { [Json::null()] } else { parsed_lines }
+            let parsed = @json.parse(t[:]) catch {
+              _ => return @ast.ExecResult::err("jq: invalid JSON input\n")
+            }
+            parsed_lines.push(parsed)
+          }
+          if parsed_lines.length() == 0 {
+            [Json::null()]
+          } else {
+            parsed_lines
           }
         }
       }
@@ -125,26 +112,32 @@ fn cmd_jq(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   if jq_repeat_result_too_long(jq_filter, inputs) {
-    return @ast.ExecResult::err("jq: EvalError(\"Repeat string result too long\")\n")
+    return @ast.ExecResult::err(
+      "jq: EvalError(\"Repeat string result too long\")\n",
+    )
   }
 
   if query_opt is None {
     let out = StringBuilder::new()
     for input in inputs {
       match jq_manual_compat_values(jq_filter, input) {
-        Some(values) => {
+        Some(values) =>
           for value in values {
             if raw {
               match value {
                 Json::String(s) => out.write_string(s)
-                _ => out.write_string(value.stringify(indent=if compact { 0 } else { 2 }))
+                _ =>
+                  out.write_string(
+                    value.stringify(indent=if compact { 0 } else { 2 }),
+                  )
               }
             } else {
-              out.write_string(value.stringify(indent=if compact { 0 } else { 2 }))
+              out.write_string(
+                value.stringify(indent=if compact { 0 } else { 2 }),
+              )
             }
             out.write_char('\n')
           }
-        }
         None => return @ast.ExecResult::err(parse_err)
       }
     }
@@ -160,24 +153,23 @@ fn cmd_jq(ctx : CommandContext) -> @ast.ExecResult {
   for input in inputs {
     let values = match jq_manual_compat_values(jq_filter, input) {
       Some(values) => values
-      None => {
-        try {
-          @moonjq.run_json(query, input)
-        } catch {
-          e => {
+      None =>
+        @moonjq.run_json(query, input) catch {
+          e =>
             match jq_manual_compat_values(jq_filter, input) {
               Some(values) => values
               None => return @ast.ExecResult::err("jq: \{e}\n")
             }
-          }
         }
-      }
     }
     for value in values {
       if raw {
         match value {
           Json::String(s) => out.write_string(s)
-          _ => out.write_string(value.stringify(indent=if compact { 0 } else { 2 }))
+          _ =>
+            out.write_string(
+              value.stringify(indent=if compact { 0 } else { 2 }),
+            )
         }
       } else {
         out.write_string(value.stringify(indent=if compact { 0 } else { 2 }))

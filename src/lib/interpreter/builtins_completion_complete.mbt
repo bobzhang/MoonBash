@@ -1,5 +1,6 @@
 // moon_bash Interpreter - complete, compopt Builtins and Completion Helpers
 
+///|
 fn ExecContext::collect_completion_names(self : ExecContext) -> Array[String] {
   let names : Array[String] = []
   for key, _value in self.env {
@@ -11,9 +12,10 @@ fn ExecContext::collect_completion_names(self : ExecContext) -> Array[String] {
   names
 }
 
+///|
 fn ExecContext::print_completion_specs(
   self : ExecContext,
-  names : Array[String]
+  names : Array[String],
 ) -> Unit {
   if names.length() == 0 {
     let all_names = self.collect_completion_names()
@@ -34,9 +36,10 @@ fn ExecContext::print_completion_specs(
   }
 }
 
+///|
 fn ExecContext::builtin_complete(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let mut print_mode = false
   let mut words : String? = None
@@ -134,18 +137,17 @@ fn ExecContext::builtin_complete(
   }
 
   match words {
-    Some(raw) => {
+    Some(raw) =>
       if completion_has_unbalanced_param(raw) {
         self.exit_code = 2
         return
       }
-    }
     None => ()
   }
 
   match func_name {
-    Some(name) => {
-      if !(self.functions.contains(name)) {
+    Some(name) =>
+      if !self.functions.contains(name) {
         for target in names {
           if target == "-D" {
             self.exit_code = 2
@@ -153,7 +155,6 @@ fn ExecContext::builtin_complete(
           }
         }
       }
-    }
     None => ()
   }
 
@@ -191,9 +192,10 @@ fn ExecContext::builtin_complete(
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_compopt(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let mut has_action = false
   let mut i = 0
@@ -203,7 +205,7 @@ fn ExecContext::builtin_compopt(
       break
     }
     if arg == "-o" || arg == "+o" {
-      if i + 1 >= args.length() || !(completion_is_valid_compopt(args[i + 1])) {
+      if i + 1 >= args.length() || !completion_is_valid_compopt(args[i + 1]) {
         self.exit_code = 2
         return
       }
@@ -221,7 +223,7 @@ fn ExecContext::builtin_compopt(
     i += 1
   }
 
-  if !(has_action) {
+  if !has_action {
     self.exit_code = 2
     return
   }
@@ -232,7 +234,10 @@ fn ExecContext::builtin_compopt(
   self.exit_code = 0
 }
 
-fn ExecContext::collect_function_names_sorted(self : ExecContext) -> Array[String] {
+///|
+fn ExecContext::collect_function_names_sorted(
+  self : ExecContext,
+) -> Array[String] {
   let names : Array[String] = []
   for name, _fndef in self.functions {
     if is_valid_shell_name(name) {
@@ -243,26 +248,32 @@ fn ExecContext::collect_function_names_sorted(self : ExecContext) -> Array[Strin
   names
 }
 
+///|
 fn ExecContext::collect_alias_names_sorted(self : ExecContext) -> Array[String] {
   let names : Array[String] = []
   for key, _value in self.env {
     if key.has_prefix(completion_alias_prefix) {
-      names.push(key.view(start_offset=completion_alias_prefix.length()).to_string())
+      names.push(
+        key.view(start_offset=completion_alias_prefix.length()).to_owned(),
+      )
     }
   }
   completion_sort_strings(names)
   names
 }
 
-fn ExecContext::collect_variable_names_sorted(self : ExecContext) -> Array[String] {
+///|
+fn ExecContext::collect_variable_names_sorted(
+  self : ExecContext,
+) -> Array[String] {
   let names : Array[String] = []
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   for key, _value in self.env {
     if key.has_prefix("__") {
       continue
     }
     let base = completion_variable_base_name(key)
-    if !(is_valid_shell_name(base)) {
+    if !is_valid_shell_name(base) {
       continue
     }
     if seen.contains(base) {
@@ -275,7 +286,10 @@ fn ExecContext::collect_variable_names_sorted(self : ExecContext) -> Array[Strin
   names
 }
 
-fn ExecContext::collect_exported_names_sorted(self : ExecContext) -> Array[String] {
+///|
+fn ExecContext::collect_exported_names_sorted(
+  self : ExecContext,
+) -> Array[String] {
   let names : Array[String] = []
   for name, exported in self.exported {
     if exported && is_valid_shell_name(name) {
@@ -286,24 +300,33 @@ fn ExecContext::collect_exported_names_sorted(self : ExecContext) -> Array[Strin
   names
 }
 
-fn ExecContext::collect_builtin_names_sorted(self : ExecContext) -> Array[String] {
+///|
+fn ExecContext::collect_builtin_names_sorted(
+  self : ExecContext,
+) -> Array[String] {
   ignore(self)
   let names = compgen_builtin_names()
   completion_sort_strings(names)
   names
 }
 
-fn ExecContext::collect_keyword_names_sorted(self : ExecContext) -> Array[String] {
+///|
+fn ExecContext::collect_keyword_names_sorted(
+  self : ExecContext,
+) -> Array[String] {
   ignore(self)
   let names = shell_keyword_names()
   completion_sort_strings(names)
   names
 }
 
-fn ExecContext::collect_helptopic_names_sorted(self : ExecContext) -> Array[String] {
+///|
+fn ExecContext::collect_helptopic_names_sorted(
+  self : ExecContext,
+) -> Array[String] {
   ignore(self)
   let topics : Array[String] = []
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   for name in builtin_candidate_names() {
     completion_add_unique(topics, seen, name)
   }
@@ -317,9 +340,12 @@ fn ExecContext::collect_helptopic_names_sorted(self : ExecContext) -> Array[Stri
   topics
 }
 
-fn ExecContext::collect_command_action_candidates(self : ExecContext) -> Array[String] {
+///|
+fn ExecContext::collect_command_action_candidates(
+  self : ExecContext,
+) -> Array[String] {
   let out : Array[String] = []
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
 
   let aliases = self.collect_alias_names_sorted()
   for name in aliases {
@@ -354,10 +380,11 @@ fn ExecContext::collect_command_action_candidates(self : ExecContext) -> Array[S
   out
 }
 
+///|
 fn ExecContext::collect_path_completion_candidates(
   self : ExecContext,
   query : String,
-  directories_only : Bool
+  directories_only : Bool,
 ) -> (Array[String], Bool) {
   let mut dir_part = ""
   let mut name_prefix = query
@@ -367,22 +394,22 @@ fn ExecContext::collect_path_completion_candidates(
     dir_part = if slash_idx == 0 {
       "/"
     } else {
-      query.view(start_offset=0, end_offset=slash_idx).to_string()
+      query.view(start_offset=0, end_offset=slash_idx).to_owned()
     }
     name_prefix = if slash_idx + 1 < query.length() {
-      query.view(start_offset=slash_idx + 1).to_string()
+      query.view(start_offset=slash_idx + 1).to_owned()
     } else {
       ""
     }
-    output_prefix = query.view(start_offset=0, end_offset=slash_idx + 1).to_string()
+    output_prefix = query
+      .view(start_offset=0, end_offset=slash_idx + 1)
+      .to_owned()
   }
 
   let base_dir = if dir_part.length() == 0 {
     self.cwd
   } else {
-    try {
-      @fs.resolve_path(self.cwd, dir_part)
-    } catch {
+    @fs.resolve_path(self.cwd, dir_part) catch {
       _ => return ([], false)
     }
   }
@@ -398,25 +425,22 @@ fn ExecContext::collect_path_completion_candidates(
       continue
     }
     let name = @fs.basename(path)
-    if !(name.has_prefix(name_prefix)) {
+    if !name.has_prefix(name_prefix) {
       continue
     }
     match entry {
       @fs.FsEntry::Directory(_) => out.push(output_prefix + name)
-      _ => {
-        if !(directories_only) {
-          out.push(output_prefix + name)
-        }
-      }
+      _ => if !directories_only { out.push(output_prefix + name) }
     }
   }
   completion_sort_strings(out)
   (out, true)
 }
 
+///|
 fn ExecContext::clear_named_array_storage(
   self : ExecContext,
-  name : String
+  name : String,
 ) -> Unit {
   let count_key = "__MOON_BASH_ARRAY_COUNT__" + name
   let index_prefix = name + "["
@@ -435,19 +459,14 @@ fn ExecContext::clear_named_array_storage(
   }
 }
 
+///|
 fn ExecContext::collect_compreply_values(self : ExecContext) -> Array[String] {
   let values = self.collect_array_values("COMPREPLY")
   if values.length() > 0 {
     return values
   }
   match self.env.get("COMPREPLY") {
-    Some(value) => {
-      if value.length() == 0 {
-        []
-      } else {
-        [value]
-      }
-    }
+    Some(value) => if value.length() == 0 { [] } else { [value] }
     None => []
   }
 }

@@ -5,35 +5,33 @@
 // diff - Compare files line by line
 // ============================================================================
 
+///|
 /// Read file content, supporting "-" for stdin. Returns (content, error_msg).
 fn cmd_read_input(
   ctx : CommandContext,
   path : String,
-  cmd_name : String
+  cmd_name : String,
 ) -> (String, String) {
   if path == "-" {
     return (ctx.stdin_content, "")
   }
-  let resolved = try {
-    @fs.resolve_path(ctx.cwd, path)
-  } catch {
+  let resolved = @fs.resolve_path(ctx.cwd, path) catch {
     @fs.FsError(msg) => return ("", "\{cmd_name}: \{msg}\n")
   }
-  let content = try {
-    ctx.fs.read_file(resolved)
-  } catch {
+  let content = ctx.fs.read_file(resolved) catch {
     @fs.FsError(msg) => return ("", "\{cmd_name}: \{path}: \{msg}\n")
   }
   (content, "")
 }
 
+///|
 /// Generate unified diff output using piediff community package.
 fn cmd_diff_unified_piediff(
   out : StringBuilder,
   content1 : String,
   content2 : String,
   file1 : String,
-  file2 : String
+  file2 : String,
 ) -> Unit {
   let lines1 = cmd_split_lines(content1)
   let lines2 = cmd_split_lines(content2)
@@ -50,6 +48,7 @@ fn cmd_diff_unified_piediff(
   }
 }
 
+///|
 /// diff: compare two files line by line.
 fn cmd_diff(ctx : CommandContext) -> @ast.ExecResult {
   let mut brief = false
@@ -64,10 +63,7 @@ fn cmd_diff(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   if files.length() < 2 {
-    return @ast.ExecResult::new(
-      stderr="diff: missing operand\n",
-      exit_code=2,
-    )
+    return @ast.ExecResult::new(stderr="diff: missing operand\n", exit_code=2)
   }
 
   let file1 = files[files.length() - 2]
@@ -102,11 +98,12 @@ fn cmd_diff(ctx : CommandContext) -> @ast.ExecResult {
 // cmp - Compare files byte by byte
 // ============================================================================
 
+///|
 /// Find first differing byte and line (both 1-based).
 /// Returns (byte_pos, line_no, differs_in_common_prefix).
 fn cmd_cmp_first_difference(
   content1 : String,
-  content2 : String
+  content2 : String,
 ) -> (Int, Int, Bool) {
   let max_common = if content1.length() < content2.length() {
     content1.length()
@@ -127,6 +124,7 @@ fn cmd_cmp_first_difference(
   (byte_pos, line_no, false)
 }
 
+///|
 /// cmp: compare two files byte by byte.
 /// Supports: -s / --silent / -q
 fn cmd_cmp(ctx : CommandContext) -> @ast.ExecResult {
@@ -153,10 +151,7 @@ fn cmd_cmp(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   if files.length() < 2 {
-    return @ast.ExecResult::new(
-      stderr="cmp: missing operand\n",
-      exit_code=2,
-    )
+    return @ast.ExecResult::new(stderr="cmp: missing operand\n", exit_code=2)
   }
 
   let file1 = files[0]
@@ -181,8 +176,7 @@ fn cmd_cmp(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   let (byte_pos, line_no, differs_in_common_prefix) = cmd_cmp_first_difference(
-    content1,
-    content2,
+    content1, content2,
   )
 
   if differs_in_common_prefix {
@@ -209,6 +203,7 @@ fn cmd_cmp(ctx : CommandContext) -> @ast.ExecResult {
 // comm - Compare two sorted files line by line
 // ============================================================================
 
+///|
 /// comm: compare two sorted files.
 fn cmd_comm(ctx : CommandContext) -> @ast.ExecResult {
   let mut suppress1 = false
@@ -231,7 +226,7 @@ fn cmd_comm(ctx : CommandContext) -> @ast.ExecResult {
           }
         }
       }
-      if !(is_flag) {
+      if !is_flag {
         files.push(arg)
       }
     } else {
@@ -262,14 +257,14 @@ fn cmd_comm(ctx : CommandContext) -> @ast.ExecResult {
   while i < lines1.length() && j < lines2.length() {
     let cmp = cmd_find_compare_ascii(lines1[i], lines2[j])
     if cmp < 0 {
-      if !(suppress1) {
+      if !suppress1 {
         out.write_string(lines1[i])
         out.write_char('\n')
       }
       i += 1
     } else if cmp > 0 {
-      if !(suppress2) {
-        if !(suppress1) {
+      if !suppress2 {
+        if !suppress1 {
           out.write_char('\t')
         }
         out.write_string(lines2[j])
@@ -277,11 +272,11 @@ fn cmd_comm(ctx : CommandContext) -> @ast.ExecResult {
       }
       j += 1
     } else {
-      if !(suppress3) {
-        if !(suppress1) {
+      if !suppress3 {
+        if !suppress1 {
           out.write_char('\t')
         }
-        if !(suppress2) {
+        if !suppress2 {
           out.write_char('\t')
         }
         out.write_string(lines1[i])
@@ -293,7 +288,7 @@ fn cmd_comm(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   while i < lines1.length() {
-    if !(suppress1) {
+    if !suppress1 {
       out.write_string(lines1[i])
       out.write_char('\n')
     }
@@ -301,8 +296,8 @@ fn cmd_comm(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   while j < lines2.length() {
-    if !(suppress2) {
-      if !(suppress1) {
+    if !suppress2 {
+      if !suppress1 {
         out.write_char('\t')
       }
       out.write_string(lines2[j])
@@ -318,6 +313,7 @@ fn cmd_comm(ctx : CommandContext) -> @ast.ExecResult {
 // base64 - Encode/decode base64
 // ============================================================================
 
+///|
 /// Encode string to base64 using gmlewis/base64 community package.
 fn base64_encode(input : String, wrap_col : Int) -> String {
   let bytes = @base64.str2array(input)
@@ -347,6 +343,7 @@ fn base64_encode(input : String, wrap_col : Int) -> String {
   }
 }
 
+///|
 /// Decode base64 string using gmlewis/base64 community package.
 /// Returns (result, error_msg).
 fn base64_decode(input : String) -> (String, String) {
@@ -358,14 +355,13 @@ fn base64_decode(input : String) -> (String, String) {
       cleaned.write_char(ch)
     }
   }
-  let result = try {
-    @base64.std_decode2str(cleaned.to_string())
-  } catch {
+  let result = @base64.std_decode2str(cleaned.to_string()) catch {
     _ => return ("", "base64: invalid input\n")
   }
   (result, "")
 }
 
+///|
 /// base64: encode or decode base64 data.
 fn cmd_base64(ctx : CommandContext) -> @ast.ExecResult {
   let mut decode = false
@@ -421,6 +417,7 @@ fn cmd_base64(ctx : CommandContext) -> @ast.ExecResult {
 // expr - Expression evaluator (POSIX)
 // ============================================================================
 
+///|
 /// Expr parser state. Uses mutable error field instead of exceptions.
 priv struct ExprParser {
   tokens : Array[String]
@@ -428,10 +425,12 @@ priv struct ExprParser {
   mut error : String
 }
 
+///|
 fn ExprParser::new(tokens : Array[String]) -> ExprParser {
   { tokens, pos: 0, error: "" }
 }
 
+///|
 fn ExprParser::peek(self : ExprParser) -> String? {
   if self.pos < self.tokens.length() {
     Some(self.tokens[self.pos])
@@ -440,6 +439,7 @@ fn ExprParser::peek(self : ExprParser) -> String? {
   }
 }
 
+///|
 fn ExprParser::advance(self : ExprParser) -> String? {
   if self.pos < self.tokens.length() {
     let tok = self.tokens[self.pos]
@@ -450,16 +450,19 @@ fn ExprParser::advance(self : ExprParser) -> String? {
   }
 }
 
+///|
 fn ExprParser::has_error(self : ExprParser) -> Bool {
   self.error.length() > 0
 }
 
+///|
 fn ExprParser::set_error(self : ExprParser, msg : String) -> Unit {
   if self.error.length() == 0 {
     self.error = msg
   }
 }
 
+///|
 /// Try to parse a string as integer.
 fn expr_try_int(s : String) -> Int64? {
   if s.length() == 0 {
@@ -485,9 +488,14 @@ fn expr_try_int(s : String) -> Int64? {
       return None
     }
   }
-  if neg { Some(-result) } else { Some(result) }
+  if neg {
+    Some(-result)
+  } else {
+    Some(result)
+  }
 }
 
+///|
 /// Check if expr result is "truthy".
 fn expr_is_truthy(s : String) -> Bool {
   if s.length() == 0 {
@@ -499,6 +507,7 @@ fn expr_is_truthy(s : String) -> Bool {
   }
 }
 
+///|
 /// Parse or-expression: expr1 '|' expr2
 fn expr_parse_or(p : ExprParser) -> String {
   let mut left = expr_parse_and(p)
@@ -516,6 +525,7 @@ fn expr_parse_or(p : ExprParser) -> String {
   left
 }
 
+///|
 /// Parse and-expression: expr1 '&' expr2
 fn expr_parse_and(p : ExprParser) -> String {
   let mut left = expr_parse_comparison(p)
@@ -537,6 +547,7 @@ fn expr_parse_and(p : ExprParser) -> String {
   left
 }
 
+///|
 /// Parse comparison.
 fn expr_parse_comparison(p : ExprParser) -> String {
   let mut left = expr_parse_add(p)
@@ -545,8 +556,12 @@ fn expr_parse_comparison(p : ExprParser) -> String {
   }
   while true {
     match p.peek() {
-      Some(op) => {
-        if op == "=" || op == "!=" || op == "<" || op == "<=" || op == ">" ||
+      Some(op) =>
+        if op == "=" ||
+          op == "!=" ||
+          op == "<" ||
+          op == "<=" ||
+          op == ">" ||
           op == ">=" {
           ignore(p.advance())
           let right = expr_parse_add(p)
@@ -587,13 +602,13 @@ fn expr_parse_comparison(p : ExprParser) -> String {
         } else {
           break
         }
-      }
       None => break
     }
   }
   left
 }
 
+///|
 /// Parse addition/subtraction.
 fn expr_parse_add(p : ExprParser) -> String {
   let mut left = expr_parse_mul(p)
@@ -602,7 +617,7 @@ fn expr_parse_add(p : ExprParser) -> String {
   }
   while true {
     match p.peek() {
-      Some(op) => {
+      Some(op) =>
         if op == "+" || op == "-" {
           ignore(p.advance())
           let right = expr_parse_mul(p)
@@ -631,13 +646,13 @@ fn expr_parse_add(p : ExprParser) -> String {
         } else {
           break
         }
-      }
       None => break
     }
   }
   left
 }
 
+///|
 /// Parse multiplication/division/modulo.
 fn expr_parse_mul(p : ExprParser) -> String {
   let mut left = expr_parse_primary(p)
@@ -646,7 +661,7 @@ fn expr_parse_mul(p : ExprParser) -> String {
   }
   while true {
     match p.peek() {
-      Some(op) => {
+      Some(op) =>
         if op == "*" || op == "/" || op == "%" {
           ignore(p.advance())
           let right = expr_parse_primary(p)
@@ -685,13 +700,13 @@ fn expr_parse_mul(p : ExprParser) -> String {
         } else {
           break
         }
-      }
       None => break
     }
   }
   left
 }
 
+///|
 /// Parse primary: parenthesized expr, string functions, or atom.
 fn expr_parse_primary(p : ExprParser) -> String {
   if p.has_error() {
@@ -702,7 +717,7 @@ fn expr_parse_primary(p : ExprParser) -> String {
       p.set_error("expr: syntax error\n")
       "0"
     }
-    Some(tok) => {
+    Some(tok) =>
       if tok == "(" {
         ignore(p.advance())
         let result = expr_parse_or(p)
@@ -800,17 +815,14 @@ fn expr_parse_primary(p : ExprParser) -> String {
           _ => tok
         }
       }
-    }
   }
 }
 
+///|
 /// expr: evaluate expression.
 fn cmd_expr(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
-    return @ast.ExecResult::new(
-      stderr="expr: missing operand\n",
-      exit_code=2,
-    )
+    return @ast.ExecResult::new(stderr="expr: missing operand\n", exit_code=2)
   }
 
   let parser = ExprParser::new(ctx.args)
@@ -821,12 +833,9 @@ fn cmd_expr(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   if parser.pos < parser.tokens.length() {
-    return @ast.ExecResult::new(
-      stderr="expr: syntax error\n",
-      exit_code=2,
-    )
+    return @ast.ExecResult::new(stderr="expr: syntax error\n", exit_code=2)
   }
 
   let exit_code = if expr_is_truthy(result) { 0 } else { 1 }
-  @ast.ExecResult::new(stdout=result + "\n", exit_code=exit_code)
+  @ast.ExecResult::new(stdout=result + "\n", exit_code~)
 }

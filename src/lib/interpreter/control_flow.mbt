@@ -5,9 +5,10 @@
 // Compound Command Dispatch
 // ============================================================================
 
+///|
 fn ExecContext::execute_compound(
   self : ExecContext,
-  cmd : @ast.CompoundCommand
+  cmd : @ast.CompoundCommand,
 ) -> Unit {
   match cmd {
     @ast.CompoundCommand::If(clause) => self.execute_if(clause)
@@ -39,6 +40,7 @@ fn ExecContext::execute_compound(
 // If Statement
 // ============================================================================
 
+///|
 fn ExecContext::execute_if(self : ExecContext, clause : @ast.IfClause) -> Unit {
   // Evaluate condition
   self.execute_script(clause.condition)
@@ -68,7 +70,11 @@ fn ExecContext::execute_if(self : ExecContext, clause : @ast.IfClause) -> Unit {
 // For Loop
 // ============================================================================
 
-fn ExecContext::execute_for(self : ExecContext, clause : @ast.ForClause) -> Unit {
+///|
+fn ExecContext::execute_for(
+  self : ExecContext,
+  clause : @ast.ForClause,
+) -> Unit {
   let words = match clause.words {
     Some(word_list) => {
       let expanded : Array[String] = []
@@ -134,9 +140,10 @@ fn ExecContext::execute_for(self : ExecContext, clause : @ast.ForClause) -> Unit
 // While Loop
 // ============================================================================
 
+///|
 fn ExecContext::execute_while(
   self : ExecContext,
-  clause : @ast.WhileClause
+  clause : @ast.WhileClause,
 ) -> Unit {
   self.loop_depth += 1
   let mut iter_count = 0
@@ -192,9 +199,10 @@ fn ExecContext::execute_while(
 // Until Loop
 // ============================================================================
 
+///|
 fn ExecContext::execute_until(
   self : ExecContext,
-  clause : @ast.UntilClause
+  clause : @ast.UntilClause,
 ) -> Unit {
   self.loop_depth += 1
   let mut iter_count = 0
@@ -250,7 +258,11 @@ fn ExecContext::execute_until(
 // Case Statement
 // ============================================================================
 
-fn ExecContext::execute_case(self : ExecContext, clause : @ast.CaseClause) -> Unit {
+///|
+fn ExecContext::execute_case(
+  self : ExecContext,
+  clause : @ast.CaseClause,
+) -> Unit {
   let word = self.expand_word_to_string(clause.word)
 
   for item in clause.items {
@@ -267,10 +279,9 @@ fn ExecContext::execute_case(self : ExecContext, clause : @ast.CaseClause) -> Un
       match item.terminator {
         @ast.CaseTerminator::Break => return
         @ast.CaseTerminator::Fallthrough => continue
-        @ast.CaseTerminator::Continue => {
+        @ast.CaseTerminator::Continue =>
           // ;;&  - test next pattern
           continue
-        }
       }
     }
   }
@@ -281,20 +292,21 @@ fn ExecContext::execute_case(self : ExecContext, clause : @ast.CaseClause) -> Un
 // Subshell
 // ============================================================================
 
+///|
 fn ExecContext::execute_subshell(
   self : ExecContext,
-  script : @ast.Script
+  script : @ast.Script,
 ) -> Unit {
   // Save shell state - subshell modifications are discarded.
-  let saved_env : Map[String, String] = {}
+  let saved_env : Map[String, String] = Map([])
   for k, v in self.env {
     saved_env[k] = v
   }
-  let saved_exported : Map[String, Bool] = {}
+  let saved_exported : Map[String, Bool] = Map([])
   for k, v in self.exported {
     saved_exported[k] = v
   }
-  let saved_functions : Map[String, @ast.FunctionDef] = {}
+  let saved_functions : Map[String, @ast.FunctionDef] = Map([])
   for k, v in self.functions {
     saved_functions[k] = v
   }
@@ -328,9 +340,10 @@ fn ExecContext::execute_subshell(
 // C-style For Loop
 // ============================================================================
 
+///|
 fn ExecContext::execute_cstyle_for(
   self : ExecContext,
-  clause : @ast.CStyleForClause
+  clause : @ast.CStyleForClause,
 ) -> Unit {
   self.loop_depth += 1
   let mut iter_count = 0
@@ -395,14 +408,16 @@ fn ExecContext::execute_cstyle_for(
 // Conditional Command ([[ ]])
 // ============================================================================
 
+///|
 fn ExecContext::execute_conditional(
   self : ExecContext,
-  cond : @ast.CondExpr
+  cond : @ast.CondExpr,
 ) -> Unit {
   let result = self.eval_cond(cond)
   self.exit_code = if result { 0 } else { 1 }
 }
 
+///|
 fn ExecContext::eval_cond(self : ExecContext, cond : @ast.CondExpr) -> Bool {
   match cond {
     @ast.CondExpr::UnaryTest(op, word) => {
@@ -411,9 +426,7 @@ fn ExecContext::eval_cond(self : ExecContext, cond : @ast.CondExpr) -> Bool {
         "-z" => value.length() == 0
         "-n" => value.length() > 0
         "-f" => {
-          let path = try {
-            @fs.resolve_path(self.cwd, value)
-          } catch {
+          let path = @fs.resolve_path(self.cwd, value) catch {
             _ => return false
           }
           match self.fs.entries.get(path) {
@@ -422,9 +435,7 @@ fn ExecContext::eval_cond(self : ExecContext, cond : @ast.CondExpr) -> Bool {
           }
         }
         "-d" => {
-          let path = try {
-            @fs.resolve_path(self.cwd, value)
-          } catch {
+          let path = @fs.resolve_path(self.cwd, value) catch {
             _ => return false
           }
           match self.fs.entries.get(path) {
@@ -433,17 +444,13 @@ fn ExecContext::eval_cond(self : ExecContext, cond : @ast.CondExpr) -> Bool {
           }
         }
         "-e" => {
-          let path = try {
-            @fs.resolve_path(self.cwd, value)
-          } catch {
+          let path = @fs.resolve_path(self.cwd, value) catch {
             _ => return false
           }
           self.fs.exists(path)
         }
         "-s" => {
-          let path = try {
-            @fs.resolve_path(self.cwd, value)
-          } catch {
+          let path = @fs.resolve_path(self.cwd, value) catch {
             _ => return false
           }
           match self.fs.entries.get(path) {
@@ -452,20 +459,17 @@ fn ExecContext::eval_cond(self : ExecContext, cond : @ast.CondExpr) -> Bool {
           }
         }
         "-r" | "-w" | "-x" => {
-          let path = try {
-            @fs.resolve_path(self.cwd, value)
-          } catch {
+          let path = @fs.resolve_path(self.cwd, value) catch {
             _ => return false
           }
           self.fs.exists(path)
         }
-        "-v" => {
+        "-v" =>
           if value.length() == 0 {
             false
           } else {
             self.env.contains(value)
           }
-        }
         _ => false
       }
     }
@@ -488,7 +492,7 @@ fn ExecContext::eval_cond(self : ExecContext, cond : @ast.CondExpr) -> Bool {
       self.eval_cond(left) && self.eval_cond(right)
     @ast.CondExpr::Or(left, right) =>
       self.eval_cond(left) || self.eval_cond(right)
-    @ast.CondExpr::Not(inner) => !(self.eval_cond(inner))
+    @ast.CondExpr::Not(inner) => !self.eval_cond(inner)
     @ast.CondExpr::Regex(left_word, right_word) => {
       let left = self.expand_word_to_string(left_word)
       let right = self.expand_word_to_string(right_word)
@@ -497,19 +501,18 @@ fn ExecContext::eval_cond(self : ExecContext, cond : @ast.CondExpr) -> Bool {
   }
 }
 
+///|
 fn ExecContext::regex_cond_match(
   self : ExecContext,
   text : String,
-  pattern : String
+  pattern : String,
 ) -> Bool {
-  let matcher = try {
-    @regex.compile_grep_matcher(
-      pattern,
-      extended=true,
-      fixed=false,
-      ignore_case=false,
-    )
-  } catch {
+  let matcher = @regex.compile_grep_matcher(
+    pattern,
+    extended=true,
+    fixed=false,
+    ignore_case=false,
+  ) catch {
     _ => {
       self.store_array_assignment("BASH_REMATCH", [])
       return false
@@ -518,7 +521,7 @@ fn ExecContext::regex_cond_match(
   match matcher.find_first_with_groups(text) {
     Some((start, end, groups)) => {
       let values : Array[String] = []
-      values.push(text.view(start_offset=start, end_offset=end).to_string())
+      values.push(text.view(start_offset=start, end_offset=end).to_owned())
       for group in groups {
         values.push(group)
       }
@@ -532,6 +535,7 @@ fn ExecContext::regex_cond_match(
   }
 }
 
+///|
 fn cstyle_condition_omitted(expr : @ast.ArithExpr) -> Bool {
   match expr {
     @ast.ArithExpr::Raw(raw) => trim_cstyle_expr(raw).length() == 0
@@ -539,6 +543,7 @@ fn cstyle_condition_omitted(expr : @ast.ArithExpr) -> Bool {
   }
 }
 
+///|
 fn trim_cstyle_expr(s : String) -> String {
   let mut start = 0
   let mut end_ = s.length()
@@ -558,5 +563,5 @@ fn trim_cstyle_expr(s : String) -> String {
       break
     }
   }
-  s.view(start_offset=start, end_offset=end_).to_string()
+  s.view(start_offset=start, end_offset=end_).to_owned()
 }

@@ -1,5 +1,6 @@
 // moon_bash Commands - jq normalization and query parsing
 
+///|
 fn jq_normalize_def_param_dollars(filter : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -30,13 +31,13 @@ fn jq_normalize_def_param_dollars(filter : String) -> String {
           let left_ok = if i == 0 {
             true
           } else {
-            !(jq_is_ident_char(filter[i - 1].to_int().unsafe_to_char()))
+            !jq_is_ident_char(filter[i - 1].to_int().unsafe_to_char())
           }
           let after = i + 3
           let right_ok = if after >= filter.length() {
             true
           } else {
-            !(jq_is_ident_char(filter[after].to_int().unsafe_to_char()))
+            !jq_is_ident_char(filter[after].to_int().unsafe_to_char())
           }
           if left_ok && right_ok {
             out.write_string("def")
@@ -53,7 +54,7 @@ fn jq_normalize_def_param_dollars(filter : String) -> String {
             }
 
             while i < filter.length() &&
-              jq_is_ident_char(filter[i].to_int().unsafe_to_char()) {
+                  jq_is_ident_char(filter[i].to_int().unsafe_to_char()) {
               out.write_char(filter[i].to_int().unsafe_to_char())
               i += 1
             }
@@ -85,12 +86,13 @@ fn jq_normalize_def_param_dollars(filter : String) -> String {
                     }
                     i += 1
                   }
-                  None => {
+                  None =>
                     if pch == '"' || pch == '\'' {
                       param_quote = Some(pch)
                       out.write_char(pch)
                       i += 1
-                    } else if pch == '$' && i + 1 < filter.length() &&
+                    } else if pch == '$' &&
+                      i + 1 < filter.length() &&
                       jq_is_ident_start(filter[i + 1].to_int().unsafe_to_char()) {
                       i += 1
                     } else {
@@ -100,7 +102,6 @@ fn jq_normalize_def_param_dollars(filter : String) -> String {
                         break
                       }
                     }
-                  }
                 }
               }
             }
@@ -116,17 +117,19 @@ fn jq_normalize_def_param_dollars(filter : String) -> String {
   out.to_string()
 }
 
+///|
 fn jq_strip_all_ws(text : String) -> String {
   let out = StringBuilder::new()
   for i = 0; i < text.length(); i = i + 1 {
     let ch = text[i].to_int().unsafe_to_char()
-    if !(jq_is_ws(ch)) {
+    if !jq_is_ws(ch) {
       out.write_char(ch)
     }
   }
   out.to_string()
 }
 
+///|
 fn jq_parse_positive_int_at(text : String, start : Int) -> (Int, Int)? {
   if start < 0 || start >= text.length() {
     return None
@@ -148,13 +151,14 @@ fn jq_parse_positive_int_at(text : String, start : Int) -> (Int, Int)? {
     }
     i += 1
   }
-  if !(has_digit) {
+  if !has_digit {
     None
   } else {
     Some((value, i))
   }
 }
 
+///|
 fn jq_parse_signed_int_at(text : String, start : Int) -> (Int, Int)? {
   if start < 0 || start >= text.length() {
     return None
@@ -174,6 +178,7 @@ fn jq_parse_signed_int_at(text : String, start : Int) -> (Int, Int)? {
   }
 }
 
+///|
 fn jq_array_contains_int(xs : Array[Int], target : Int) -> Bool {
   for x in xs {
     if x == target {
@@ -183,6 +188,7 @@ fn jq_array_contains_int(xs : Array[Int], target : Int) -> Bool {
   false
 }
 
+///|
 fn jq_emit_bool_stream(values : Array[Bool]) -> String {
   if values.length() == 0 {
     return "empty"
@@ -201,15 +207,24 @@ fn jq_emit_bool_stream(values : Array[Bool]) -> String {
   out.to_string()
 }
 
+///|
 fn jq_range_values_from_args(args : Array[Int]) -> Array[Int] {
   let out : Array[Int] = []
   let start = if args.length() >= 1 {
-    if args.length() == 1 { 0 } else { args[0] }
+    if args.length() == 1 {
+      0
+    } else {
+      args[0]
+    }
   } else {
     0
   }
   let end_ = if args.length() >= 1 {
-    if args.length() == 1 { args[0] } else { args[1] }
+    if args.length() == 1 {
+      args[0]
+    } else {
+      args[1]
+    }
   } else {
     0
   }
@@ -232,8 +247,9 @@ fn jq_range_values_from_args(args : Array[Int]) -> Array[Int] {
   out
 }
 
+///|
 fn jq_parse_range_call_at(text : String, pos : Int) -> (Array[Int], Int)? {
-  if !(jq_starts_with_at(text, pos, "range(")) {
+  if !jq_starts_with_at(text, pos, "range(") {
     return None
   }
   let args : Array[Int] = []
@@ -266,6 +282,7 @@ fn jq_parse_range_call_at(text : String, pos : Int) -> (Array[Int], Int)? {
   Some((jq_range_values_from_args(args), i))
 }
 
+///|
 fn jq_rewrite_static_in_cases(filter : String) -> String {
   let normalized = jq_strip_all_ws(filter)
 
@@ -274,13 +291,12 @@ fn jq_rewrite_static_in_cases(filter : String) -> String {
   }
 
   match jq_parse_range_call_at(normalized, 0) {
-    Some((left_values, left_end)) => {
+    Some((left_values, left_end)) =>
       if left_end + 4 < normalized.length() &&
         jq_starts_with_at(normalized, left_end, "|IN(") {
         let right_start = left_end + 4
         match jq_parse_range_call_at(normalized, right_start) {
-          Some((right_values, right_end)) if
-            right_end < normalized.length() &&
+          Some((right_values, right_end)) if right_end < normalized.length() &&
             normalized[right_end].to_int().unsafe_to_char() == ')' &&
             right_end + 1 == normalized.length() => {
             let matches : Array[Bool] = []
@@ -292,18 +308,15 @@ fn jq_rewrite_static_in_cases(filter : String) -> String {
           _ => ()
         }
       }
-    }
     None => ()
   }
 
   if jq_starts_with_at(normalized, 0, "IN(") {
     match jq_parse_range_call_at(normalized, 3) {
-      Some((left_values, left_end)) if
-        left_end < normalized.length() &&
-        normalized[left_end].to_int().unsafe_to_char() == ';' => {
+      Some((left_values, left_end)) if left_end < normalized.length() &&
+        normalized[left_end].to_int().unsafe_to_char() == ';' =>
         match jq_parse_range_call_at(normalized, left_end + 1) {
-          Some((right_values, right_end)) if
-            right_end < normalized.length() &&
+          Some((right_values, right_end)) if right_end < normalized.length() &&
             normalized[right_end].to_int().unsafe_to_char() == ')' &&
             right_end + 1 == normalized.length() => {
             let mut has_match = false
@@ -317,7 +330,6 @@ fn jq_rewrite_static_in_cases(filter : String) -> String {
           }
           _ => ()
         }
-      }
       _ => ()
     }
   }
@@ -325,6 +337,7 @@ fn jq_rewrite_static_in_cases(filter : String) -> String {
   filter
 }
 
+///|
 fn jq_parse_simple_repeat_literal(expr : String) -> Int? {
   if expr.length() < 3 {
     return None
@@ -336,24 +349,23 @@ fn jq_parse_simple_repeat_literal(expr : String) -> Int? {
     }
   } else {
     match jq_parse_positive_int_at(expr, 0) {
-      Some((count, pos)) => {
-        if pos + 2 == expr.length() &&
-          jq_starts_with_at(expr, pos, "*.") {
+      Some((count, pos)) =>
+        if pos + 2 == expr.length() && jq_starts_with_at(expr, pos, "*.") {
           Some(count)
         } else {
           None
         }
-      }
       _ => None
     }
   }
 }
 
+///|
 fn jq_extract_repeat_literal_count(filter : String) -> Int? {
   let normalized = jq_strip_all_ws(filter)
   match jq_parse_simple_repeat_literal(normalized) {
     Some(count) => Some(count)
-    None => {
+    None =>
       if aj_starts_with(normalized, "try(") &&
         aj_ends_with(normalized, ")catch.") &&
         normalized.length() > 11 {
@@ -362,10 +374,10 @@ fn jq_extract_repeat_literal_count(filter : String) -> Int? {
       } else {
         None
       }
-    }
   }
 }
 
+///|
 fn jq_repeat_result_too_long(filter : String, inputs : Array[Json]) -> Bool {
   let count = match jq_extract_repeat_literal_count(filter) {
     Some(c) => c
@@ -391,11 +403,9 @@ fn jq_repeat_result_too_long(filter : String, inputs : Array[Json]) -> Bool {
   false
 }
 
-fn jq_parse_query_with_compat(
-  filter : String
-) -> (@moonjq.Query?, String) {
-  let compat_prelude =
-    "def arrays: select(type == \"array\");" +
+///|
+fn jq_parse_query_with_compat(filter : String) -> (@moonjq.Query?, String) {
+  let compat_prelude = "def arrays: select(type == \"array\");" +
     "def objects: select(type == \"object\");" +
     "def iterables: select(type == \"array\" or type == \"object\");" +
     "def scalars: select(type != \"array\" and type != \"object\");" +
@@ -417,11 +427,7 @@ fn jq_parse_query_with_compat(
   )
   let compat_filter = jq_rewrite_static_in_cases(normalized_filter)
   let filter_with_prelude = compat_prelude + compat_filter
-  let first = try {
-    Some(@moonjq.parse(filter_with_prelude))
-  } catch {
-    _ => None
-  }
+  let first = Some(@moonjq.parse(filter_with_prelude)) catch { _ => None }
   match first {
     Some(query) => (Some(query), "")
     None => {
@@ -429,11 +435,7 @@ fn jq_parse_query_with_compat(
       if compat_filter == filter_with_prelude {
         return (None, "jq: invalid filter\n")
       }
-      let second = try {
-        Some(@moonjq.parse(compat_filter))
-      } catch {
-        _ => None
-      }
+      let second = Some(@moonjq.parse(compat_filter)) catch { _ => None }
       match second {
         Some(query) => (Some(query), "")
         None => (None, "jq: invalid filter\n")
@@ -441,4 +443,3 @@ fn jq_parse_query_with_compat(
     }
   }
 }
-

@@ -2,20 +2,24 @@
 // Brace Expansion
 // ============================================================================
 
+///|
 let brace_expansion_result_limit : Int = 10_000
 
+///|
 priv enum BraceOptionParseResult {
   BraceNoOption
   BraceOptions(Array[String])
   BraceOptionSyntaxError
 }
 
+///|
 priv enum BraceRangeParseResult {
   BraceNoRange
   BraceRangeOptions(Array[String])
   BraceRangeSyntaxError
 }
 
+///|
 fn expand_brace_literal(s : String) -> (Array[String], Bool) {
   let out : Array[String] = []
   if brace_expand_collect(s, out) {
@@ -32,6 +36,7 @@ fn expand_brace_literal(s : String) -> (Array[String], Bool) {
   }
 }
 
+///|
 fn brace_expand_collect(input : String, out : Array[String]) -> Bool {
   if out.length() >= brace_expansion_result_limit {
     return false
@@ -42,7 +47,9 @@ fn brace_expand_collect(input : String, out : Array[String]) -> Bool {
       false
     }
     Some((start, end_)) => {
-      let content = input.view(start_offset=start + 1, end_offset=end_).to_string()
+      let content = input
+        .view(start_offset=start + 1, end_offset=end_)
+        .to_owned()
       let options = match parse_brace_options(content) {
         BraceOptionParseResult::BraceOptions(v) => v
         BraceOptionParseResult::BraceOptionSyntaxError => return true
@@ -51,8 +58,8 @@ fn brace_expand_collect(input : String, out : Array[String]) -> Bool {
           return false
         }
       }
-      let prefix = input.view(start_offset=0, end_offset=start).to_string()
-      let suffix = input.view(start_offset=end_ + 1).to_string()
+      let prefix = input.view(start_offset=0, end_offset=start).to_owned()
+      let suffix = input.view(start_offset=end_ + 1).to_owned()
       for option in options {
         if out.length() >= brace_expansion_result_limit {
           return false
@@ -66,6 +73,7 @@ fn brace_expand_collect(input : String, out : Array[String]) -> Bool {
   }
 }
 
+///|
 fn find_first_expandable_brace_pair(s : String) -> (Int, Int)? {
   let mut i = 0
   while i < s.length() {
@@ -93,17 +101,16 @@ fn find_first_expandable_brace_pair(s : String) -> (Int, Int)? {
         }
         j += 1
       }
-      if !(matched) {
+      if !matched {
         i += 1
         continue
       }
-      let content = s.view(start_offset=i + 1, end_offset=j).to_string()
+      let content = s.view(start_offset=i + 1, end_offset=j).to_owned()
       match parse_brace_options(content) {
-        BraceOptionParseResult::BraceOptions(options) => {
+        BraceOptionParseResult::BraceOptions(options) =>
           if options.length() > 0 {
             return Some((i, j))
           }
-        }
         BraceOptionParseResult::BraceOptionSyntaxError => return Some((i, j))
         BraceOptionParseResult::BraceNoOption => ()
       }
@@ -113,6 +120,7 @@ fn find_first_expandable_brace_pair(s : String) -> (Int, Int)? {
   None
 }
 
+///|
 fn parse_brace_options(content : String) -> BraceOptionParseResult {
   let (comma_options, has_comma) = split_brace_top_level_commas(content)
   if has_comma {
@@ -128,6 +136,7 @@ fn parse_brace_options(content : String) -> BraceOptionParseResult {
   }
 }
 
+///|
 fn split_brace_top_level_commas(content : String) -> (Array[String], Bool) {
   let parts : Array[String] = []
   let mut depth = 0
@@ -147,7 +156,7 @@ fn split_brace_top_level_commas(content : String) -> (Array[String], Bool) {
         depth -= 1
       }
     } else if content[i] == ',' && depth == 0 {
-      parts.push(content.view(start_offset=start, end_offset=i).to_string())
+      parts.push(content.view(start_offset=start, end_offset=i).to_owned())
       start = i + 1
       has_comma = true
     }
@@ -155,11 +164,14 @@ fn split_brace_top_level_commas(content : String) -> (Array[String], Bool) {
   }
 
   if has_comma {
-    parts.push(content.view(start_offset=start, end_offset=content.length()).to_string())
+    parts.push(
+      content.view(start_offset=start, end_offset=content.length()).to_owned(),
+    )
   }
   (parts, has_comma)
 }
 
+///|
 fn brace_unescape(text : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -176,6 +188,7 @@ fn brace_unescape(text : String) -> String {
   out.to_string()
 }
 
+///|
 fn parse_brace_range(content : String) -> BraceRangeParseResult {
   let parts = split_by_double_dot(content)
   if parts.length() != 2 && parts.length() != 3 {
@@ -212,7 +225,8 @@ fn parse_brace_range(content : String) -> BraceRangeParseResult {
     _ => ()
   }
 
-  if (parse_signed_int(parts[0]) is Some(_)) || (parse_signed_int(parts[1]) is Some(_)) {
+  if parse_signed_int(parts[0]) is Some(_) ||
+    parse_signed_int(parts[1]) is Some(_) {
     return BraceRangeParseResult::BraceNoRange
   }
 
@@ -254,6 +268,7 @@ fn parse_brace_range(content : String) -> BraceRangeParseResult {
   BraceRangeParseResult::BraceNoRange
 }
 
+///|
 fn brace_char_kind(ch : Char) -> Int {
   if ch >= 'a' && ch <= 'z' {
     1
@@ -266,21 +281,23 @@ fn brace_char_kind(ch : Char) -> Int {
   }
 }
 
+///|
 fn brace_numeric_pad_width(start_text : String, end_text : String) -> Int {
-  match (brace_numeric_digit_info(start_text), brace_numeric_digit_info(end_text)) {
-    (Some((start_width, start_zero)), Some((end_width, end_zero))) => {
-      if !(start_zero) && !(end_zero) {
+  match
+    (brace_numeric_digit_info(start_text), brace_numeric_digit_info(end_text)) {
+    (Some((start_width, start_zero)), Some((end_width, end_zero))) =>
+      if !start_zero && !end_zero {
         0
       } else if start_width >= end_width {
         start_width
       } else {
         end_width
       }
-    }
     _ => 0
   }
 }
 
+///|
 fn brace_numeric_digit_info(text : String) -> (Int, Bool)? {
   if text.length() == 0 {
     return None
@@ -303,23 +320,27 @@ fn brace_numeric_digit_info(text : String) -> (Int, Bool)? {
   Some((width, leading_zero))
 }
 
+///|
 fn split_by_double_dot(content : String) -> Array[String] {
   let parts : Array[String] = []
   let mut start = 0
   let mut i = 0
   while i + 1 < content.length() {
     if content[i] == '.' && content[i + 1] == '.' {
-      parts.push(content.view(start_offset=start, end_offset=i).to_string())
+      parts.push(content.view(start_offset=start, end_offset=i).to_owned())
       start = i + 2
       i += 2
       continue
     }
     i += 1
   }
-  parts.push(content.view(start_offset=start, end_offset=content.length()).to_string())
+  parts.push(
+    content.view(start_offset=start, end_offset=content.length()).to_owned(),
+  )
   parts
 }
 
+///|
 fn parse_signed_int(text : String) -> Int64? {
   if text.length() == 0 {
     return None
@@ -347,11 +368,12 @@ fn parse_signed_int(text : String) -> Int64? {
   Some(value * sign)
 }
 
+///|
 fn generate_numeric_range(
   start_num : Int64,
   end_num : Int64,
   step : Int64,
-  pad_width : Int
+  pad_width : Int,
 ) -> Array[String] {
   let out : Array[String] = []
   let mut current = start_num
@@ -376,6 +398,7 @@ fn generate_numeric_range(
   out
 }
 
+///|
 fn format_padded_numeric(value : Int64, width : Int) -> String {
   if width <= 0 {
     return value.to_string()
@@ -384,7 +407,11 @@ fn format_padded_numeric(value : Int64, width : Int) -> String {
   let abs_value = if negative { -value } else { value }
   let digits = abs_value.to_string()
   if digits.length() >= width {
-    if negative { "-" + digits } else { digits }
+    if negative {
+      "-" + digits
+    } else {
+      digits
+    }
   } else {
     let pad_len = width - digits.length()
     let out = StringBuilder::new()
@@ -399,7 +426,12 @@ fn format_padded_numeric(value : Int64, width : Int) -> String {
   }
 }
 
-fn generate_char_range(start_ch : Int, end_ch : Int, step : Int) -> Array[String] {
+///|
+fn generate_char_range(
+  start_ch : Int,
+  end_ch : Int,
+  step : Int,
+) -> Array[String] {
   let out : Array[String] = []
   let mut current = start_ch
   while true {
@@ -425,16 +457,17 @@ fn generate_char_range(start_ch : Int, end_ch : Int, step : Int) -> Array[String
 // Pathname Expansion (Globbing)
 // ============================================================================
 
+///|
 fn ExecContext::pathname_expand(
   self : ExecContext,
-  words : Array[String]
+  words : Array[String],
 ) -> Array[String] {
   if self.options.noglob {
     return words
   }
   let expanded : Array[String] = []
   for word in words {
-    if !(has_glob_meta(word)) {
+    if !has_glob_meta(word) {
       expanded.push(word)
       continue
     }
@@ -450,20 +483,17 @@ fn ExecContext::pathname_expand(
   expanded
 }
 
+///|
 fn ExecContext::expand_glob_word(
   self : ExecContext,
-  pattern : String
+  pattern : String,
 ) -> Array[String] {
   let absolute_pattern = if pattern.length() > 0 && pattern[0] == '/' {
-    try {
-      @fs.normalize_path(pattern)
-    } catch {
+    @fs.normalize_path(pattern) catch {
       _ => pattern
     }
   } else {
-    try {
-      @fs.resolve_path(self.cwd, pattern)
-    } catch {
+    @fs.resolve_path(self.cwd, pattern) catch {
       _ => self.cwd + "/" + pattern
     }
   }
@@ -483,15 +513,16 @@ fn ExecContext::expand_glob_word(
   display_matches
 }
 
+///|
 fn ExecContext::glob_expand_segments(
   self : ExecContext,
   segments : Array[String],
   idx : Int,
   current_abs : String,
-  out : Array[String]
+  out : Array[String],
 ) -> Unit {
   if idx >= segments.length() {
-    if !(self.consume_glob_operation()) {
+    if !self.consume_glob_operation() {
       return
     }
     if self.fs.exists(current_abs) {
@@ -502,12 +533,10 @@ fn ExecContext::glob_expand_segments(
 
   let segment = segments[idx]
   if has_glob_meta(segment) {
-    if !(self.consume_glob_operation()) {
+    if !self.consume_glob_operation() {
       return
     }
-    let entries = try {
-      self.fs.readdir(current_abs)
-    } catch {
+    let entries = self.fs.readdir(current_abs) catch {
       @fs.FsError(_msg) => return
     }
 
@@ -523,10 +552,10 @@ fn ExecContext::glob_expand_segments(
     }
 
     for name in names {
-      if !(include_dotfiles) && name.length() > 0 && name[0] == '.' {
+      if !include_dotfiles && name.length() > 0 && name[0] == '.' {
         continue
       }
-      if !(@fs.glob_match(segment, name)) {
+      if !@fs.glob_match(segment, name) {
         continue
       }
 
@@ -536,19 +565,17 @@ fn ExecContext::glob_expand_segments(
         current_abs + "/" + name
       }
       if idx + 1 >= segments.length() {
-        if !(self.consume_glob_operation()) {
+        if !self.consume_glob_operation() {
           return
         }
         if self.fs.exists(child_abs) {
           out.push(child_abs)
         }
       } else {
-        if !(self.consume_glob_operation()) {
+        if !self.consume_glob_operation() {
           return
         }
-        let stat = try {
-          self.fs.stat(child_abs)
-        } catch {
+        let stat = self.fs.stat(child_abs) catch {
           @fs.FsError(_msg) => continue
         }
         if stat.is_directory {
@@ -564,30 +591,30 @@ fn ExecContext::glob_expand_segments(
   } else {
     current_abs + "/" + segment
   }
-  if !(self.consume_glob_operation()) {
+  if !self.consume_glob_operation() {
     return
   }
-  if !(self.fs.exists(next_abs)) {
+  if !self.fs.exists(next_abs) {
     return
   }
   if idx + 1 >= segments.length() {
     out.push(next_abs)
     return
   }
-  if !(self.consume_glob_operation()) {
+  if !self.consume_glob_operation() {
     return
   }
-  let stat = try {
-    self.fs.stat(next_abs)
-  } catch {
-    @fs.FsError(_msg) => return
-  }
+  let stat = self.fs.stat(next_abs) catch { @fs.FsError(_msg) => return }
   if stat.is_directory {
     self.glob_expand_segments(segments, idx + 1, next_abs, out)
   }
 }
 
-fn ExecContext::fail_execution_limit(self : ExecContext, message : String) -> Unit {
+///|
+fn ExecContext::fail_execution_limit(
+  self : ExecContext,
+  message : String,
+) -> Unit {
   if self.exit_code != 126 {
     self.stderr_buf.write_string("moon_bash: \{message}\n")
   }
@@ -595,6 +622,7 @@ fn ExecContext::fail_execution_limit(self : ExecContext, message : String) -> Un
   self.should_exit = true
 }
 
+///|
 fn ExecContext::consume_glob_operation(self : ExecContext) -> Bool {
   self.glob_operations += 1
   if self.glob_operations > self.limits.max_glob_operations {
@@ -604,26 +632,37 @@ fn ExecContext::consume_glob_operation(self : ExecContext) -> Bool {
   true
 }
 
+///|
 fn expansion_array_count_storage_key(name : String) -> String {
   "__MOON_BASH_ARRAY_COUNT__" + name
 }
 
+///|
 fn array_count_var_name(name : String) -> String? {
   if name.length() >= 3 {
-    let suffix = name.view(start_offset=name.length() - 3, end_offset=name.length()).to_string()
+    let suffix = name
+      .view(start_offset=name.length() - 3, end_offset=name.length())
+      .to_owned()
     if suffix == "[@]" || suffix == "[*]" {
-      let base = name.view(start_offset=0, end_offset=name.length() - 3).to_string()
+      let base = name
+        .view(start_offset=0, end_offset=name.length() - 3)
+        .to_owned()
       return Some(expansion_array_count_storage_key(base))
     }
   }
   None
 }
 
+///|
 fn indirection_array_keys_name(name : String) -> String? {
   if name.length() >= 3 {
-    let suffix = name.view(start_offset=name.length() - 3, end_offset=name.length()).to_string()
+    let suffix = name
+      .view(start_offset=name.length() - 3, end_offset=name.length())
+      .to_owned()
     if suffix == "[@]" || suffix == "[*]" {
-      let base = name.view(start_offset=0, end_offset=name.length() - 3).to_string()
+      let base = name
+        .view(start_offset=0, end_offset=name.length() - 3)
+        .to_owned()
       if base.length() > 0 {
         return Some(base)
       }
@@ -632,13 +671,16 @@ fn indirection_array_keys_name(name : String) -> String? {
   None
 }
 
+///|
 fn indirection_prefix_name(name : String) -> String? {
   if name.length() <= 1 {
     return None
   }
   let last = name[name.length() - 1].to_int().unsafe_to_char()
   if last == '*' || last == '@' {
-    let prefix = name.view(start_offset=0, end_offset=name.length() - 1).to_string()
+    let prefix = name
+      .view(start_offset=0, end_offset=name.length() - 1)
+      .to_owned()
     if prefix.length() > 0 {
       return Some(prefix)
     }
@@ -646,9 +688,10 @@ fn indirection_prefix_name(name : String) -> String? {
   None
 }
 
+///|
 fn ExecContext::expand_variables_with_prefix(
   self : ExecContext,
-  prefix : String
+  prefix : String,
 ) -> String {
   let names : Array[String] = []
   for key, _value in self.env {
@@ -657,12 +700,18 @@ fn ExecContext::expand_variables_with_prefix(
     }
   }
   sort_strings(names)
-  names.iter().fold(
-    init="",
-    fn(acc, name) { if acc.length() == 0 { name } else { acc + " " + name } },
-  )
+  names
+  .iter()
+  .fold(init="", fn(acc, name) {
+    if acc.length() == 0 {
+      name
+    } else {
+      acc + " " + name
+    }
+  })
 }
 
+///|
 fn parse_array_reference_name(name : String) -> (String, String)? {
   if name.length() < 3 || name[name.length() - 1] != ']' {
     return None
@@ -679,8 +728,8 @@ fn parse_array_reference_name(name : String) -> (String, String)? {
     return None
   }
 
-  let base = name.view(start_offset=0, end_offset=bracket).to_string()
-  if !(is_expand_var_base_name(base)) {
+  let base = name.view(start_offset=0, end_offset=bracket).to_owned()
+  if !is_expand_var_base_name(base) {
     return None
   }
 
@@ -708,37 +757,37 @@ fn parse_array_reference_name(name : String) -> (String, String)? {
     return None
   }
 
-  let index = name.view(start_offset=bracket + 1, end_offset=name.length() - 1).to_string()
+  let index = name
+    .view(start_offset=bracket + 1, end_offset=name.length() - 1)
+    .to_owned()
   Some((base, index))
 }
 
+///|
 fn is_expand_var_base_name(name : String) -> Bool {
   if name.length() == 0 {
     return false
   }
   let first = name[0].to_int().unsafe_to_char()
-  if !(
-    (first >= 'a' && first <= 'z') ||
+  if !((first >= 'a' && first <= 'z') ||
     (first >= 'A' && first <= 'Z') ||
-    first == '_'
-  ) {
+    first == '_') {
     return false
   }
 
   for i = 1; i < name.length(); i = i + 1 {
     let ch = name[i].to_int().unsafe_to_char()
-    if !(
-      (ch >= 'a' && ch <= 'z') ||
+    if !((ch >= 'a' && ch <= 'z') ||
       (ch >= 'A' && ch <= 'Z') ||
       (ch >= '0' && ch <= '9') ||
-      ch == '_'
-    ) {
+      ch == '_') {
       return false
     }
   }
   true
 }
 
+///|
 fn trim_ascii_space_simple(s : String) -> String {
   let mut start = 0
   let mut end_ = s.length()
@@ -761,38 +810,49 @@ fn trim_ascii_space_simple(s : String) -> String {
     }
   }
 
-  s.view(start_offset=start, end_offset=end_).to_string()
+  s.view(start_offset=start, end_offset=end_).to_owned()
 }
 
+///|
 fn strip_wrapping_quotes(text : String) -> String {
   if text.length() >= 2 {
     let first = text[0].to_int().unsafe_to_char()
     let last = text[text.length() - 1].to_int().unsafe_to_char()
     if (first == '"' && last == '"') || (first == '\'' && last == '\'') {
-      return text.view(start_offset=1, end_offset=text.length() - 1).to_string()
+      return text.view(start_offset=1, end_offset=text.length() - 1).to_owned()
     }
   }
   text
 }
 
+///|
 fn ExecContext::expand_array_keys(self : ExecContext, base : String) -> String {
   let keys = self.collect_array_keys(base)
-  keys.iter().fold(
-    init="",
-    fn(acc, key) { if acc.length() == 0 { key } else { acc + " " + key } },
-  )
+  keys
+  .iter()
+  .fold(init="", fn(acc, key) {
+    if acc.length() == 0 {
+      key
+    } else {
+      acc + " " + key
+    }
+  })
 }
 
+///|
 fn ExecContext::collect_array_keys(
   self : ExecContext,
-  base : String
+  base : String,
 ) -> Array[String] {
   let keys : Array[String] = []
   let prefix = base + "["
   for env_key, _value in self.env {
-    if starts_with(env_key, prefix) && env_key.length() > prefix.length() &&
+    if starts_with(env_key, prefix) &&
+      env_key.length() > prefix.length() &&
       env_key[env_key.length() - 1] == ']' {
-      let key = env_key.view(start_offset=prefix.length(), end_offset=env_key.length() - 1).to_string()
+      let key = env_key
+        .view(start_offset=prefix.length(), end_offset=env_key.length() - 1)
+        .to_owned()
       if key != "@" && key != "*" {
         keys.push(key)
       }
@@ -802,18 +862,11 @@ fn ExecContext::collect_array_keys(
   keys
 }
 
+///|
 fn sort_array_key_names(keys : Array[String]) -> Unit {
   keys.sort_by(fn(a, b) {
     match (parse_non_negative_array_key(a), parse_non_negative_array_key(b)) {
-      (Some(ai), Some(bi)) => {
-        if ai < bi {
-          -1
-        } else if ai > bi {
-          1
-        } else {
-          0
-        }
-      }
+      (Some(ai), Some(bi)) => if ai < bi { -1 } else if ai > bi { 1 } else { 0 }
       (Some(_), None) => -1
       (None, Some(_)) => 1
       (None, None) => compare_array_key_text(a, b)
@@ -821,6 +874,7 @@ fn sort_array_key_names(keys : Array[String]) -> Unit {
   })
 }
 
+///|
 fn parse_non_negative_array_key(text : String) -> Int? {
   if text.length() == 0 {
     return None
@@ -836,6 +890,7 @@ fn parse_non_negative_array_key(text : String) -> Int? {
   Some(value)
 }
 
+///|
 fn compare_array_key_text(a : String, b : String) -> Int {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
   for i = 0; i < min_len; i = i + 1 {
@@ -855,13 +910,14 @@ fn compare_array_key_text(a : String, b : String) -> Int {
   }
 }
 
+///|
 fn split_path_segments(path : String) -> Array[String] {
   let segments : Array[String] = []
   let mut start = 0
   for i = 0; i <= path.length(); i = i + 1 {
     if i == path.length() || path[i] == '/' {
       if i > start {
-        segments.push(path.view(start_offset=start, end_offset=i).to_string())
+        segments.push(path.view(start_offset=start, end_offset=i).to_owned())
       }
       start = i + 1
     }
@@ -869,6 +925,7 @@ fn split_path_segments(path : String) -> Array[String] {
   segments
 }
 
+///|
 fn has_glob_meta(s : String) -> Bool {
   let mut i = 0
   while i < s.length() {
@@ -885,23 +942,19 @@ fn has_glob_meta(s : String) -> Bool {
   false
 }
 
+///|
 fn word_should_apply_glob(parts : Array[@ast.WordPart]) -> Bool {
   for part in parts {
     match part {
-      @ast.WordPart::Literal(s) => {
-        if has_glob_meta(s) {
-          return true
-        }
-      }
+      @ast.WordPart::Literal(s) => if has_glob_meta(s) { return true }
       @ast.WordPart::Variable(_)
       | @ast.WordPart::ParameterExpansion(_)
       | @ast.WordPart::CommandSubstitution(_)
       | @ast.WordPart::BraceExpansion(_)
       | @ast.WordPart::TildePrefix(_)
-      | @ast.WordPart::Glob(_) => {
+      | @ast.WordPart::Glob(_) =>
         // Unquoted expansions may produce glob metacharacters.
         return true
-      }
       @ast.WordPart::ArithmeticExpansion(_)
       | @ast.WordPart::SingleQuoted(_)
       | @ast.WordPart::DoubleQuoted(_) => ()
@@ -910,23 +963,28 @@ fn word_should_apply_glob(parts : Array[@ast.WordPart]) -> Bool {
   false
 }
 
-fn ExecContext::abs_to_shell_path(self : ExecContext, abs_path : String) -> String {
+///|
+fn ExecContext::abs_to_shell_path(
+  self : ExecContext,
+  abs_path : String,
+) -> String {
   if abs_path == self.cwd {
     return "."
   }
   if self.cwd == "/" {
     if abs_path.length() > 0 && abs_path[0] == '/' {
-      return abs_path.view(start_offset=1).to_string()
+      return abs_path.view(start_offset=1).to_owned()
     }
     return abs_path
   }
   let prefix = self.cwd + "/"
   if starts_with(abs_path, prefix) {
-    return abs_path.view(start_offset=prefix.length()).to_string()
+    return abs_path.view(start_offset=prefix.length()).to_owned()
   }
   abs_path
 }
 
+///|
 fn starts_with(s : String, prefix : String) -> Bool {
   if prefix.length() > s.length() {
     return false
@@ -939,6 +997,7 @@ fn starts_with(s : String, prefix : String) -> Bool {
   true
 }
 
+///|
 fn sort_strings(values : Array[String]) -> Unit {
   values.sort_by(fn(a, b) {
     let min_len = if a.length() < b.length() { a.length() } else { b.length() }
@@ -964,7 +1023,12 @@ fn sort_strings(values : Array[String]) -> Unit {
 // Pattern Matching Helpers
 // ============================================================================
 
-fn strip_prefix_pattern(value : String, pattern : String, greedy : Bool) -> String {
+///|
+fn strip_prefix_pattern(
+  value : String,
+  pattern : String,
+  greedy : Bool,
+) -> String {
   if pattern.length() == 0 {
     return value
   }
@@ -972,54 +1036,61 @@ fn strip_prefix_pattern(value : String, pattern : String, greedy : Bool) -> Stri
   if greedy {
     // Try longest match from start
     for i = value.length(); i >= 0; i = i - 1 {
-      let prefix = value.view(start_offset=0, end_offset=i).to_string()
+      let prefix = value.view(start_offset=0, end_offset=i).to_owned()
       if simple_pattern_match(prefix, pattern) {
-        return value.view(start_offset=i).to_string()
+        return value.view(start_offset=i).to_owned()
       }
     }
     value
   } else {
     // Try shortest match from start
     for i = 0; i <= value.length(); i = i + 1 {
-      let prefix = value.view(start_offset=0, end_offset=i).to_string()
+      let prefix = value.view(start_offset=0, end_offset=i).to_owned()
       if simple_pattern_match(prefix, pattern) {
-        return value.view(start_offset=i).to_string()
+        return value.view(start_offset=i).to_owned()
       }
     }
     value
   }
 }
 
-fn strip_suffix_pattern(value : String, pattern : String, greedy : Bool) -> String {
+///|
+fn strip_suffix_pattern(
+  value : String,
+  pattern : String,
+  greedy : Bool,
+) -> String {
   if pattern.length() == 0 {
     return value
   }
   if greedy {
     // Try longest match from end
     for i = 0; i <= value.length(); i = i + 1 {
-      let suffix = value.view(start_offset=i).to_string()
+      let suffix = value.view(start_offset=i).to_owned()
       if simple_pattern_match(suffix, pattern) {
-        return value.view(start_offset=0, end_offset=i).to_string()
+        return value.view(start_offset=0, end_offset=i).to_owned()
       }
     }
     value
   } else {
     // Try shortest match from end
     for i = value.length(); i >= 0; i = i - 1 {
-      let suffix = value.view(start_offset=i).to_string()
+      let suffix = value.view(start_offset=i).to_owned()
       if simple_pattern_match(suffix, pattern) {
-        return value.view(start_offset=0, end_offset=i).to_string()
+        return value.view(start_offset=0, end_offset=i).to_owned()
       }
     }
     value
   }
 }
 
+///|
 /// Simple pattern matching supporting * and ? globs.
 fn simple_pattern_match(s : String, pattern : String) -> Bool {
   match_pattern(s, 0, pattern, 0)
 }
 
+///|
 fn match_pattern(s : String, si : Int, p : String, pi : Int) -> Bool {
   if pi >= p.length() {
     return si >= s.length()
@@ -1028,8 +1099,8 @@ fn match_pattern(s : String, si : Int, p : String, pi : Int) -> Bool {
   if pch == '\\' {
     if pi + 1 >= p.length() {
       return si < s.length() &&
-      s[si].to_int().unsafe_to_char() == '\\' &&
-      match_pattern(s, si + 1, p, pi + 1)
+        s[si].to_int().unsafe_to_char() == '\\' &&
+        match_pattern(s, si + 1, p, pi + 1)
     }
     if si >= s.length() {
       return false
@@ -1075,10 +1146,11 @@ fn match_pattern(s : String, si : Int, p : String, pi : Int) -> Bool {
   false
 }
 
+///|
 fn match_char_class_pattern(
   ch : Char,
   pattern : String,
-  start : Int
+  start : Int,
 ) -> (Bool, Int)? {
   if start + 1 >= pattern.length() {
     return None
@@ -1102,7 +1174,8 @@ fn match_char_class_pattern(
       // Allow doubled `]]` to include a literal `]` inside the class before
       // closing. This is needed for patterns normalized from forms like
       // `['[]']`.
-      if i + 1 < pattern.length() && pattern[i + 1].to_int().unsafe_to_char() == ']' {
+      if i + 1 < pattern.length() &&
+        pattern[i + 1].to_int().unsafe_to_char() == ']' {
         if ch == ']' {
           matched = true
         }
@@ -1110,7 +1183,7 @@ fn match_char_class_pattern(
         i += 1
         continue
       }
-      let final_match = if negated { !(matched) } else { matched }
+      let final_match = if negated { !matched } else { matched }
       return Some((final_match, i + 1))
     }
 
@@ -1146,11 +1219,12 @@ fn match_char_class_pattern(
   None
 }
 
+///|
 fn replace_pattern(
   value : String,
   pattern : String,
   replacement : String,
-  mode : @ast.ReplaceMode
+  mode : @ast.ReplaceMode,
 ) -> String {
   if pattern.length() == 0 {
     return value
@@ -1161,9 +1235,9 @@ fn replace_pattern(
     @ast.ReplaceMode::Prefix => {
       // Replace only if pattern matches at beginning
       for i = 0; i <= value.length(); i = i + 1 {
-        let prefix = value.view(start_offset=0, end_offset=i).to_string()
+        let prefix = value.view(start_offset=0, end_offset=i).to_owned()
         if simple_pattern_match(prefix, pattern) {
-          return replacement + value.view(start_offset=i).to_string()
+          return replacement + value.view(start_offset=i).to_owned()
         }
       }
       value
@@ -1171,9 +1245,10 @@ fn replace_pattern(
     @ast.ReplaceMode::Suffix => {
       // Replace only if pattern matches at end
       for i = value.length(); i >= 0; i = i - 1 {
-        let suffix = value.view(start_offset=i).to_string()
+        let suffix = value.view(start_offset=i).to_owned()
         if simple_pattern_match(suffix, pattern) {
-          return value.view(start_offset=0, end_offset=i).to_string() + replacement
+          return value.view(start_offset=0, end_offset=i).to_owned() +
+            replacement
         }
       }
       value
@@ -1181,26 +1256,38 @@ fn replace_pattern(
   }
 }
 
-fn replace_first(value : String, pattern : String, replacement : String) -> String {
+///|
+fn replace_first(
+  value : String,
+  pattern : String,
+  replacement : String,
+) -> String {
   // Try each position
   for i = 0; i < value.length(); i = i + 1 {
     for j = i + 1; j <= value.length(); j = j + 1 {
-      let substr = value.view(start_offset=i, end_offset=j).to_string()
+      let substr = value.view(start_offset=i, end_offset=j).to_owned()
       if simple_pattern_match(substr, pattern) {
-        return value.view(start_offset=0, end_offset=i).to_string() + replacement + value.view(start_offset=j).to_string()
+        return value.view(start_offset=0, end_offset=i).to_owned() +
+          replacement +
+          value.view(start_offset=j).to_owned()
       }
     }
   }
   value
 }
 
-fn replace_all(value : String, pattern : String, replacement : String) -> String {
+///|
+fn replace_all(
+  value : String,
+  pattern : String,
+  replacement : String,
+) -> String {
   let buf = StringBuilder::new()
   let mut i = 0
   while i < value.length() {
     let mut matched = false
     for j = i + 1; j <= value.length(); j = j + 1 {
-      let substr = value.view(start_offset=i, end_offset=j).to_string()
+      let substr = value.view(start_offset=i, end_offset=j).to_owned()
       if simple_pattern_match(substr, pattern) {
         buf.write_string(replacement)
         i = j
@@ -1208,7 +1295,7 @@ fn replace_all(value : String, pattern : String, replacement : String) -> String
         break
       }
     }
-    if !(matched) {
+    if !matched {
       buf.write_char(value[i].to_int().unsafe_to_char())
       i += 1
     }
@@ -1220,6 +1307,7 @@ fn replace_all(value : String, pattern : String, replacement : String) -> String
 // String Case Helpers
 // ============================================================================
 
+///|
 fn to_upper(s : String) -> String {
   let buf = StringBuilder::new()
   for i = 0; i < s.length(); i = i + 1 {
@@ -1233,6 +1321,7 @@ fn to_upper(s : String) -> String {
   buf.to_string()
 }
 
+///|
 fn to_lower(s : String) -> String {
   let buf = StringBuilder::new()
   for i = 0; i < s.length(); i = i + 1 {
@@ -1246,6 +1335,7 @@ fn to_lower(s : String) -> String {
   buf.to_string()
 }
 
+///|
 fn upper_first(s : String) -> String {
   if s.length() == 0 {
     return s
@@ -1264,6 +1354,7 @@ fn upper_first(s : String) -> String {
   buf.to_string()
 }
 
+///|
 fn lower_first(s : String) -> String {
   if s.length() == 0 {
     return s
@@ -1286,14 +1377,16 @@ fn lower_first(s : String) -> String {
 // Utility
 // ============================================================================
 
+///|
 fn strip_trailing_newlines(s : String) -> String {
   let mut end = s.length()
   while end > 0 && s[end - 1] == '\n' {
     end -= 1
   }
-  s.view(start_offset=0, end_offset=end).to_string()
+  s.view(start_offset=0, end_offset=end).to_owned()
 }
 
+///|
 fn int_pow(base : Int64, exp : Int64) -> Int64 {
   if exp <= 0L {
     return 1L

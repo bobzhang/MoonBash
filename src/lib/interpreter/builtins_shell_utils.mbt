@@ -1,19 +1,19 @@
 // moon_bash Interpreter - Shell Utility Builtins
 // whoami, hostname, help, clear, history, tac, od
 
+///|
 fn ExecContext::builtin_whoami(
   self : ExecContext,
-  _args : Array[String]
+  _args : Array[String],
 ) -> Unit {
-  self.stdout_buf.write_string(
-    self.env.get("USER").unwrap_or("user") + "\n",
-  )
+  self.stdout_buf.write_string(self.env.get("USER").unwrap_or("user") + "\n")
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_hostname(
   self : ExecContext,
-  _args : Array[String]
+  _args : Array[String],
 ) -> Unit {
   self.stdout_buf.write_string(
     self.env.get("HOSTNAME").unwrap_or("moon-bash") + "\n",
@@ -21,10 +21,8 @@ fn ExecContext::builtin_hostname(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_help(
-  self : ExecContext,
-  _args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_help(self : ExecContext, _args : Array[String]) -> Unit {
   let text =
     #|MoonBash - POSIX Shell Sandbox
     #|
@@ -43,26 +41,26 @@ fn ExecContext::builtin_help(
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_clear(
   self : ExecContext,
-  _args : Array[String]
+  _args : Array[String],
 ) -> Unit {
   // No-op in sandbox environment
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_history(
   self : ExecContext,
-  _args : Array[String]
+  _args : Array[String],
 ) -> Unit {
   // No persistent history in sandbox
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_tac(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_tac(self : ExecContext, args : Array[String]) -> Unit {
   let files : Array[String] = []
   for arg in args {
     files.push(arg)
@@ -81,14 +79,8 @@ fn ExecContext::builtin_tac(
   }
 
   for file in files {
-    let resolved = try {
-      @fs.resolve_path(self.cwd, file)
-    } catch {
-      _ => file
-    }
-    let content = try {
-      self.fs.read_file(resolved)
-    } catch {
+    let resolved = @fs.resolve_path(self.cwd, file) catch { _ => file }
+    let content = self.fs.read_file(resolved) catch {
       @fs.FsError(msg) => {
         self.stderr_buf.write_string("tac: \{msg}\n")
         self.exit_code = 1
@@ -105,10 +97,8 @@ fn ExecContext::builtin_tac(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_od(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_od(self : ExecContext, args : Array[String]) -> Unit {
   let mut char_mode = false
   let mut hex_byte_mode = false
   let mut hex_word_mode = false
@@ -144,7 +134,7 @@ fn ExecContext::builtin_od(
       }
       i += 2
     } else if arg.has_prefix("-A") && arg.length() > 2 {
-      let fmt = arg.view(start_offset=2).to_string()
+      let fmt = arg.view(start_offset=2).to_owned()
       if fmt == "x" {
         hex_address = true
         no_address = false
@@ -153,7 +143,7 @@ fn ExecContext::builtin_od(
       }
       i += 1
     } else if arg.has_prefix("-t") && arg.length() > 2 {
-      let fmt = arg.view(start_offset=2).to_string()
+      let fmt = arg.view(start_offset=2).to_owned()
       if fmt == "c" {
         char_mode = true
       } else if fmt == "x1" {
@@ -170,14 +160,8 @@ fn ExecContext::builtin_od(
 
   let input = match input_file {
     Some(path) => {
-      let resolved = try {
-        @fs.resolve_path(self.cwd, path)
-      } catch {
-        _ => path
-      }
-      try {
-        self.fs.read_file(resolved)
-      } catch {
+      let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+      self.fs.read_file(resolved) catch {
         @fs.FsError(msg) => {
           self.stderr_buf.write_string("od: \{msg}\n")
           self.exit_code = 1
@@ -194,12 +178,12 @@ fn ExecContext::builtin_od(
   }
 
   let total = bytes.length()
-  let emit_default_octal = !(char_mode) && !(hex_byte_mode) && !(hex_word_mode)
+  let emit_default_octal = !char_mode && !hex_byte_mode && !hex_word_mode
   let mut offset = 0
   while offset < total {
     let line_end = if offset + 16 <= total { offset + 16 } else { total }
     if char_mode {
-      if !(no_address) {
+      if !no_address {
         if hex_address {
           self.stdout_buf.write_string(od_format_hex_addr(offset))
         } else {
@@ -216,7 +200,7 @@ fn ExecContext::builtin_od(
     }
 
     if hex_byte_mode {
-      if !(no_address) {
+      if !no_address {
         if hex_address {
           self.stdout_buf.write_string(od_format_hex_addr(offset))
         } else {
@@ -233,7 +217,7 @@ fn ExecContext::builtin_od(
     }
 
     if hex_word_mode {
-      if !(no_address) {
+      if !no_address {
         if hex_address {
           self.stdout_buf.write_string(od_format_hex_addr(offset))
         } else {
@@ -254,7 +238,7 @@ fn ExecContext::builtin_od(
     }
 
     if emit_default_octal {
-      if !(no_address) {
+      if !no_address {
         if hex_address {
           self.stdout_buf.write_string(od_format_hex_addr(offset))
         } else {
@@ -277,7 +261,7 @@ fn ExecContext::builtin_od(
   }
 
   // Final offset line
-  if !(no_address) {
+  if !no_address {
     if hex_address {
       self.stdout_buf.write_string(od_format_hex_addr(total))
     } else {
@@ -289,6 +273,8 @@ fn ExecContext::builtin_od(
 }
 
 // Format a 7-digit octal address
+
+///|
 fn od_format_octal_addr(n : Int) -> String {
   let buf = StringBuilder::new()
   let mut val = n
@@ -317,6 +303,8 @@ fn od_format_octal_addr(n : Int) -> String {
 }
 
 // Format a hex address (6 digits)
+
+///|
 fn od_format_hex_addr(n : Int) -> String {
   let buf = StringBuilder::new()
   let mut val = n
@@ -345,6 +333,8 @@ fn od_format_hex_addr(n : Int) -> String {
 }
 
 // Format a single byte as a named character for -c mode
+
+///|
 fn od_format_char(b : Int) -> String {
   match b {
     0 => "  \\0"
@@ -377,6 +367,8 @@ fn od_format_char(b : Int) -> String {
 }
 
 // Format a 4-digit hex value
+
+///|
 fn od_format_hex4(n : Int) -> String {
   let hex_chars = "0123456789abcdef"
   let buf = StringBuilder::new()
@@ -387,9 +379,10 @@ fn od_format_hex4(n : Int) -> String {
   buf.to_string()
 }
 
+///|
 fn od_format_hex2(n : Int) -> String {
   let hex = "0123456789abcdef"
-  let hi = (n / 16) % 16
+  let hi = n / 16 % 16
   let lo = n % 16
   let out = StringBuilder::new()
   out.write_char(hex[hi].to_int().unsafe_to_char())
@@ -398,6 +391,8 @@ fn od_format_hex2(n : Int) -> String {
 }
 
 // Format a 6-digit octal value
+
+///|
 fn od_format_octal6(n : Int) -> String {
   let buf = StringBuilder::new()
   let mut val = n

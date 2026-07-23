@@ -1,12 +1,14 @@
 // moon_bash Parser
 // Recursive descent parser that converts token stream into AST.
 
+///|
 let max_depth : Int = 100
 
 // ============================================================================
 // Parser State
 // ============================================================================
 
+///|
 pub(all) struct Parser {
   tokens : Array[@ast.Token]
   mut pos : Int
@@ -17,18 +19,22 @@ pub(all) struct Parser {
 // Public API
 // ============================================================================
 
+///|
 /// Parse a source string into an AST Script.
 pub fn parse(input : String) -> @ast.Script raise @ast.BashError {
   let tokens = @lexer.tokenize(input)
   parse_tokens(tokens)
 }
 
+///|
 /// Parse a token array into an AST Script.
-pub fn parse_tokens(tokens : Array[@ast.Token]) -> @ast.Script raise @ast.BashError {
+pub fn parse_tokens(
+  tokens : Array[@ast.Token],
+) -> @ast.Script raise @ast.BashError {
   let parser : Parser = { tokens, pos: 0, depth: 0 }
   let script = parser.parse_script()
   parser.skip_newlines()
-  if !(parser.at_end()) {
+  if !parser.at_end() {
     raise @ast.BashError("syntax error near unexpected token")
   }
   script
@@ -38,6 +44,7 @@ pub fn parse_tokens(tokens : Array[@ast.Token]) -> @ast.Script raise @ast.BashEr
 // Token Helpers
 // ============================================================================
 
+///|
 fn Parser::peek(self : Parser) -> @ast.Token {
   if self.pos >= self.tokens.length() {
     @ast.Token::EOF
@@ -46,6 +53,7 @@ fn Parser::peek(self : Parser) -> @ast.Token {
   }
 }
 
+///|
 fn Parser::advance(self : Parser) -> @ast.Token {
   let tok = self.peek()
   if self.pos < self.tokens.length() {
@@ -54,6 +62,7 @@ fn Parser::advance(self : Parser) -> @ast.Token {
   tok
 }
 
+///|
 fn Parser::at_end(self : Parser) -> Bool {
   match self.peek() {
     @ast.Token::EOF => true
@@ -61,17 +70,23 @@ fn Parser::at_end(self : Parser) -> Bool {
   }
 }
 
-fn Parser::expect(self : Parser, expected : @ast.Token) -> Unit raise @ast.BashError {
+///|
+fn Parser::expect(
+  self : Parser,
+  expected : @ast.Token,
+) -> Unit raise @ast.BashError {
   let tok = self.advance()
   if tok != expected {
     raise @ast.BashError("expected \{expected}, got \{tok}")
   }
 }
 
+///|
 fn Parser::check(self : Parser, tok : @ast.Token) -> Bool {
   self.peek() == tok
 }
 
+///|
 fn Parser::match_token(self : Parser, tok : @ast.Token) -> Bool {
   if self.check(tok) {
     self.advance() |> ignore
@@ -81,12 +96,14 @@ fn Parser::match_token(self : Parser, tok : @ast.Token) -> Bool {
   }
 }
 
+///|
 fn Parser::skip_newlines(self : Parser) -> Unit {
   while self.check(@ast.Token::Newline) {
     self.advance() |> ignore
   }
 }
 
+///|
 fn Parser::enter_depth(self : Parser) -> Unit raise @ast.BashError {
   self.depth += 1
   if self.depth > max_depth {
@@ -94,10 +111,12 @@ fn Parser::enter_depth(self : Parser) -> Unit raise @ast.BashError {
   }
 }
 
+///|
 fn Parser::leave_depth(self : Parser) -> Unit {
   self.depth -= 1
 }
 
+///|
 /// Check if current token is a word-like token (Word or a reserved word being
 /// used in non-command position).
 fn Parser::is_word(self : Parser) -> Bool {
@@ -130,18 +149,24 @@ fn Parser::is_word(self : Parser) -> Bool {
   }
 }
 
+///|
 /// Get the string value of the current token if it's word-like.
 fn token_to_string(tok : @ast.Token) -> String {
   match tok {
     @ast.Token::Word(s) => s
     @ast.Token::Number(n) => n.to_string()
-    @ast.Token::AssignmentWord(name, value, append) => {
+    @ast.Token::AssignmentWord(name, value, append) =>
       if value.length() == 0 {
-        if append { name + "+=" } else { name + "=" }
+        if append {
+          name + "+="
+        } else {
+          name + "="
+        }
+      } else if append {
+        name + "+=" + value
       } else {
-        if append { name + "+=" + value } else { name + "=" + value }
+        name + "=" + value
       }
-    }
     @ast.Token::If => "if"
     @ast.Token::Then => "then"
     @ast.Token::Elif => "elif"
@@ -167,12 +192,17 @@ fn token_to_string(tok : @ast.Token) -> String {
   }
 }
 
+///|
 fn arith_token_to_string(tok : @ast.Token) -> String {
   match tok {
     @ast.Token::Word(s) => s
     @ast.Token::Number(n) => n.to_string()
     @ast.Token::AssignmentWord(name, value, append) =>
-      if append { name + "+=" + value } else { name + "=" + value }
+      if append {
+        name + "+=" + value
+      } else {
+        name + "=" + value
+      }
     @ast.Token::Pipe => "|"
     @ast.Token::PipeAnd => "|&"
     @ast.Token::And => "&&"
@@ -220,18 +250,19 @@ fn arith_token_to_string(tok : @ast.Token) -> String {
   }
 }
 
+///|
 fn Parser::parse_arithmetic_raw(self : Parser) -> String raise @ast.BashError {
   let buf = StringBuilder::new()
   let mut depth = 0
 
-  while !(self.at_end()) {
+  while !self.at_end() {
     let tok = self.advance()
     match tok {
       @ast.Token::LeftParen => {
         depth += 1
         buf.write_char('(')
       }
-      @ast.Token::RightParen => {
+      @ast.Token::RightParen =>
         if depth > 0 {
           depth -= 1
           buf.write_char(')')
@@ -240,7 +271,6 @@ fn Parser::parse_arithmetic_raw(self : Parser) -> String raise @ast.BashError {
         } else {
           buf.write_char(')')
         }
-      }
       _ => {
         let text = arith_token_to_string(tok)
         if text.length() == 0 {
@@ -258,11 +288,12 @@ fn Parser::parse_arithmetic_raw(self : Parser) -> String raise @ast.BashError {
 // Script Parsing
 // ============================================================================
 
+///|
 /// Parse a complete script (sequence of statements).
 fn Parser::parse_script(self : Parser) -> @ast.Script raise @ast.BashError {
   let statements : Array[@ast.Statement] = []
   self.skip_newlines()
-  while !(self.at_end()) && !(self.is_script_terminator()) {
+  while !self.at_end() && !self.is_script_terminator() {
     let stmt = self.parse_statement()
     statements.push(stmt)
     // Consume statement separators (but not ;; which is a case terminator)
@@ -270,13 +301,15 @@ fn Parser::parse_script(self : Parser) -> @ast.Script raise @ast.BashError {
       // skip newlines
     }
     // Only consume ; if it's not part of ;; (case terminator)
-    while self.check(@ast.Token::Semi) && !(self.peek_at_offset(1) == @ast.Token::Semi) {
+    while self.check(@ast.Token::Semi) &&
+          !(self.peek_at_offset(1) == @ast.Token::Semi) {
       self.advance() |> ignore
     }
   }
   { statements, }
 }
 
+///|
 /// Check if the current token terminates a script context (fi, done, esac, etc.)
 fn Parser::is_script_terminator(self : Parser) -> Bool {
   match self.peek() {
@@ -289,14 +322,14 @@ fn Parser::is_script_terminator(self : Parser) -> Bool {
     | @ast.Token::Do
     | @ast.Token::RightBrace
     | @ast.Token::RightParen => true
-    @ast.Token::Semi => {
+    @ast.Token::Semi =>
       // Check for ;; (case terminator): two consecutive Semi tokens
       self.peek_at_offset(1) == @ast.Token::Semi
-    }
     _ => false
   }
 }
 
+///|
 fn Parser::peek_at_offset(self : Parser, offset : Int) -> @ast.Token {
   let idx = self.pos + offset
   if idx >= self.tokens.length() {
@@ -310,8 +343,11 @@ fn Parser::peek_at_offset(self : Parser, offset : Int) -> @ast.Token {
 // Statement Parsing
 // ============================================================================
 
+///|
 /// Parse a statement: pipeline (&&/|| pipeline)* [;/&]
-fn Parser::parse_statement(self : Parser) -> @ast.Statement raise @ast.BashError {
+fn Parser::parse_statement(
+  self : Parser,
+) -> @ast.Statement raise @ast.BashError {
   let pipeline = self.parse_pipeline()
 
   // Check for list operators
@@ -332,7 +368,7 @@ fn Parser::parse_statement(self : Parser) -> @ast.Statement raise @ast.BashError
       self.advance() |> ignore
       @ast.Statement::Background(pipeline)
     }
-    @ast.Token::Semi => {
+    @ast.Token::Semi =>
       // Check for ;; (case terminator) - don't consume it
       if self.peek_at_offset(1) == @ast.Token::Semi {
         @ast.Statement::Pipeline(pipeline)
@@ -346,7 +382,6 @@ fn Parser::parse_statement(self : Parser) -> @ast.Statement raise @ast.BashError
           @ast.Statement::Sequence(pipeline, right)
         }
       }
-    }
     _ => @ast.Statement::Pipeline(pipeline)
   }
 }
@@ -355,6 +390,7 @@ fn Parser::parse_statement(self : Parser) -> @ast.Statement raise @ast.BashError
 // Pipeline Parsing
 // ============================================================================
 
+///|
 /// Parse a pipeline: [!] command (| command)*
 fn Parser::parse_pipeline(self : Parser) -> @ast.Pipeline raise @ast.BashError {
   let negated = self.match_token(@ast.Token::Bang)
@@ -387,6 +423,7 @@ fn Parser::parse_pipeline(self : Parser) -> @ast.Pipeline raise @ast.BashError {
 // Command Parsing
 // ============================================================================
 
+///|
 /// Parse a command: simple, compound, or function definition.
 fn Parser::parse_command(self : Parser) -> @ast.Command raise @ast.BashError {
   if self.is_double_bracket_start() {
@@ -430,7 +467,7 @@ fn Parser::parse_command(self : Parser) -> @ast.Command raise @ast.BashError {
       self.leave_depth()
       @ast.Command::Compound(@ast.CompoundCommand::Case(cmd), redirs)
     }
-    @ast.Token::LeftParen => {
+    @ast.Token::LeftParen =>
       if self.peek_at_offset(1) == @ast.Token::LeftParen {
         self.enter_depth()
         self.advance() |> ignore
@@ -453,7 +490,6 @@ fn Parser::parse_command(self : Parser) -> @ast.Command raise @ast.BashError {
         self.leave_depth()
         @ast.Command::Compound(@ast.CompoundCommand::Subshell(script), redirs)
       }
-    }
     @ast.Token::LeftBrace => {
       self.enter_depth()
       self.advance() |> ignore
@@ -465,10 +501,8 @@ fn Parser::parse_command(self : Parser) -> @ast.Command raise @ast.BashError {
       self.leave_depth()
       @ast.Command::Compound(@ast.CompoundCommand::Group(script), redirs)
     }
-    @ast.Token::Function => {
-      self.parse_function_def()
-    }
-    _ => {
+    @ast.Token::Function => self.parse_function_def()
+    _ =>
       // Simple command or POSIX function definition: name() { ... }
       if self.looks_like_posix_function_def() {
         self.enter_depth()
@@ -478,10 +512,10 @@ fn Parser::parse_command(self : Parser) -> @ast.Command raise @ast.BashError {
       } else {
         @ast.Command::Simple(self.parse_simple_command())
       }
-    }
   }
 }
 
+///|
 fn Parser::is_double_bracket_start(self : Parser) -> Bool {
   match self.peek() {
     @ast.Token::Word(s) => s == "[["
@@ -490,8 +524,9 @@ fn Parser::is_double_bracket_start(self : Parser) -> Bool {
   }
 }
 
+///|
 fn Parser::parse_double_bracket_simple_command(
-  self : Parser
+  self : Parser,
 ) -> @ast.SimpleCommand raise @ast.BashError {
   let assignments : Array[@ast.Assignment] = []
   let words : Array[@ast.Word] = []
@@ -506,7 +541,7 @@ fn Parser::parse_double_bracket_simple_command(
   words.push(parse_word_content(opening_text))
 
   let mut closed = false
-  while !(self.at_end()) {
+  while !self.at_end() {
     match self.peek() {
       @ast.Token::Newline => {
         self.advance() |> ignore
@@ -528,7 +563,7 @@ fn Parser::parse_double_bracket_simple_command(
     }
   }
 
-  if !(closed) {
+  if !closed {
     raise @ast.BashError("expected ]] to close conditional expression")
   }
 
@@ -543,8 +578,11 @@ fn Parser::parse_double_bracket_simple_command(
 // Simple Command Parsing
 // ============================================================================
 
+///|
 /// Parse a simple command: [assignments] [words] [redirections]
-fn Parser::parse_simple_command(self : Parser) -> @ast.SimpleCommand raise @ast.BashError {
+fn Parser::parse_simple_command(
+  self : Parser,
+) -> @ast.SimpleCommand raise @ast.BashError {
   let assignments : Array[@ast.Assignment] = []
   let words : Array[@ast.Word] = []
   let redirections : Array[@ast.Redirection] = []
@@ -605,6 +643,7 @@ fn Parser::parse_simple_command(self : Parser) -> @ast.SimpleCommand raise @ast.
 // Redirection Parsing
 // ============================================================================
 
+///|
 /// Check if current token starts a redirection.
 fn Parser::is_redirection(self : Parser) -> Bool {
   match self.peek() {
@@ -625,8 +664,11 @@ fn Parser::is_redirection(self : Parser) -> Bool {
   }
 }
 
+///|
 /// Parse redirections that follow a command.
-fn Parser::parse_redirections(self : Parser) -> Array[@ast.Redirection] raise @ast.BashError {
+fn Parser::parse_redirections(
+  self : Parser,
+) -> Array[@ast.Redirection] raise @ast.BashError {
   let redirs : Array[@ast.Redirection] = []
   while self.is_redirection() {
     redirs.push(self.parse_redirection())
@@ -634,8 +676,11 @@ fn Parser::parse_redirections(self : Parser) -> Array[@ast.Redirection] raise @a
   redirs
 }
 
+///|
 /// Parse a single redirection.
-fn Parser::parse_redirection(self : Parser) -> @ast.Redirection raise @ast.BashError {
+fn Parser::parse_redirection(
+  self : Parser,
+) -> @ast.Redirection raise @ast.BashError {
   let mut fd : Int? = None
 
   // Check for fd number prefix
@@ -668,17 +713,18 @@ fn Parser::parse_redirection(self : Parser) -> @ast.Redirection raise @ast.BashE
     @ast.Token::Word(s) => {
       self.advance() |> ignore
       match op {
-        @ast.RedirectOp::HereDoc(_strip_tabs) => {
+        @ast.RedirectOp::HereDoc(_strip_tabs) =>
           // Quoted heredoc delimiters disable body expansion.
           if has_single_quote_markers(s) {
             let quoted_word : @ast.Word = {
-              parts: [@ast.WordPart::SingleQuoted(strip_single_quote_markers(s))]
+              parts: [
+                @ast.WordPart::SingleQuoted(strip_single_quote_markers(s)),
+              ],
             }
             quoted_word
           } else {
             parse_word_content(s)
           }
-        }
         _ => parse_word_content(s)
       }
     }
@@ -692,9 +738,10 @@ fn Parser::parse_redirection(self : Parser) -> @ast.Redirection raise @ast.BashE
   { fd, fd_var: None, op, target }
 }
 
+///|
 fn Parser::consume_heredoc_bodies(
   self : Parser,
-  redirections : Array[@ast.Redirection]
+  redirections : Array[@ast.Redirection],
 ) -> Unit raise @ast.BashError {
   let mut heredoc_count = 0
   for redir in redirections {
@@ -717,29 +764,35 @@ fn Parser::consume_heredoc_bodies(
   for i = 0; i < redirections.length(); i = i + 1 {
     match redirections[i].op {
       @ast.RedirectOp::HereDoc(_strip_tabs) => {
-        let (delimiter, quoted_delim) = heredoc_delimiter(redirections[i].target)
+        let (delimiter, quoted_delim) = heredoc_delimiter(
+          redirections[i].target,
+        )
         let body = self.read_heredoc_until(delimiter)
         let body_word : @ast.Word = if quoted_delim {
-          {
-            parts: [@ast.WordPart::SingleQuoted(body)]
-          }
+          { parts: [@ast.WordPart::SingleQuoted(body)] }
         } else {
           parse_word_content(body)
         }
         let redir = redirections[i]
-        redirections[i] = { fd: redir.fd, fd_var: redir.fd_var, op: redir.op, target: body_word }
+        redirections[i] = {
+          fd: redir.fd,
+          fd_var: redir.fd_var,
+          op: redir.op,
+          target: body_word,
+        }
       }
       _ => ()
     }
   }
 }
 
+///|
 fn Parser::read_heredoc_until(
   self : Parser,
-  delimiter : String
+  delimiter : String,
 ) -> String raise @ast.BashError {
   let body = StringBuilder::new()
-  while !(self.at_end()) {
+  while !self.at_end() {
     let line = self.read_line_tokens()
     if line == delimiter {
       return body.to_string()
@@ -747,12 +800,15 @@ fn Parser::read_heredoc_until(
     body.write_string(line)
     body.write_char('\n')
   }
-  raise @ast.BashError("unexpected EOF while looking for matching heredoc delimiter")
+  raise @ast.BashError(
+    "unexpected EOF while looking for matching heredoc delimiter",
+  )
 }
 
+///|
 fn Parser::read_line_tokens(self : Parser) -> String {
   let parts : Array[String] = []
-  while !(self.at_end()) && !(self.check(@ast.Token::Newline)) {
+  while !self.at_end() && !self.check(@ast.Token::Newline) {
     let tok = self.advance()
     parts.push(token_line_text(tok))
   }
@@ -762,6 +818,7 @@ fn Parser::read_line_tokens(self : Parser) -> String {
   join_tokens_with_space(parts)
 }
 
+///|
 fn token_line_text(tok : @ast.Token) -> String {
   match tok {
     @ast.Token::Word(s) => strip_single_quote_markers(s)
@@ -805,14 +862,21 @@ fn token_line_text(tok : @ast.Token) -> String {
     @ast.Token::RedirectInOut => "<>"
     @ast.Token::RedirectAndOut => "&>"
     @ast.Token::RedirectAndAppend => "&>>"
-    @ast.Token::AssignmentWord(name, value, append) => {
+    @ast.Token::AssignmentWord(name, value, append) =>
       if value.length() == 0 {
-        if append { name + "+=" } else { name + "=" }
+        if append {
+          name + "+="
+        } else {
+          name + "="
+        }
       } else {
         let rendered = strip_single_quote_markers(value)
-        if append { name + "+=" + rendered } else { name + "=" + rendered }
+        if append {
+          name + "+=" + rendered
+        } else {
+          name + "=" + rendered
+        }
       }
-    }
     @ast.Token::FdNumber(n) => n.to_string()
     @ast.Token::DoubleBracketOpen => "[["
     @ast.Token::DoubleBracketClose => "]]"
@@ -820,6 +884,7 @@ fn token_line_text(tok : @ast.Token) -> String {
   }
 }
 
+///|
 fn join_tokens_with_space(parts : Array[String]) -> String {
   let out = StringBuilder::new()
   for i = 0; i < parts.length(); i = i + 1 {
@@ -831,6 +896,7 @@ fn join_tokens_with_space(parts : Array[String]) -> String {
   out.to_string()
 }
 
+///|
 fn heredoc_delimiter(word : @ast.Word) -> (String, Bool) {
   let out = StringBuilder::new()
   let mut quoted = false
@@ -857,6 +923,7 @@ fn heredoc_delimiter(word : @ast.Word) -> (String, Bool) {
   (out.to_string(), quoted)
 }
 
+///|
 fn has_single_quote_markers(s : String) -> Bool {
   for i = 0; i < s.length(); i = i + 1 {
     if s[i].to_int().unsafe_to_char() == '\u0001' {
@@ -866,6 +933,7 @@ fn has_single_quote_markers(s : String) -> Bool {
   false
 }
 
+///|
 fn strip_single_quote_markers(s : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -890,7 +958,10 @@ fn strip_single_quote_markers(s : String) -> String {
 // Function Definition
 // ============================================================================
 
-fn Parser::parse_function_def(self : Parser) -> @ast.Command raise @ast.BashError {
+///|
+fn Parser::parse_function_def(
+  self : Parser,
+) -> @ast.Command raise @ast.BashError {
   self.expect(@ast.Token::Function)
   let name = match self.advance() {
     @ast.Token::Word(s) => s
@@ -910,6 +981,7 @@ fn Parser::parse_function_def(self : Parser) -> @ast.Command raise @ast.BashErro
   @ast.Command::FunctionDef({ name, body, redirections })
 }
 
+///|
 fn Parser::looks_like_posix_function_def(self : Parser) -> Bool {
   match self.peek() {
     @ast.Token::Word(_) => {
@@ -936,8 +1008,9 @@ fn Parser::looks_like_posix_function_def(self : Parser) -> Bool {
   }
 }
 
+///|
 fn Parser::parse_posix_function_def(
-  self : Parser
+  self : Parser,
 ) -> @ast.Command raise @ast.BashError {
   let name = match self.advance() {
     @ast.Token::Word(s) => s
@@ -958,11 +1031,13 @@ fn Parser::parse_posix_function_def(
 // Word Construction Helpers
 // ============================================================================
 
+///|
 /// Create a word with a single literal part.
 fn make_literal_word(s : String) -> @ast.Word {
   { parts: [@ast.WordPart::Literal(s)] }
 }
 
+///|
 /// Parse word content string into Word with parts (variable expansion, etc.).
 pub fn parse_word_content(s : String) -> @ast.Word {
   let parts = parse_word_parts(s)

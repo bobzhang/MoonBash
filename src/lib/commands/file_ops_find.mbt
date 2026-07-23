@@ -1,5 +1,6 @@
 // moon_bash Commands - mkdir, rm, cp, mv, touch, find
 
+///|
 fn cmd_mkdir(ctx : CommandContext) -> @ast.ExecResult {
   let mut recursive = false
   let paths : Array[String] = []
@@ -19,27 +20,24 @@ fn cmd_mkdir(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut exit_code = 0
   for path in paths {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, path)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, path) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("mkdir: \{msg}\n")
         exit_code = 1
         continue
       }
     }
-    try {
-      ctx.fs.mkdir(resolved, recursive=recursive)
-    } catch {
+    ctx.fs.mkdir(resolved, recursive~) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("mkdir: \{msg}\n")
         exit_code = 1
       }
     }
   }
-  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code=exit_code)
+  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code~)
 }
 
+///|
 /// rm: remove files or directories
 fn cmd_rm(ctx : CommandContext) -> @ast.ExecResult {
   let mut recursive = false
@@ -50,39 +48,39 @@ fn cmd_rm(ctx : CommandContext) -> @ast.ExecResult {
     match arg {
       "-r" | "-R" => recursive = true
       "-f" => force = true
-      "-rf" | "-fr" | "-Rf" | "-fR" => { recursive = true; force = true }
+      "-rf" | "-fr" | "-Rf" | "-fR" => {
+        recursive = true
+        force = true
+      }
       _ => paths.push(arg)
     }
   }
 
-  if paths.length() == 0 && !(force) {
+  if paths.length() == 0 && !force {
     return @ast.ExecResult::err("rm: missing operand\n")
   }
 
   let errbuf = StringBuilder::new()
   let mut exit_code = 0
   for path in paths {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, path)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, path) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("rm: \{msg}\n")
         exit_code = 1
         continue
       }
     }
-    try {
-      ctx.fs.rm(resolved, recursive=recursive, force=force)
-    } catch {
+    ctx.fs.rm(resolved, recursive~, force~) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("rm: \{msg}\n")
         exit_code = 1
       }
     }
   }
-  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code=exit_code)
+  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code~)
 }
 
+///|
 /// cp: copy files or directories
 fn cmd_cp(ctx : CommandContext) -> @ast.ExecResult {
   let mut recursive = false
@@ -99,9 +97,7 @@ fn cmd_cp(ctx : CommandContext) -> @ast.ExecResult {
     return @ast.ExecResult::err("cp: missing operand\n")
   }
 
-  let dst = try {
-    @fs.resolve_path(ctx.cwd, paths[paths.length() - 1])
-  } catch {
+  let dst = @fs.resolve_path(ctx.cwd, paths[paths.length() - 1]) catch {
     @fs.FsError(msg) => return @ast.ExecResult::err("cp: \{msg}\n")
   }
 
@@ -112,26 +108,25 @@ fn cmd_cp(ctx : CommandContext) -> @ast.ExecResult {
     } catch {
       @fs.FsError(_msg) => false
     }
-    if !(dst_is_dir) {
-      return @ast.ExecResult::err("cp: target '\{paths[paths.length() - 1]}' is not a directory\n")
+    if !dst_is_dir {
+      return @ast.ExecResult::err(
+        "cp: target '\{paths[paths.length() - 1]}' is not a directory\n",
+      )
     }
   }
 
   for i = 0; i < paths.length() - 1; i = i + 1 {
-    let src = try {
-      @fs.resolve_path(ctx.cwd, paths[i])
-    } catch {
+    let src = @fs.resolve_path(ctx.cwd, paths[i]) catch {
       @fs.FsError(msg) => return @ast.ExecResult::err("cp: \{msg}\n")
     }
-    try {
-      ctx.fs.cp(src, dst, recursive=recursive)
-    } catch {
+    ctx.fs.cp(src, dst, recursive~) catch {
       @fs.FsError(msg) => return @ast.ExecResult::err("cp: \{msg}\n")
     }
   }
   @ast.ExecResult::new()
 }
 
+///|
 /// mv: move/rename files or directories
 fn cmd_mv(ctx : CommandContext) -> @ast.ExecResult {
   let paths : Array[String] = []
@@ -143,9 +138,7 @@ fn cmd_mv(ctx : CommandContext) -> @ast.ExecResult {
     return @ast.ExecResult::err("mv: missing operand\n")
   }
 
-  let dst = try {
-    @fs.resolve_path(ctx.cwd, paths[paths.length() - 1])
-  } catch {
+  let dst = @fs.resolve_path(ctx.cwd, paths[paths.length() - 1]) catch {
     @fs.FsError(msg) => return @ast.ExecResult::err("mv: \{msg}\n")
   }
 
@@ -156,26 +149,25 @@ fn cmd_mv(ctx : CommandContext) -> @ast.ExecResult {
     } catch {
       @fs.FsError(_msg) => false
     }
-    if !(dst_is_dir) {
-      return @ast.ExecResult::err("mv: target '\{paths[paths.length() - 1]}' is not a directory\n")
+    if !dst_is_dir {
+      return @ast.ExecResult::err(
+        "mv: target '\{paths[paths.length() - 1]}' is not a directory\n",
+      )
     }
   }
 
   for i = 0; i < paths.length() - 1; i = i + 1 {
-    let src = try {
-      @fs.resolve_path(ctx.cwd, paths[i])
-    } catch {
+    let src = @fs.resolve_path(ctx.cwd, paths[i]) catch {
       @fs.FsError(msg) => return @ast.ExecResult::err("mv: \{msg}\n")
     }
-    try {
-      ctx.fs.mv(src, dst)
-    } catch {
+    ctx.fs.mv(src, dst) catch {
       @fs.FsError(msg) => return @ast.ExecResult::err("mv: \{msg}\n")
     }
   }
   @ast.ExecResult::new()
 }
 
+///|
 /// touch: create empty files or update timestamps
 fn cmd_touch_parse_date_value(spec : String) -> Int64? {
   let normalized = spec.replace(old="/", new="-")
@@ -190,10 +182,11 @@ fn cmd_touch_parse_date_value(spec : String) -> Int64? {
   Some((packed - 99_999_999).to_int64())
 }
 
+///|
 fn cmd_touch_apply_mtime(
   ctx : CommandContext,
   resolved : String,
-  mtime : Int64
+  mtime : Int64,
 ) -> Unit {
   match ctx.fs.entries.get(resolved) {
     Some(@fs.FsEntry::File(data)) => data.mtime = mtime
@@ -203,6 +196,7 @@ fn cmd_touch_apply_mtime(
   }
 }
 
+///|
 fn cmd_touch(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
     return @ast.ExecResult::err("touch: missing file operand\n")
@@ -217,11 +211,16 @@ fn cmd_touch(ctx : CommandContext) -> @ast.ExecResult {
     if arg == "-d" {
       saw_option = true
       if i + 1 >= ctx.args.length() {
-        return @ast.ExecResult::err("touch: option requires an argument -- 'd'\n")
+        return @ast.ExecResult::err(
+          "touch: option requires an argument -- 'd'\n",
+        )
       }
       match cmd_touch_parse_date_value(ctx.args[i + 1]) {
         Some(parsed) => date_mtime = Some(parsed)
-        None => return @ast.ExecResult::err("touch: invalid date format '\{ctx.args[i + 1]}'\n")
+        None =>
+          return @ast.ExecResult::err(
+            "touch: invalid date format '\{ctx.args[i + 1]}'\n",
+          )
       }
       i += 2
       continue
@@ -245,19 +244,15 @@ fn cmd_touch(ctx : CommandContext) -> @ast.ExecResult {
   let errbuf = StringBuilder::new()
   let mut exit_code = 0
   for arg in paths {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, arg)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, arg) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("touch: \{msg}\n")
         exit_code = 1
         continue
       }
     }
-    if !(ctx.fs.exists(resolved)) {
-      try {
-        ctx.fs.write_file(resolved, "")
-      } catch {
+    if !ctx.fs.exists(resolved) {
+      ctx.fs.write_file(resolved, "") catch {
         @fs.FsError(msg) => {
           errbuf.write_string("touch: \{msg}\n")
           exit_code = 1
@@ -270,9 +265,10 @@ fn cmd_touch(ctx : CommandContext) -> @ast.ExecResult {
       None => ()
     }
   }
-  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code=exit_code)
+  @ast.ExecResult::new(stderr=errbuf.to_string(), exit_code~)
 }
 
+///|
 /// Parse integer from string with optional sign.
 fn cmd_find_parse_int(s : String) -> Int {
   let mut result = 0
@@ -292,9 +288,14 @@ fn cmd_find_parse_int(s : String) -> Int {
       break
     }
   }
-  if neg { -result } else { result }
+  if neg {
+    -result
+  } else {
+    result
+  }
 }
 
+///|
 /// Trim trailing slashes (except for root and ".").
 fn cmd_find_trim_trailing_slashes(path : String) -> String {
   if path == "/" || path == "." {
@@ -307,10 +308,11 @@ fn cmd_find_trim_trailing_slashes(path : String) -> String {
   if end == path.length() {
     path
   } else {
-    path.view(start_offset=0, end_offset=end).to_string()
+    path.view(start_offset=0, end_offset=end).to_owned()
   }
 }
 
+///|
 /// Join display path with child name.
 fn cmd_find_join_display(base : String, name : String) -> String {
   if base == "/" {
@@ -320,6 +322,7 @@ fn cmd_find_join_display(base : String, name : String) -> String {
   }
 }
 
+///|
 /// Basename logic for displayed path.
 fn cmd_find_display_basename(path : String) -> String {
   if path == "." || path == "/" {
@@ -336,16 +339,20 @@ fn cmd_find_display_basename(path : String) -> String {
   } else if slash + 1 >= path.length() {
     ""
   } else {
-    path.view(start_offset=slash + 1).to_string()
+    path.view(start_offset=slash + 1).to_owned()
   }
 }
 
+///|
 fn cmd_find_parse_octal(s : String) -> Int {
   let mut value = 0
   let mut i = 0
   if s.length() >= 2 &&
     s[0].to_int().unsafe_to_char() == '0' &&
-    (s[1].to_int().unsafe_to_char() == 'o' || s[1].to_int().unsafe_to_char() == 'O') {
+    (
+      s[1].to_int().unsafe_to_char() == 'o' ||
+      s[1].to_int().unsafe_to_char() == 'O'
+    ) {
     i = 2
   }
   while i < s.length() {
@@ -359,16 +366,17 @@ fn cmd_find_parse_octal(s : String) -> Int {
   value
 }
 
+///|
 fn cmd_find_perm_matches(expr : String, mode : Int) -> Bool {
   if expr.length() == 0 {
     return false
   }
   let first = expr[0].to_int().unsafe_to_char()
   if first == '-' {
-    let mask = cmd_find_parse_octal(expr.view(start_offset=1).to_string())
+    let mask = cmd_find_parse_octal(expr.view(start_offset=1).to_owned())
     mode.land(mask) == mask
   } else if first == '/' {
-    let mask = cmd_find_parse_octal(expr.view(start_offset=1).to_string())
+    let mask = cmd_find_parse_octal(expr.view(start_offset=1).to_owned())
     mode.land(mask) != 0
   } else {
     let expected = cmd_find_parse_octal(expr)
@@ -376,6 +384,7 @@ fn cmd_find_perm_matches(expr : String, mode : Int) -> Bool {
   }
 }
 
+///|
 /// Evaluate a parsed find expression for one entry.
 fn cmd_find_matches(
   display_path : String,
@@ -383,9 +392,9 @@ fn cmd_find_matches(
   is_directory : Bool,
   mode : Int,
   groups : Array[Array[(String, String)]],
-  has_predicates : Bool
+  has_predicates : Bool,
 ) -> Bool {
-  if !(has_predicates) {
+  if !has_predicates {
     return true
   }
   let base = cmd_find_display_basename(display_path)
@@ -394,18 +403,18 @@ fn cmd_find_matches(
     for pred in group {
       let (kind, value) = pred
       if kind == "name" {
-        if !(@fs.glob_match(value, base)) {
+        if !@fs.glob_match(value, base) {
           group_match = false
           break
         }
       } else if kind == "type" {
         if value == "f" {
-          if !(is_file) {
+          if !is_file {
             group_match = false
             break
           }
         } else if value == "d" {
-          if !(is_directory) {
+          if !is_directory {
             group_match = false
             break
           }
@@ -414,7 +423,7 @@ fn cmd_find_matches(
           break
         }
       } else if kind == "perm" {
-        if !(cmd_find_perm_matches(value, mode)) {
+        if !cmd_find_perm_matches(value, mode) {
           group_match = false
           break
         }
@@ -427,6 +436,7 @@ fn cmd_find_matches(
   false
 }
 
+///|
 /// Recursively walk from start path and collect matching entries.
 fn cmd_find_walk(
   fs : @fs.InMemoryFs,
@@ -437,22 +447,14 @@ fn cmd_find_walk(
   maxdepth : Int?,
   groups : Array[Array[(String, String)]],
   has_predicates : Bool,
-  matches : Array[String]
+  matches : Array[String],
 ) -> Unit {
   match maxdepth {
-    Some(maxd) => {
-      if depth > maxd {
-        return
-      }
-    }
+    Some(maxd) => if depth > maxd { return }
     None => ()
   }
 
-  let stat = try {
-    fs.stat(abs_path)
-  } catch {
-    @fs.FsError(_msg) => return
-  }
+  let stat = fs.stat(abs_path) catch { @fs.FsError(_msg) => return }
 
   if depth >= mindepth &&
     cmd_find_matches(
@@ -466,7 +468,7 @@ fn cmd_find_walk(
     matches.push(display_path)
   }
 
-  if !(stat.is_directory) {
+  if !stat.is_directory {
     return
   }
 
@@ -474,24 +476,18 @@ fn cmd_find_walk(
     Some(maxd) => depth < maxd
     None => true
   }
-  if !(should_descend) {
+  if !should_descend {
     return
   }
 
-  let entries = try {
-    fs.readdir(abs_path)
-  } catch {
-    @fs.FsError(_msg) => return
-  }
+  let entries = fs.readdir(abs_path) catch { @fs.FsError(_msg) => return }
 
   let names : Array[String] = []
   for entry in entries {
     names.push(entry.name)
   }
   // Keep deterministic output order.
-  names.sort_by(fn(a, b) {
-    cmd_find_compare_ascii(a, b)
-  })
+  names.sort_by(fn(a, b) { cmd_find_compare_ascii(a, b) })
 
   for name in names {
     let child_abs = if abs_path == "/" {
@@ -514,6 +510,7 @@ fn cmd_find_walk(
   }
 }
 
+///|
 /// ASCII byte-wise string compare for deterministic ordering.
 fn cmd_find_compare_ascii(a : String, b : String) -> Int {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
@@ -534,6 +531,7 @@ fn cmd_find_compare_ascii(a : String, b : String) -> Int {
   }
 }
 
+///|
 /// find: recursively search paths with minimal predicate support.
 fn cmd_find(ctx : CommandContext) -> @ast.ExecResult {
   let start_paths : Array[String] = []
@@ -616,9 +614,7 @@ fn cmd_find(ctx : CommandContext) -> @ast.ExecResult {
   let mut exit_code = 0
 
   for start_arg in start_paths {
-    let start_abs = try {
-      @fs.resolve_path(ctx.cwd, start_arg)
-    } catch {
+    let start_abs = @fs.resolve_path(ctx.cwd, start_arg) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("find: \{msg}\n")
         exit_code = 1
@@ -646,9 +642,7 @@ fn cmd_find(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   // Keep deterministic output even before external `sort`.
-  matches.sort_by(fn(a, b) {
-    cmd_find_compare_ascii(a, b)
-  })
+  matches.sort_by(fn(a, b) { cmd_find_compare_ascii(a, b) })
   let out = StringBuilder::new()
   for m in matches {
     out.write_string(m + "\n")
@@ -657,6 +651,6 @@ fn cmd_find(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(
     stdout=out.to_string(),
     stderr=errbuf.to_string(),
-    exit_code=exit_code,
+    exit_code~,
   )
 }

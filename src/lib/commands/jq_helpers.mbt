@@ -1,5 +1,6 @@
 // moon_bash Commands - jq helper utilities
 
+///|
 fn jq_strip_bom(text : String) -> String {
   if text.length() > 0 && text[0].to_int() == 65279 {
     aj_substr(text, 1, text.length())
@@ -8,22 +9,21 @@ fn jq_strip_bom(text : String) -> String {
   }
 }
 
+///|
 fn jq_json_from_int(n : Int) -> Json {
-  try {
-    @json.parse(n.to_string()[:])
-  } catch {
+  @json.parse(n.to_string()[:]) catch {
     _ => Json::null()
   }
 }
 
+///|
 fn jq_json_from_literal(literal : String) -> Json {
-  try {
-    @json.parse(literal[:])
-  } catch {
+  @json.parse(literal[:]) catch {
     _ => Json::null()
   }
 }
 
+///|
 fn jq_trimstr_once(input : String, trim : String) -> String {
   if trim.length() == 0 {
     return input
@@ -38,6 +38,7 @@ fn jq_trimstr_once(input : String, trim : String) -> String {
   out
 }
 
+///|
 fn jq_is_trim_ws_unit(code : Int) -> Bool {
   code == 9 ||
   code == 10 ||
@@ -56,6 +57,7 @@ fn jq_is_trim_ws_unit(code : Int) -> Bool {
   code == 12288
 }
 
+///|
 fn jq_ltrim_unicode(input : String) -> String {
   let mut start = 0
   while start < input.length() {
@@ -72,6 +74,7 @@ fn jq_ltrim_unicode(input : String) -> String {
   }
 }
 
+///|
 fn jq_rtrim_unicode(input : String) -> String {
   let mut end_ = input.length()
   while end_ > 0 {
@@ -88,10 +91,12 @@ fn jq_rtrim_unicode(input : String) -> String {
   }
 }
 
+///|
 fn jq_trim_unicode(input : String) -> String {
   jq_rtrim_unicode(jq_ltrim_unicode(input))
 }
 
+///|
 fn jq_manual_trim_map(input : Json, mode : String) -> Json? {
   match input {
     Json::Array(items) => {
@@ -117,6 +122,7 @@ fn jq_manual_trim_map(input : Json, mode : String) -> Json? {
   }
 }
 
+///|
 fn jq_extract_object_number(obj : Map[String, Json], key : String) -> Int? {
   match obj.get(key) {
     Some(Json::Number(n, ..)) => Some(n.to_int())
@@ -124,6 +130,7 @@ fn jq_extract_object_number(obj : Map[String, Json], key : String) -> Int? {
   }
 }
 
+///|
 fn jq_bsearch_numbers(haystack : Array[Int], needle : Int) -> Int {
   let mut low = 0
   let mut high = haystack.length()
@@ -141,4 +148,3 @@ fn jq_bsearch_numbers(haystack : Array[Int], needle : Int) -> Int {
   }
   -(low + 1)
 }
-

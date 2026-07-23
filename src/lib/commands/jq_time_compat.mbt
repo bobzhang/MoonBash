@@ -106,9 +106,9 @@ fn jq_time_plain_datetime_from_parts(
     0
   }
   let month = month0 + 1
-  let dt = try {
-    Some(@time.PlainDateTime::of(year, month, day, hour~, minute~, second~))
-  } catch {
+  let dt = Some(
+    @time.PlainDateTime::of(year, month, day, hour~, minute~, second~),
+  ) catch {
     _ => None
   }
   dt
@@ -139,35 +139,22 @@ fn jq_time_long_date_from_datetime(dt : @time.PlainDateTime) -> String {
 }
 
 ///|
-fn jq_time_plain_datetime_from_unix(
-  second : Int64,
-) -> @time.PlainDateTime? {
-  let zoned = @time.unix(second, zone=@time.utc_zone) catch {
-    _ => return None
-  }
+fn jq_time_plain_datetime_from_unix(second : Int64) -> @time.PlainDateTime? {
+  let zoned = @time.unix(second, zone=@time.utc_zone) catch { _ => return None }
   Some(zoned.to_plain_date_time())
 }
 
 ///|
-fn jq_time_plain_datetime_from_iso_utc(
-  text : String,
-) -> @time.PlainDateTime? {
+fn jq_time_plain_datetime_from_iso_utc(text : String) -> @time.PlainDateTime? {
   if !text.has_suffix("Z") || text.length() <= 1 {
     return None
   }
-  let plain = text.view(start_offset=0, end_offset=text.length() - 1).to_string()
-  let dt = try {
-    Some(@time.PlainDateTime::from_string(plain))
-  } catch {
-    _ => None
-  }
+  let plain = text.view(start_offset=0, end_offset=text.length() - 1).to_owned()
+  let dt = Some(@time.PlainDateTime::from_string(plain)) catch { _ => None }
   dt
 }
 
 ///|
-fn jq_time_unix_from_plain_datetime(
-  dt : @time.PlainDateTime,
-) -> Int64 {
-  @time.ZonedDateTime::from_plain_datetime(dt, zone=@time.utc_zone)
-  .to_unix_second()
+fn jq_time_unix_from_plain_datetime(dt : @time.PlainDateTime) -> Int64 {
+  @time.ZonedDateTime::from_plain_datetime(dt, zone=@time.utc_zone).to_unix_second()
 }

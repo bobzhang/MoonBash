@@ -4,19 +4,24 @@
 // Aliases are stored in env vars with "__ALIAS_" prefix.
 // e.g. alias ll='ls -l' → env["__ALIAS_ll"] = "ls -l"
 
+///|
 let alias_prefix : String = "__ALIAS_"
 
+///|
 fn shell_is_digit(ch : Char) -> Bool {
   ch >= '0' && ch <= '9'
 }
 
+///|
 fn shell_parse_duration_ms(raw : String) -> Result[Int, String] {
   if raw.length() == 0 {
     return Err("invalid time interval '\{raw}'")
   }
   let mut unit_ms = 1000
   let mut end_ = raw.length()
-  if raw.length() >= 2 && raw[raw.length() - 2].to_int().unsafe_to_char() == 'm' && raw[raw.length() - 1].to_int().unsafe_to_char() == 's' {
+  if raw.length() >= 2 &&
+    raw[raw.length() - 2].to_int().unsafe_to_char() == 'm' &&
+    raw[raw.length() - 1].to_int().unsafe_to_char() == 's' {
     unit_ms = 1
     end_ = raw.length() - 2
   } else {
@@ -71,13 +76,13 @@ fn shell_parse_duration_ms(raw : String) -> Result[Int, String] {
       } else {
         whole = whole * 10 + digit
       }
-    } else if ch == '.' && !(seen_dot) {
+    } else if ch == '.' && !seen_dot {
       seen_dot = true
     } else {
       return Err("invalid time interval '\{raw}'")
     }
   }
-  if !(has_digit) {
+  if !has_digit {
     return Err("invalid time interval '\{raw}'")
   }
   let max_ms = 2147483647
@@ -86,7 +91,7 @@ fn shell_parse_duration_ms(raw : String) -> Result[Int, String] {
   }
   let mut total = whole * unit_ms
   if frac > 0 {
-    let frac_ms = (frac * unit_ms) / frac_scale
+    let frac_ms = frac * unit_ms / frac_scale
     if frac_ms > max_ms - total {
       return Err("invalid time interval '\{raw}'")
     }
@@ -95,6 +100,7 @@ fn shell_parse_duration_ms(raw : String) -> Result[Int, String] {
   Ok(total)
 }
 
+///|
 fn shell_parse_total_duration_ms(args : Array[String]) -> Result[Int, String] {
   let mut total = 0
   for raw in args {
@@ -110,6 +116,7 @@ fn shell_parse_total_duration_ms(args : Array[String]) -> Result[Int, String] {
   Ok(total)
 }
 
+///|
 fn shell_pad3(value : Int) -> String {
   if value < 10 {
     "00" + value.to_string()
@@ -120,10 +127,8 @@ fn shell_pad3(value : Int) -> String {
   }
 }
 
-fn ExecContext::builtin_alias(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_alias(self : ExecContext, args : Array[String]) -> Unit {
   let mut start = 0
   if args.length() > 0 && args[0] == "--" {
     start = 1
@@ -133,7 +138,7 @@ fn ExecContext::builtin_alias(
     // List all aliases
     for k, v in self.env {
       if k.has_prefix(alias_prefix) {
-        let name = k.view(start_offset=alias_prefix.length()).to_string()
+        let name = k.view(start_offset=alias_prefix.length()).to_owned()
         self.stdout_buf.write_string("alias \{name}='\{v}'\n")
       }
     }
@@ -152,19 +157,16 @@ fn ExecContext::builtin_alias(
     }
     if eq_pos > 0 {
       // name=value → set alias
-      let name = arg.view(start_offset=0, end_offset=eq_pos).to_string()
-      let value = arg.view(start_offset=eq_pos + 1).to_string()
+      let name = arg.view(start_offset=0, end_offset=eq_pos).to_owned()
+      let value = arg.view(start_offset=eq_pos + 1).to_owned()
       self.env[alias_prefix + name] = value
     } else {
       // name only → show alias
       let key = alias_prefix + arg
       match self.env.get(key) {
-        Some(v) =>
-          self.stdout_buf.write_string("alias \{arg}='\{v}'\n")
+        Some(v) => self.stdout_buf.write_string("alias \{arg}='\{v}'\n")
         None => {
-          self.stderr_buf.write_string(
-            "moon_bash: alias: \{arg}: not found\n",
-          )
+          self.stderr_buf.write_string("moon_bash: alias: \{arg}: not found\n")
           self.exit_code = 1
           return
         }
@@ -174,12 +176,15 @@ fn ExecContext::builtin_alias(
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_unalias(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() == 0 {
-    self.stderr_buf.write_string("moon_bash: unalias: usage: unalias [-a] name ...\n")
+    self.stderr_buf.write_string(
+      "moon_bash: unalias: usage: unalias [-a] name ...\n",
+    )
     self.exit_code = 2
     return
   }
@@ -212,7 +217,9 @@ fn ExecContext::builtin_unalias(
   }
 
   if start >= args.length() {
-    self.stderr_buf.write_string("moon_bash: unalias: usage: unalias [-a] name ...\n")
+    self.stderr_buf.write_string(
+      "moon_bash: unalias: usage: unalias [-a] name ...\n",
+    )
     self.exit_code = 2
     return
   }
@@ -223,9 +230,7 @@ fn ExecContext::builtin_unalias(
     if self.env.contains(key) {
       self.env.remove(key)
     } else {
-      self.stderr_buf.write_string(
-        "moon_bash: unalias: \{arg}: not found\n",
-      )
+      self.stderr_buf.write_string("moon_bash: unalias: \{arg}: not found\n")
       self.exit_code = 1
       return
     }
@@ -233,10 +238,8 @@ fn ExecContext::builtin_unalias(
   self.exit_code = 0
 }
 
-fn ExecContext::builtin_bash(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_bash(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     // No args: interactive mode not supported
     self.exit_code = 0
@@ -245,14 +248,14 @@ fn ExecContext::builtin_bash(
   if args[0] == "-c" {
     // bash -c 'script'
     if args.length() < 2 {
-      self.stderr_buf.write_string("moon_bash: -c: option requires an argument\n")
+      self.stderr_buf.write_string(
+        "moon_bash: -c: option requires an argument\n",
+      )
       self.exit_code = 2
       return
     }
     let script = args[1]
-    let parsed = try {
-      @parser.parse(script)
-    } catch {
+    let parsed = @parser.parse(script) catch {
       @ast.BashError(msg) => {
         self.stderr_buf.write_string("moon_bash: \{msg}\n")
         self.exit_code = 2
@@ -263,23 +266,15 @@ fn ExecContext::builtin_bash(
     return
   }
   // Otherwise treat first arg as a script file
-  let path = try {
-    @fs.resolve_path(self.cwd, args[0])
-  } catch {
-    _ => args[0]
-  }
-  let content = try {
-    self.fs.read_file(path)
-  } catch {
+  let path = @fs.resolve_path(self.cwd, args[0]) catch { _ => args[0] }
+  let content = self.fs.read_file(path) catch {
     @fs.FsError(msg) => {
       self.stderr_buf.write_string("moon_bash: \{args[0]}: \{msg}\n")
       self.exit_code = 127
       return
     }
   }
-  let parsed = try {
-    @parser.parse(content)
-  } catch {
+  let parsed = @parser.parse(content) catch {
     @ast.BashError(msg) => {
       self.stderr_buf.write_string("moon_bash: \{msg}\n")
       self.exit_code = 2
@@ -289,17 +284,13 @@ fn ExecContext::builtin_bash(
   self.execute_script(parsed)
 }
 
-fn ExecContext::builtin_sh(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_sh(self : ExecContext, args : Array[String]) -> Unit {
   self.builtin_bash(args)
 }
 
-fn ExecContext::builtin_time(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_time(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     self.exit_code = 0
     return
@@ -314,7 +305,7 @@ fn ExecContext::builtin_time(
   let end_ms = @ffi.now_ms_sync()
   let elapsed_ms = if end_ms >= start_ms { end_ms - start_ms } else { 0 }
   let minutes = elapsed_ms / 60000
-  let seconds = (elapsed_ms % 60000) / 1000
+  let seconds = elapsed_ms % 60000 / 1000
   let millis = elapsed_ms % 1000
   self.stderr_buf.write_string(
     "\nreal\t\{minutes}m\{seconds}.\{shell_pad3(millis)}s\n",
@@ -322,10 +313,8 @@ fn ExecContext::builtin_time(
   self.stderr_buf.write_string("user\t0m0.000s\nsys\t0m0.000s\n")
 }
 
-fn ExecContext::builtin_sleep(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_sleep(self : ExecContext, args : Array[String]) -> Unit {
   if args.length() == 0 {
     self.stderr_buf.write_string("moon_bash: sleep: missing operand\n")
     self.exit_code = 1
@@ -341,23 +330,20 @@ fn ExecContext::builtin_sleep(
   }
   let sleep_error = @ffi.sleep_sync(duration_ms)
   if sleep_error.length() > 0 {
-    self.stderr_buf.write_string(
-      "moon_bash: sleep: \{sleep_error}\n",
-    )
+    self.stderr_buf.write_string("moon_bash: sleep: \{sleep_error}\n")
     self.exit_code = 1
     return
   }
   self.exit_code = 0
 }
 
+///|
 fn ExecContext::builtin_timeout(
   self : ExecContext,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   if args.length() < 2 {
-    self.stderr_buf.write_string(
-      "moon_bash: timeout: missing operand\n",
-    )
+    self.stderr_buf.write_string("moon_bash: timeout: missing operand\n")
     self.exit_code = 1
     return
   }

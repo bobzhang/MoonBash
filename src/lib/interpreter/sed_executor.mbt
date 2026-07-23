@@ -1,9 +1,7 @@
 // moon_bash Interpreter - Sed Executor
 
-fn ExecContext::builtin_sed(
-  self : ExecContext,
-  args : Array[String]
-) -> Unit {
+///|
+fn ExecContext::builtin_sed(self : ExecContext, args : Array[String]) -> Unit {
   for arg in args {
     if trim_ascii_space(arg) == "..." {
       self.stderr_buf.write_string("sed: invalid script\n")
@@ -22,13 +20,14 @@ fn ExecContext::builtin_sed(
   let mut i = 0
   while i < args.length() {
     let arg = args[i]
-    if arg == "-i" || (arg.has_prefix("-i") && arg.length() > 1 && !(script_taken)) {
+    if arg == "-i" ||
+      (arg.has_prefix("-i") && arg.length() > 1 && !script_taken) {
       inplace = true
     } else if arg == "-n" {
       quiet = true
     } else if arg == "-E" || arg == "-r" {
       extended = true
-    } else if arg.length() > 2 && arg[0] == '-' && !(script_taken) {
+    } else if arg.length() > 2 && arg[0] == '-' && !script_taken {
       let mut handled_bundle = true
       let mut treat_as_script = false
       let mut j = 1
@@ -45,12 +44,14 @@ fn ExecContext::builtin_sed(
           j += 1
         } else if flag == 'e' {
           if j + 1 < arg.length() {
-            expressions.push(arg.view(start_offset=j + 1).to_string())
+            expressions.push(arg.view(start_offset=j + 1).to_owned())
           } else if i + 1 < args.length() {
             i += 1
             expressions.push(args[i])
           } else {
-            self.stderr_buf.write_string("sed: option requires an argument -- e\n")
+            self.stderr_buf.write_string(
+              "sed: option requires an argument -- e\n",
+            )
             self.exit_code = 1
             return
           }
@@ -78,7 +79,7 @@ fn ExecContext::builtin_sed(
           expressions.push(arg)
         }
         script_taken = true
-      } else if !(handled_bundle) {
+      } else if !handled_bundle {
         // Unknown non-bundled option form; defer to script handling fallback.
         let mut candidate = arg
         let mut consumed = 0
@@ -101,9 +102,9 @@ fn ExecContext::builtin_sed(
       expressions.push(args[i])
       script_taken = true
     } else if arg.has_prefix("-e") && arg.length() > 2 {
-      expressions.push(arg.view(start_offset=2).to_string())
+      expressions.push(arg.view(start_offset=2).to_owned())
       script_taken = true
-    } else if !(script_taken) {
+    } else if !script_taken {
       let mut candidate = arg
       let mut consumed = 0
       let mut parsed = parse_sed_script_commands(candidate, extended~)
@@ -202,14 +203,8 @@ fn ExecContext::builtin_sed(
         input_paths.push("")
         continue
       }
-      let resolved = try {
-        @fs.resolve_path(self.cwd, path)
-      } catch {
-        _ => path
-      }
-      let content = try {
-        self.fs.read_file(resolved)
-      } catch {
+      let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
+      let content = self.fs.read_file(resolved) catch {
         @fs.FsError(msg) => {
           self.stderr_buf.write_string("sed: \{msg}\n")
           self.exit_code = 1
@@ -228,9 +223,7 @@ fn ExecContext::builtin_sed(
         return
       }
       if input_paths[idx].length() > 0 {
-        try {
-          self.fs.write_file(input_paths[idx], rendered)
-        } catch {
+        self.fs.write_file(input_paths[idx], rendered) catch {
           @fs.FsError(msg) => {
             self.stderr_buf.write_string("sed: \{msg}\n")
             self.exit_code = 1
@@ -251,7 +244,11 @@ fn ExecContext::builtin_sed(
       prev_missing_newline = chunk.length() > 0 &&
         chunk[chunk.length() - 1].to_int().unsafe_to_char() != '\n'
     }
-    let (rendered, _) = self.sed_render_input(commands, merged_input.to_string(), quiet~)
+    let (rendered, _) = self.sed_render_input(
+      commands,
+      merged_input.to_string(),
+      quiet~,
+    )
     if self.exit_code != 0 {
       return
     }
@@ -261,6 +258,7 @@ fn ExecContext::builtin_sed(
   self.exit_code = 0
 }
 
+///|
 priv struct SedRuntime {
   commands : Array[SedCommand]
   lines : Array[(String, Bool)]
@@ -271,7 +269,11 @@ priv struct SedRuntime {
   out : StringBuilder
 }
 
-fn sed_build_runtime(commands : Array[SedCommand], input : String) -> SedRuntime {
+///|
+fn sed_build_runtime(
+  commands : Array[SedCommand],
+  input : String,
+) -> SedRuntime {
   let lines = sed_split_lines_with_flags(input)
   let (label_names, label_indices) = sed_collect_label_table(commands)
   {
@@ -285,7 +287,10 @@ fn sed_build_runtime(commands : Array[SedCommand], input : String) -> SedRuntime
   }
 }
 
-fn sed_collect_label_table(commands : Array[SedCommand]) -> (Array[String], Array[Int]) {
+///|
+fn sed_collect_label_table(
+  commands : Array[SedCommand],
+) -> (Array[String], Array[Int]) {
   let label_names : Array[String] = []
   let label_indices : Array[Int] = []
   for cmd_idx = 0; cmd_idx < commands.length(); cmd_idx = cmd_idx + 1 {
@@ -300,6 +305,7 @@ fn sed_collect_label_table(commands : Array[SedCommand]) -> (Array[String], Arra
   (label_names, label_indices)
 }
 
+///|
 fn sed_new_state() -> SedState {
   {
     hold_space: "",
@@ -310,6 +316,7 @@ fn sed_new_state() -> SedState {
   }
 }
 
+///|
 fn sed_new_cycle(runtime : SedRuntime, line_idx : Int) -> SedCycle {
   {
     line_no: line_idx + 1,
@@ -323,11 +330,12 @@ fn sed_new_cycle(runtime : SedRuntime, line_idx : Int) -> SedCycle {
   }
 }
 
+///|
 fn ExecContext::sed_render_input(
   self : ExecContext,
   commands : Array[SedCommand],
   input : String,
-  quiet~ : Bool = false
+  quiet? : Bool = false,
 ) -> (String, Bool) {
   let runtime = sed_build_runtime(commands, input)
   let state = sed_new_state()
@@ -358,9 +366,17 @@ fn ExecContext::sed_render_input(
       runtime.range_states[cmd_idx] = next_state
       state.last_regex = next_last_regex
 
-      let should_apply = if cmd.negated { !(applies) } else { applies }
+      let should_apply = if cmd.negated { !applies } else { applies }
       let action = if should_apply {
-        self.sed_execute_one_command(runtime, state, cycle, cmd, cmd_idx, line_idx, quiet~)
+        self.sed_execute_one_command(
+          runtime,
+          state,
+          cycle,
+          cmd,
+          cmd_idx,
+          line_idx,
+          quiet~,
+        )
       } else {
         self.sed_skip_unmatched_command(runtime, cycle, cmd_idx)
       }
@@ -379,7 +395,7 @@ fn ExecContext::sed_render_input(
       }
     }
 
-    if !(cycle.deleted) && !(quiet) {
+    if !cycle.deleted && !quiet {
       state.pending_no_newline = sed_emit_chunk(
         runtime.out,
         cycle.line,
@@ -405,11 +421,12 @@ fn ExecContext::sed_render_input(
   (runtime.out.to_string(), state.pending_no_newline)
 }
 
+///|
 fn ExecContext::sed_skip_unmatched_command(
   self : ExecContext,
   runtime : SedRuntime,
   cycle : SedCycle,
-  cmd_idx : Int
+  cmd_idx : Int,
 ) -> CycleAction {
   match runtime.commands[cmd_idx].kind {
     GroupStart => {
@@ -424,14 +441,17 @@ fn ExecContext::sed_skip_unmatched_command(
   }
 }
 
+///|
 fn sed_tick_remaining_addresses(
   runtime : SedRuntime,
   cycle : SedCycle,
   start_idx : Int,
-  last_regex : @regex.GrepMatcher?
+  last_regex : @regex.GrepMatcher?,
 ) -> @regex.GrepMatcher? {
   let mut next_last = last_regex
-  for rest_idx = start_idx + 1; rest_idx < runtime.commands.length(); rest_idx = rest_idx + 1 {
+  for rest_idx = start_idx + 1
+      rest_idx < runtime.commands.length()
+      rest_idx = rest_idx + 1 {
     let (next_state, tick_last_regex) = sed_address_tick_skipped(
       runtime.commands[rest_idx].address,
       cycle.line,
@@ -446,10 +466,11 @@ fn sed_tick_remaining_addresses(
   next_last
 }
 
+///|
 fn ExecContext::sed_cycle_error(
   self : ExecContext,
   cycle : SedCycle,
-  message : String
+  message : String,
 ) -> CycleAction {
   self.stderr_buf.write_string(message + "\n")
   self.exit_code = 1
@@ -458,16 +479,21 @@ fn ExecContext::sed_cycle_error(
   BreakCycle
 }
 
+///|
 fn ExecContext::sed_branch_action(
   self : ExecContext,
   runtime : SedRuntime,
   cycle : SedCycle,
-  label : String?
+  label : String?,
 ) -> CycleAction {
   match label {
     None => BreakCycle
     Some(name) => {
-      let target = sed_find_label_index(runtime.label_names, runtime.label_indices, name)
+      let target = sed_find_label_index(
+        runtime.label_names,
+        runtime.label_indices,
+        name,
+      )
       if target < 0 {
         self.sed_cycle_error(cycle, "sed: can't find label \{name}")
       } else {
@@ -477,6 +503,7 @@ fn ExecContext::sed_branch_action(
   }
 }
 
+///|
 fn ExecContext::sed_execute_one_command(
   self : ExecContext,
   runtime : SedRuntime,
@@ -485,13 +512,15 @@ fn ExecContext::sed_execute_one_command(
   cmd : SedCommand,
   cmd_idx : Int,
   line_idx : Int,
-  quiet~ : Bool = false
+  quiet? : Bool = false,
 ) -> CycleAction {
   match cmd.kind {
     GroupStart | GroupEnd => Next
     Delete => sed_execute_delete(runtime, state, cycle, cmd_idx)
-    DeleteFirstLine => sed_execute_delete_first_line(runtime, state, cycle, cmd_idx)
-    Substitute(subst) => self.sed_execute_substitute(runtime, state, cycle, subst)
+    DeleteFirstLine =>
+      sed_execute_delete_first_line(runtime, state, cycle, cmd_idx)
+    Substitute(subst) =>
+      self.sed_execute_substitute(runtime, state, cycle, subst)
     AppendNextLine => sed_execute_append_next_line(runtime, cycle, line_idx)
     NextLine => sed_execute_next_line(runtime, state, cycle, line_idx, quiet~)
     Transliterate(spec) => {
@@ -518,43 +547,57 @@ fn ExecContext::sed_execute_one_command(
     }
     Label(_) => Next
     Branch(label) => self.sed_branch_action(runtime, cycle, label)
-    BranchIfSubst(label) => self.sed_execute_conditional_branch(
-      runtime,
-      cycle,
-      label,
-      branch_on_subst=true,
-    )
-    BranchIfNotSubst(label) => self.sed_execute_conditional_branch(
-      runtime,
-      cycle,
-      label,
-      branch_on_subst=false,
-    )
+    BranchIfSubst(label) =>
+      self.sed_execute_conditional_branch(
+        runtime,
+        cycle,
+        label,
+        branch_on_subst=true,
+      )
+    BranchIfNotSubst(label) =>
+      self.sed_execute_conditional_branch(
+        runtime,
+        cycle,
+        label,
+        branch_on_subst=false,
+      )
     VersionCheck(required) => self.sed_execute_version_check(cycle, required)
     Quit => sed_execute_quit(runtime, state, cycle, quiet~)
   }
 }
 
+///|
 fn sed_execute_delete(
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
-  cmd_idx : Int
+  cmd_idx : Int,
 ) -> CycleAction {
-  state.last_regex = sed_tick_remaining_addresses(runtime, cycle, cmd_idx, state.last_regex)
+  state.last_regex = sed_tick_remaining_addresses(
+    runtime,
+    cycle,
+    cmd_idx,
+    state.last_regex,
+  )
   cycle.deleted = true
   BreakCycle
 }
 
+///|
 fn sed_execute_delete_first_line(
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
-  cmd_idx : Int
+  cmd_idx : Int,
 ) -> CycleAction {
   let nl_idx = sed_find_newline(cycle.line)
   if nl_idx < 0 {
-    state.last_regex = sed_tick_remaining_addresses(runtime, cycle, cmd_idx, state.last_regex)
+    state.last_regex = sed_tick_remaining_addresses(
+      runtime,
+      cycle,
+      cmd_idx,
+      state.last_regex,
+    )
     cycle.deleted = true
     BreakCycle
   } else {
@@ -563,24 +606,27 @@ fn sed_execute_delete_first_line(
   }
 }
 
+///|
 fn ExecContext::sed_execute_substitute(
   self : ExecContext,
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
-  subst : SedSubstSpec
+  subst : SedSubstSpec,
 ) -> CycleAction {
   let matcher = match subst.matcher {
     Some(explicit_matcher) => {
       state.last_regex = Some(explicit_matcher)
       explicit_matcher
     }
-    None => match state.last_regex {
-      Some(previous_matcher) => previous_matcher
-      None => {
-        return self.sed_cycle_error(cycle, "sed: no previous regular expression")
+    None =>
+      match state.last_regex {
+        Some(previous_matcher) => previous_matcher
+        None =>
+          return self.sed_cycle_error(
+            cycle, "sed: no previous regular expression",
+          )
       }
-    }
   }
   let (new_line, replaced) = sed_substitute_line(
     cycle.line,
@@ -602,17 +648,19 @@ fn ExecContext::sed_execute_substitute(
       )
     }
     match subst.write_file {
-      Some(path) => self.sed_append_write(path, cycle.line, cycle.line_terminated)
+      Some(path) =>
+        self.sed_append_write(path, cycle.line, cycle.line_terminated)
       None => ()
     }
   }
   Next
 }
 
+///|
 fn sed_execute_append_next_line(
   runtime : SedRuntime,
   cycle : SedCycle,
-  line_idx : Int
+  line_idx : Int,
 ) -> CycleAction {
   let next_idx = line_idx + cycle.consumed_extra + 1
   if next_idx < runtime.total_lines {
@@ -627,14 +675,15 @@ fn sed_execute_append_next_line(
   }
 }
 
+///|
 fn sed_execute_next_line(
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
   line_idx : Int,
-  quiet~ : Bool = false
+  quiet? : Bool = false,
 ) -> CycleAction {
-  if !(quiet) {
+  if !quiet {
     state.pending_no_newline = sed_emit_chunk(
       runtime.out,
       cycle.line,
@@ -667,10 +716,11 @@ fn sed_execute_next_line(
   }
 }
 
+///|
 fn sed_execute_print_pattern(
   runtime : SedRuntime,
   state : SedState,
-  cycle : SedCycle
+  cycle : SedCycle,
 ) -> CycleAction {
   state.pending_no_newline = sed_emit_chunk(
     runtime.out,
@@ -681,10 +731,11 @@ fn sed_execute_print_pattern(
   Next
 }
 
+///|
 fn sed_execute_print_first_line(
   runtime : SedRuntime,
   state : SedState,
-  cycle : SedCycle
+  cycle : SedCycle,
 ) -> CycleAction {
   let nl_idx = sed_find_newline(cycle.line)
   if nl_idx < 0 {
@@ -705,10 +756,11 @@ fn sed_execute_print_first_line(
   Next
 }
 
+///|
 fn sed_execute_print_line_number(
   runtime : SedRuntime,
   state : SedState,
-  cycle : SedCycle
+  cycle : SedCycle,
 ) -> CycleAction {
   state.pending_no_newline = sed_emit_chunk(
     runtime.out,
@@ -719,11 +771,13 @@ fn sed_execute_print_line_number(
   Next
 }
 
+///|
 fn sed_execute_hold_set(state : SedState, cycle : SedCycle) -> CycleAction {
   state.hold_space = cycle.line
   Next
 }
 
+///|
 fn sed_execute_hold_append(state : SedState, cycle : SedCycle) -> CycleAction {
   state.hold_space = if state.hold_space.length() == 0 {
     cycle.line
@@ -733,18 +787,24 @@ fn sed_execute_hold_append(state : SedState, cycle : SedCycle) -> CycleAction {
   Next
 }
 
+///|
 fn sed_execute_hold_get(state : SedState, cycle : SedCycle) -> CycleAction {
   cycle.line = state.hold_space
   cycle.line_terminated = true
   Next
 }
 
-fn sed_execute_hold_append_get(state : SedState, cycle : SedCycle) -> CycleAction {
+///|
+fn sed_execute_hold_append_get(
+  state : SedState,
+  cycle : SedCycle,
+) -> CycleAction {
   cycle.line = cycle.line + "\n" + state.hold_space
   cycle.line_terminated = true
   Next
 }
 
+///|
 fn sed_execute_exchange_hold(state : SedState, cycle : SedCycle) -> CycleAction {
   let old_line = cycle.line
   cycle.line = state.hold_space
@@ -753,37 +813,50 @@ fn sed_execute_exchange_hold(state : SedState, cycle : SedCycle) -> CycleAction 
   Next
 }
 
+///|
 fn sed_execute_insert_text(
   runtime : SedRuntime,
   state : SedState,
-  text : String
+  text : String,
 ) -> CycleAction {
-  state.pending_no_newline = sed_emit_chunk(runtime.out, text, true, state.pending_no_newline)
+  state.pending_no_newline = sed_emit_chunk(
+    runtime.out,
+    text,
+    true,
+    state.pending_no_newline,
+  )
   Next
 }
 
+///|
 fn sed_execute_change_text(
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
-  text : String
+  text : String,
 ) -> CycleAction {
-  state.pending_no_newline = sed_emit_chunk(runtime.out, text, true, state.pending_no_newline)
+  state.pending_no_newline = sed_emit_chunk(
+    runtime.out,
+    text,
+    true,
+    state.pending_no_newline,
+  )
   cycle.deleted = true
   BreakCycle
 }
 
+///|
 fn ExecContext::sed_execute_conditional_branch(
   self : ExecContext,
   runtime : SedRuntime,
   cycle : SedCycle,
   label : String?,
-  branch_on_subst~ : Bool = true
+  branch_on_subst? : Bool = true,
 ) -> CycleAction {
   let should_branch = if branch_on_subst {
     cycle.substituted
   } else {
-    !(cycle.substituted)
+    !cycle.substituted
   }
   cycle.substituted = false
   if should_branch {
@@ -793,25 +866,27 @@ fn ExecContext::sed_execute_conditional_branch(
   }
 }
 
+///|
 fn ExecContext::sed_execute_version_check(
   self : ExecContext,
   cycle : SedCycle,
-  required : String?
+  required : String?,
 ) -> CycleAction {
-  if !(sed_version_supported(required)) {
+  if !sed_version_supported(required) {
     self.sed_cycle_error(cycle, "sed: version check failed")
   } else {
     Next
   }
 }
 
+///|
 fn sed_execute_quit(
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
-  quiet~ : Bool = false
+  quiet? : Bool = false,
 ) -> CycleAction {
-  if !(quiet) {
+  if !quiet {
     state.pending_no_newline = sed_emit_chunk(
       runtime.out,
       cycle.line,
@@ -824,6 +899,7 @@ fn sed_execute_quit(
   Quit
 }
 
+///|
 fn sed_version_supported(required : String?) -> Bool {
   match required {
     None => true
@@ -846,6 +922,7 @@ fn sed_version_supported(required : String?) -> Bool {
   }
 }
 
+///|
 fn parse_sed_version_triplet(text : String) -> (Int, Int, Int)? {
   let trimmed = trim_ascii_space(text)
   if trimmed.length() == 0 {
@@ -888,4 +965,3 @@ fn parse_sed_version_triplet(text : String) -> (Int, Int, Int)? {
   let patch = if parts.length() >= 3 { parts[2] } else { 0 }
   Some((major, minor, patch))
 }
-

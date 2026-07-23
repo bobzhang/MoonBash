@@ -66,19 +66,19 @@ fn[T : FromJson] decode_json_or(value : Json?, default : T) -> T {
 fn json_object_or_empty(json : Json) -> Map[String, Json] {
   match json {
     Json::Object(obj) => obj
-    _ => {}
+    _ => Map([])
   }
 }
 
 ///|
 fn parse_exec_result(json_text : String) -> ExecResult {
-  let parsed = @json.parse(json_text[:]) catch { _ => Json::object({}) }
+  let parsed = @json.parse(json_text[:]) catch { _ => Json::object(Map([])) }
   let obj = json_object_or_empty(parsed)
   {
     stdout: decode_json_or(obj.get("stdout"), ""),
     stderr: decode_json_or(obj.get("stderr"), ""),
     exit_code: decode_json_or(obj.get("exitCode"), 1),
-    env: decode_json_or(obj.get("env"), {}),
+    env: decode_json_or(obj.get("env"), Map([])),
   }
 }
 
@@ -99,7 +99,7 @@ fn parse_dir_entries(json_text : String) -> Array[DirEntry] {
 
 ///|
 fn parse_website_config(json_text : String) -> WebsiteConfig {
-  let parsed = @json.parse(json_text[:]) catch { _ => Json::object({}) }
+  let parsed = @json.parse(json_text[:]) catch { _ => Json::object(Map([])) }
   let obj = json_object_or_empty(parsed)
   {
     version: decode_json_or(obj.get("version"), "0.1.0"),
@@ -126,7 +126,7 @@ fn parse_website_config(json_text : String) -> WebsiteConfig {
       900,
     ),
     command_names: decode_json_or(obj.get("commandNames"), []),
-    env: decode_json_or(obj.get("env"), {}),
+    env: decode_json_or(obj.get("env"), Map([])),
     cwd: decode_json_or(obj.get("cwd"), "/home/user"),
   }
 }
@@ -307,9 +307,7 @@ fn build_verification_plan(config : WebsiteConfig) -> Array[DemoStep] {
 fn build_showcase_plan() -> Array[DemoStep] {
   [
     create_banner_step(
-      "阶段一",
-      "核心启动",
-      "阶段一：核心启动\n先确认这份中文任务数据已经被真实装载进浏览器内存文件系统。",
+      "阶段一", "核心启动", "阶段一：核心启动\n先确认这份中文任务数据已经被真实装载进浏览器内存文件系统。",
     ),
     create_showcase_step(
       "阶段一",
@@ -318,20 +316,18 @@ fn build_showcase_plan() -> Array[DemoStep] {
       ["/demo/data", "/demo/logs", "/demo/src", "/demo/notes"],
     ),
     create_banner_step(
-      "阶段一",
-      "核心启动完成",
-      "核心能力已就绪：路径解析、虚拟文件系统和命令分发都在浏览器里真实运行。",
+      "阶段一", "核心启动完成", "核心能力已就绪：路径解析、虚拟文件系统和命令分发都在浏览器里真实运行。",
     ),
     create_banner_step(
-      "阶段二",
-      "文本排障",
-      "阶段二：文本排障\n像值班排障一样，用 grep、head、tail 快速定位中文日志里的异常。",
+      "阶段二", "文本排障", "阶段二：文本排障\n像值班排障一样，用 grep、head、tail 快速定位中文日志里的异常。",
     ),
     create_showcase_step(
       "阶段二",
       "错误聚焦",
       "grep -n ERROR /demo/logs/app.log | head -5",
-      ["4:2026-04-18T09:00:04Z ERROR 接口: 上游超时", "6:2026-04-18T09:00:06Z ERROR Worker: 载荷解析失败"],
+      [
+        "4:2026-04-18T09:00:04Z ERROR 接口: 上游超时", "6:2026-04-18T09:00:06Z ERROR Worker: 载荷解析失败",
+      ],
     ),
     create_showcase_step(
       "阶段二",
@@ -340,14 +336,10 @@ fn build_showcase_plan() -> Array[DemoStep] {
       ["ERROR Worker: 载荷解析失败", "INFO Worker: 重试后恢复"],
     ),
     create_banner_step(
-      "阶段二",
-      "文本排障完成",
-      "文本处理链路已验证：日志过滤、截取和输出都是真实命令结果。",
+      "阶段二", "文本排障完成", "文本处理链路已验证：日志过滤、截取和输出都是真实命令结果。",
     ),
     create_banner_step(
-      "阶段三",
-      "数据分析",
-      "阶段三：数据分析\n用 jq 和 awk 直接处理中文业务数据，看这套浏览器 shell 能不能真的干活。",
+      "阶段三", "数据分析", "阶段三：数据分析\n用 jq 和 awk 直接处理中文业务数据，看这套浏览器 shell 能不能真的干活。",
     ),
     create_showcase_step(
       "阶段三",
@@ -362,14 +354,10 @@ fn build_showcase_plan() -> Array[DemoStep] {
       ["8270"],
     ),
     create_banner_step(
-      "阶段三",
-      "数据分析完成",
-      "数据工作流已验证：jq 和 awk 处理的是中文数据集，不是伪造输出。",
+      "阶段三", "数据分析完成", "数据工作流已验证：jq 和 awk 处理的是中文数据集，不是伪造输出。",
     ),
     create_banner_step(
-      "阶段四",
-      "文件系统巡检",
-      "阶段四：文件系统巡检\n继续浏览代码快照和说明文档，确认浏览器里的虚拟项目结构可探索。",
+      "阶段四", "文件系统巡检", "阶段四：文件系统巡检\n继续浏览代码快照和说明文档，确认浏览器里的虚拟项目结构可探索。",
     ),
     create_showcase_step(
       "阶段四",
@@ -381,14 +369,10 @@ fn build_showcase_plan() -> Array[DemoStep] {
       "/demo/src",
     ]),
     create_banner_step(
-      "阶段四",
-      "文件系统巡检完成",
-      "文件系统工作流已验证：浏览器 shell 正在遍历、统计并读取真实虚拟文件。",
+      "阶段四", "文件系统巡检完成", "文件系统工作流已验证：浏览器 shell 正在遍历、统计并读取真实虚拟文件。",
     ),
     create_banner_step(
-      "阶段五",
-      "浏览器证明",
-      "阶段五：浏览器证明\n最后用一条中文流水线收尾，证明这不是摆设终端，而是可执行的浏览器 shell。",
+      "阶段五", "浏览器证明", "阶段五：浏览器证明\n最后用一条中文流水线收尾，证明这不是摆设终端，而是可执行的浏览器 shell。",
     ),
     create_showcase_step(
       "阶段五",
@@ -397,9 +381,7 @@ fn build_showcase_plan() -> Array[DemoStep] {
       ["月壤终端浏览器任务流"],
     ),
     create_banner_step(
-      "阶段五",
-      "任务完成",
-      "浏览器任务流完成。MoonBash 刚刚在这个标签页里跑完了一整套中文真实工作流。",
+      "阶段五", "任务完成", "浏览器任务流完成。MoonBash 刚刚在这个标签页里跑完了一整套中文真实工作流。",
     ),
   ]
 }
@@ -436,7 +418,7 @@ fn stringify_string_array(values : Array[String]) -> String {
 
 ///|
 fn encode_string_map(values : Map[String, String]) -> String {
-  let payload : Map[String, Json] = {}
+  let payload : Map[String, Json] = Map([])
   for key, value in values {
     payload[key] = Json::string(value)
   }

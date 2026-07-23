@@ -240,7 +240,7 @@ fn collapse_home(path : String, home : String) -> String {
   if path == home {
     "~"
   } else if path.has_prefix((home + "/")[:]) {
-    "~" + path.view(start_offset=home.length()).to_string()
+    "~" + path.view(start_offset=home.length()).to_owned()
   } else {
     path
   }
@@ -309,15 +309,11 @@ fn apply_completion(app : Ref[AppState]) -> Unit {
   let value = app.val.dom.input.value()
   let cursor = html_input_selection_start(app.val.dom.input)
   let start = find_word_boundary(value, cursor)
-  let prefix = value.view(start_offset=start, end_offset=cursor).to_string()
+  let prefix = value.view(start_offset=start, end_offset=cursor).to_owned()
   if prefix == "" {
     return
   }
-  let candidates = if value
-    .view(end_offset=start)
-    .to_string()
-    .trim()
-    .to_string() ==
+  let candidates = if value.view(end_offset=start).to_owned().trim().to_owned() ==
     "" {
     let names : Array[String] = []
     for name in app.val.config.command_names {
@@ -345,9 +341,9 @@ fn apply_completion(app : Ref[AppState]) -> Unit {
   }
   if matches.length() == 1 {
     let completion = matches[0]
-    let next_value = value.view(end_offset=start).to_string() +
+    let next_value = value.view(end_offset=start).to_owned() +
       completion +
-      value.view(start_offset=cursor).to_string()
+      value.view(start_offset=cursor).to_owned()
     app.val.dom.input.set_value(next_value)
     let next_cursor = start + completion.length()
     html_input_set_selection_range(app.val.dom.input, next_cursor, next_cursor)
@@ -401,7 +397,7 @@ async fn run_shell_command_async(
   record_history? : Bool = false,
   after_done? : ((ExecResult) -> Unit)? = None,
 ) -> Unit {
-  let trimmed = command.trim().to_string()
+  let trimmed = command.trim().to_owned()
   if trimmed == "" || app.val.command_running {
     return
   }
@@ -638,7 +634,7 @@ fn stop_verification(app : Ref[AppState], reason : String) -> Unit {
 ///|
 fn handle_enter(app : Ref[AppState]) -> Unit {
   let command = app.val.dom.input.value()
-  let trimmed = command.trim().to_string()
+  let trimmed = command.trim().to_owned()
   if trimmed == "" {
     return
   }
@@ -659,7 +655,9 @@ fn handle_enter(app : Ref[AppState]) -> Unit {
     start_verification(app)
     return
   }
-  if trimmed == "demo stop" || trimmed == "verify stop" || trimmed == "showcase stop" {
+  if trimmed == "demo stop" ||
+    trimmed == "verify stop" ||
+    trimmed == "showcase stop" {
     app.val.dom.input.set_value("")
     stop_verification(app, "Verification stopped from terminal command.")
     return

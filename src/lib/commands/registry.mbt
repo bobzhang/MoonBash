@@ -1,6 +1,7 @@
 // moon_bash Command Registry
 // Maps command names to their implementation functions.
 
+///|
 pub(all) struct CommandContext {
   args : Array[String]
   stdin_content : String
@@ -9,10 +10,9 @@ pub(all) struct CommandContext {
   fs : @fs.InMemoryFs
 }
 
+///|
 /// Look up a command implementation by name.
-pub fn find_command(
-  name : String
-) -> ((CommandContext) -> @ast.ExecResult)? {
+pub fn find_command(name : String) -> ((CommandContext) -> @ast.ExecResult)? {
   match name {
     "echo" => Some(cmd_echo)
     "cat" => Some(cmd_cat)

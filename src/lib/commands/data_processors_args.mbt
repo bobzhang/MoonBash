@@ -50,12 +50,7 @@ fn xan_slice_parse_args(args : Array[String]) -> XanSliceConfig {
     aliases~,
     double_dash=false,
   ) catch {
-    _ =>
-      return {
-        start: 0,
-        length: None,
-        file_path: None,
-      }
+    _ => return { start: 0, length: None, file_path: None }
   }
 
   {
@@ -76,7 +71,7 @@ fn xan_slice_parse_args(args : Array[String]) -> XanSliceConfig {
 fn yq_parse_args(args : Array[String]) -> YqConfig {
   let normalized : Array[String] = []
   for arg in args {
-    if arg == "-r" || arg == "-j" || !(arg.has_prefix("-")) {
+    if arg == "-r" || arg == "-j" || !arg.has_prefix("-") {
       normalized.push(arg)
     }
   }
@@ -87,9 +82,7 @@ fn yq_parse_args(args : Array[String]) -> YqConfig {
     aliases~,
     double_dash=false,
   ) catch {
-    _ => {
-      return { raw: false, filter: ".", file_path: None }
-    }
+    _ => return { raw: false, filter: ".", file_path: None }
   }
 
   let mut filter = "."
@@ -102,11 +95,7 @@ fn yq_parse_args(args : Array[String]) -> YqConfig {
     }
   }
 
-  {
-    raw: parsed.flags.get("raw").unwrap_or(false),
-    filter,
-    file_path,
-  }
+  { raw: parsed.flags.get("raw").unwrap_or(false), filter, file_path }
 }
 
 ///|

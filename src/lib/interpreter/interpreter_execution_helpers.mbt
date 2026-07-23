@@ -1,11 +1,14 @@
 // Shell interpreter - array/FD helpers and command runner
 
+///|
 let command_stub_marker_prefix : String = "# moon_bash command stub:"
 
+///|
 fn fd_output_key(fd : Int) -> String {
   "__MOON_BASH_FD_OUT__" + fd.to_string()
 }
 
+///|
 fn parse_fd_target_number(text : String) -> Int? {
   if text.length() == 0 {
     return None
@@ -21,10 +24,16 @@ fn parse_fd_target_number(text : String) -> Int? {
   Some(value)
 }
 
+///|
 fn encode_fd_output_mapping(path : String, append : Bool) -> String {
-  if append { "A:" + path } else { "W:" + path }
+  if append {
+    "A:" + path
+  } else {
+    "W:" + path
+  }
 }
 
+///|
 fn decode_fd_output_mapping(spec : String) -> (String, Bool)? {
   if spec.length() < 3 {
     return None
@@ -33,7 +42,7 @@ fn decode_fd_output_mapping(spec : String) -> (String, Bool)? {
   if spec[1].to_int().unsafe_to_char() != ':' {
     return None
   }
-  let path = spec.view(start_offset=2).to_string()
+  let path = spec.view(start_offset=2).to_owned()
   if mode == 'A' {
     Some((path, true))
   } else if mode == 'W' {
@@ -43,30 +52,32 @@ fn decode_fd_output_mapping(spec : String) -> (String, Bool)? {
   }
 }
 
+///|
 fn ExecContext::store_fd_output_mapping(
   self : ExecContext,
   fd : Int,
   target : String,
-  append : Bool
+  append : Bool,
 ) -> Unit {
   self.env[fd_output_key(fd)] = encode_fd_output_mapping(target, append)
 }
 
+///|
 fn ExecContext::load_fd_output_mapping(
   self : ExecContext,
-  target : String
+  target : String,
 ) -> (String, Bool)? {
   match parse_fd_target_number(target) {
-    Some(fd) => {
+    Some(fd) =>
       match self.env.get(fd_output_key(fd)) {
         Some(spec) => decode_fd_output_mapping(spec)
         None => None
       }
-    }
     None => None
   }
 }
 
+///|
 fn ExecContext::consume_extra_args(self : ExecContext) -> Array[String] {
   match self.env.get("__MOON_BASH_EXTRA_ARGS") {
     None => []
@@ -77,14 +88,15 @@ fn ExecContext::consume_extra_args(self : ExecContext) -> Array[String] {
   }
 }
 
+///|
 fn ExecContext::try_store_array_assignment(
   self : ExecContext,
   name : String,
   raw_value : @ast.Word,
-  append : Bool
+  append : Bool,
 ) -> Bool {
   // Only plain shell names can take compound array literals `(a b c)`.
-  if !(is_valid_shell_name(name)) {
+  if !is_valid_shell_name(name) {
     return false
   }
 
@@ -112,7 +124,8 @@ fn ExecContext::try_store_array_assignment(
       return true
     }
   }
-  let is_assoc = self.env.get(test_array_kind_storage_key(name)).unwrap_or("") == "assoc"
+  let is_assoc = self.env.get(test_array_kind_storage_key(name)).unwrap_or("") ==
+    "assoc"
   if is_assoc {
     let entries = self.parse_assoc_assignment_entries(name, values)
     self.store_assoc_assignment(name, entries, append)
@@ -122,20 +135,26 @@ fn ExecContext::try_store_array_assignment(
   true
 }
 
+///|
 fn array_assignment_item_is_invalid_operator(item_word : @ast.Word) -> Bool {
   if item_word.parts.length() != 1 {
     return false
   }
   match item_word.parts[0] {
     @ast.WordPart::Literal(token) =>
-      token == "&" || token == "|" || token == "&&" || token == "||" || token == ";"
+      token == "&" ||
+      token == "|" ||
+      token == "&&" ||
+      token == "||" ||
+      token == ";"
     _ => false
   }
 }
 
+///|
 fn ExecContext::expand_array_assignment_item_values(
   self : ExecContext,
-  item_word : @ast.Word
+  item_word : @ast.Word,
 ) -> Array[String] {
   // `[index]=value` words should keep literal braces and skip word splitting.
   let raw = self.expand_word_to_string(item_word)
@@ -146,7 +165,8 @@ fn ExecContext::expand_array_assignment_item_values(
     Some(_) => [raw]
     None => {
       let expanded = self.expand_word(item_word)
-      if expanded.length() == 0 && array_assignment_word_has_quoted_part(item_word.parts) {
+      if expanded.length() == 0 &&
+        array_assignment_word_has_quoted_part(item_word.parts) {
         [raw]
       } else {
         expanded
@@ -155,28 +175,29 @@ fn ExecContext::expand_array_assignment_item_values(
   }
 }
 
+///|
 fn array_assignment_word_has_quoted_part(parts : Array[@ast.WordPart]) -> Bool {
   for part in parts {
     match part {
       @ast.WordPart::SingleQuoted(_) => return true
       @ast.WordPart::DoubleQuoted(_) => return true
-      @ast.WordPart::BraceExpansion(options) => {
+      @ast.WordPart::BraceExpansion(options) =>
         for option in options {
           if array_assignment_word_has_quoted_part(option) {
             return true
           }
         }
-      }
       _ => ()
     }
   }
   false
 }
 
+///|
 fn ExecContext::parse_assoc_assignment_entries(
   self : ExecContext,
   name : String,
-  values : Array[String]
+  values : Array[String],
 ) -> Array[(String, String, Bool)] {
   let entries : Array[(String, String, Bool)] = []
   let mut has_explicit = false
@@ -194,11 +215,10 @@ fn ExecContext::parse_assoc_assignment_entries(
     for token in values {
       match parse_array_assignment_explicit_entry(token) {
         Some(entry) => entries.push(entry)
-        None => {
+        None =>
           self.stderr_buf.write_string(
             "bash: line 2: \{name}: \{token}: must use subscript when assigning associative array\n",
           )
-        }
       }
     }
     return entries
@@ -223,7 +243,10 @@ fn ExecContext::parse_assoc_assignment_entries(
   entries
 }
 
-fn parse_array_assignment_explicit_entry(token : String) -> (String, String, Bool)? {
+///|
+fn parse_array_assignment_explicit_entry(
+  token : String,
+) -> (String, String, Bool)? {
   if token.length() < 3 {
     return None
   }
@@ -238,21 +261,22 @@ fn parse_array_assignment_explicit_entry(token : String) -> (String, String, Boo
 
   let (value_start, append_mode) = if close + 1 < token.length() &&
     token[close + 1].to_int().unsafe_to_char() == '=' {
-      (close + 2, false)
-    } else if close + 2 < token.length() &&
-      token[close + 1].to_int().unsafe_to_char() == '+' &&
-      token[close + 2].to_int().unsafe_to_char() == '=' {
-        (close + 3, true)
-      } else {
-        return None
-      }
+    (close + 2, false)
+  } else if close + 2 < token.length() &&
+    token[close + 1].to_int().unsafe_to_char() == '+' &&
+    token[close + 2].to_int().unsafe_to_char() == '=' {
+    (close + 3, true)
+  } else {
+    return None
+  }
 
-  let raw_key = token.view(start_offset=1, end_offset=close).to_string()
-  let value = token.view(start_offset=value_start).to_string()
+  let raw_key = token.view(start_offset=1, end_offset=close).to_owned()
+  let value = token.view(start_offset=value_start).to_owned()
   let key = normalize_array_assignment_index(raw_key)
   Some((key, value, append_mode))
 }
 
+///|
 fn find_array_assignment_close_bracket(token : String) -> Int? {
   let mut depth = 1
   let mut in_single = false
@@ -307,9 +331,10 @@ fn find_array_assignment_close_bracket(token : String) -> Int? {
   None
 }
 
+///|
 fn ExecContext::normalize_compound_assignment_value(
   self : ExecContext,
-  value : String
+  value : String,
 ) -> String {
   let cleaned_value = strip_array_assignment_index_markers(value)
   if cleaned_value.length() == 0 {
@@ -321,17 +346,20 @@ fn ExecContext::normalize_compound_assignment_value(
   let mut segment_start = 0
   let mut i = 0
   while i <= cleaned_value.length() {
-    if i == cleaned_value.length() || cleaned_value[i].to_int().unsafe_to_char() == ':' {
-      let segment = cleaned_value.view(start_offset=segment_start, end_offset=i).to_string()
+    if i == cleaned_value.length() ||
+      cleaned_value[i].to_int().unsafe_to_char() == ':' {
+      let segment = cleaned_value
+        .view(start_offset=segment_start, end_offset=i)
+        .to_owned()
       let normalized = if segment == "~" {
         home
       } else if segment.length() >= 2 &&
         segment[0].to_int().unsafe_to_char() == '~' &&
         segment[1].to_int().unsafe_to_char() == '/' {
-          home + segment.view(start_offset=1).to_string()
-        } else {
-          segment
-        }
+        home + segment.view(start_offset=1).to_owned()
+      } else {
+        segment
+      }
       out.write_string(normalized)
       if i < cleaned_value.length() {
         out.write_char(':')
@@ -343,13 +371,14 @@ fn ExecContext::normalize_compound_assignment_value(
   out.to_string()
 }
 
+///|
 fn ExecContext::store_assoc_assignment(
   self : ExecContext,
   name : String,
   entries : Array[(String, String, Bool)],
-  append : Bool
+  append : Bool,
 ) -> Unit {
-  if !(append) {
+  if !append {
     self.store_array_assignment(name, [])
   }
 
@@ -358,7 +387,8 @@ fn ExecContext::store_assoc_assignment(
     let storage_key = "\{name}[\{key}]"
     let normalized = self.normalize_compound_assignment_value(value)
     if append_mode {
-      self.env[storage_key] = self.env.get(storage_key).unwrap_or("") + normalized
+      self.env[storage_key] = self.env.get(storage_key).unwrap_or("") +
+        normalized
     } else {
       self.env[storage_key] = normalized
     }
@@ -367,12 +397,13 @@ fn ExecContext::store_assoc_assignment(
   self.env[test_array_kind_storage_key(name)] = "assoc"
 }
 
+///|
 fn ExecContext::next_indexed_assignment_seed(
   self : ExecContext,
   name : String,
-  append : Bool
+  append : Bool,
 ) -> Int {
-  if !(append) {
+  if !append {
     return 0
   }
 
@@ -380,20 +411,17 @@ fn ExecContext::next_indexed_assignment_seed(
   let mut seed = 0
   for key in keys {
     match parse_non_negative_int_for_sort(key) {
-      Some(idx) => {
-        if idx + 1 > seed {
-          seed = idx + 1
-        }
-      }
+      Some(idx) => if idx + 1 > seed { seed = idx + 1 }
       None => ()
     }
   }
   seed
 }
 
+///|
 fn ExecContext::parse_indexed_assignment_index(
   self : ExecContext,
-  raw_index : String
+  raw_index : String,
 ) -> Int {
   match parse_array_reference_name(raw_index) {
     Some((base, index_expr)) => {
@@ -424,13 +452,14 @@ fn ExecContext::parse_indexed_assignment_index(
   }
 }
 
+///|
 fn ExecContext::store_indexed_assignment(
   self : ExecContext,
   name : String,
   values : Array[String],
-  append : Bool
+  append : Bool,
 ) -> Unit {
-  if !(append) {
+  if !append {
     self.store_array_assignment(name, [])
   } else {
     self.seed_indexed_assignment_from_scalar(name)
@@ -443,7 +472,8 @@ fn ExecContext::store_indexed_assignment(
         let storage_key = "\{name}[\{index.to_string()}]"
         let normalized = self.normalize_compound_assignment_value(value)
         if append_mode {
-          self.env[storage_key] = self.env.get(storage_key).unwrap_or("") + normalized
+          self.env[storage_key] = self.env.get(storage_key).unwrap_or("") +
+            normalized
         } else {
           self.env[storage_key] = normalized
         }
@@ -461,13 +491,14 @@ fn ExecContext::store_indexed_assignment(
   self.env[test_array_kind_storage_key(name)] = "indexed"
 }
 
+///|
 fn ExecContext::seed_indexed_assignment_from_scalar(
   self : ExecContext,
-  name : String
+  name : String,
 ) -> Unit {
   if self.env.contains(test_array_count_storage_key(name)) ||
     self.collect_array_keys(name).length() > 0 ||
-    !(self.env.contains(name)) {
+    !self.env.contains(name) {
     return
   }
 
@@ -478,8 +509,9 @@ fn ExecContext::seed_indexed_assignment_from_scalar(
   self.env[test_array_count_storage_key(name)] = "1"
 }
 
+///|
 fn collect_assignment_restore_names(
-  assignments : Array[@ast.Assignment]
+  assignments : Array[@ast.Assignment],
 ) -> Array[String] {
   let names : Array[String] = []
   for assign in assignments {
@@ -491,13 +523,14 @@ fn collect_assignment_restore_names(
         break
       }
     }
-    if !(exists) {
+    if !exists {
       names.push(name)
     }
   }
   names
 }
 
+///|
 fn assignment_restore_base_name(raw_name : String) -> String {
   match parse_array_element_assignment_name(raw_name) {
     Some((base, _index)) => base
@@ -505,11 +538,12 @@ fn assignment_restore_base_name(raw_name : String) -> String {
   }
 }
 
+///|
 fn snapshot_assignment_env_entries(
   env : Map[String, String],
-  names : Array[String]
+  names : Array[String],
 ) -> Map[String, String] {
-  let snapshot : Map[String, String] = {}
+  let snapshot : Map[String, String] = Map([])
   for key, value in env {
     if env_key_matches_assignment_restore_names(key, names) {
       snapshot[key] = value
@@ -518,10 +552,11 @@ fn snapshot_assignment_env_entries(
   snapshot
 }
 
+///|
 fn restore_assignment_env_entries(
   env : Map[String, String],
   names : Array[String],
-  snapshot : Map[String, String]
+  snapshot : Map[String, String],
 ) -> Unit {
   let to_remove : Array[String] = []
   for key, _value in env {
@@ -537,9 +572,10 @@ fn restore_assignment_env_entries(
   }
 }
 
+///|
 fn env_key_matches_assignment_restore_names(
   key : String,
-  names : Array[String]
+  names : Array[String],
 ) -> Bool {
   for name in names {
     if env_key_matches_assignment_restore_name(key, name) {
@@ -549,6 +585,7 @@ fn env_key_matches_assignment_restore_names(
   false
 }
 
+///|
 fn env_key_matches_assignment_restore_name(key : String, name : String) -> Bool {
   if key == name ||
     key == test_array_count_storage_key(name) ||
@@ -558,6 +595,7 @@ fn env_key_matches_assignment_restore_name(key : String, name : String) -> Bool 
   string_has_prefix(key, name + "[")
 }
 
+///|
 fn command_keeps_prefix_assignments(cmd_name : String) -> Bool {
   cmd_name == "declare" ||
   cmd_name == "typeset" ||
@@ -566,8 +604,9 @@ fn command_keeps_prefix_assignments(cmd_name : String) -> Bool {
   cmd_name == "readonly"
 }
 
+///|
 fn split_array_assignment_items(
-  parts : Array[@ast.WordPart]
+  parts : Array[@ast.WordPart],
 ) -> Array[@ast.Word]? {
   let items : Array[@ast.Word] = []
   let mut current_parts : Array[@ast.WordPart] = []
@@ -577,10 +616,10 @@ fn split_array_assignment_items(
 
   for part in parts {
     match part {
-      @ast.WordPart::Literal(text) => {
+      @ast.WordPart::Literal(text) =>
         for i = 0; i < text.length(); i = i + 1 {
           let ch = text[i].to_int().unsafe_to_char()
-          if !(started) {
+          if !started {
             if array_assignment_is_space(ch) {
               continue
             }
@@ -619,9 +658,8 @@ fn split_array_assignment_items(
 
           literal_buf.write_char(ch)
         }
-      }
       _ => {
-        if !(started) || ended {
+        if !started || ended {
           return None
         }
         split_array_assignment_flush_literal(current_parts, literal_buf)
@@ -630,7 +668,7 @@ fn split_array_assignment_items(
     }
   }
 
-  if !(started) || !(ended) {
+  if !started || !ended {
     return None
   }
   if current_parts.length() > 0 || literal_buf.to_string().length() > 0 {
@@ -640,9 +678,10 @@ fn split_array_assignment_items(
   Some(items)
 }
 
+///|
 fn split_array_assignment_flush_literal(
   current_parts : Array[@ast.WordPart],
-  literal_buf : StringBuilder
+  literal_buf : StringBuilder,
 ) -> Unit {
   let lit = literal_buf.to_string()
   if lit.length() > 0 {
@@ -651,14 +690,16 @@ fn split_array_assignment_flush_literal(
   }
 }
 
+///|
 fn array_assignment_is_space(ch : Char) -> Bool {
   ch == ' ' || ch == '\t' || ch == '\n'
 }
 
+///|
 fn ExecContext::store_array_assignment(
   self : ExecContext,
   name : String,
-  values : Array[String]
+  values : Array[String],
 ) -> Unit {
   let count_key = "__MOON_BASH_ARRAY_COUNT__" + name
   let index_prefix = name + "["
@@ -685,12 +726,13 @@ fn ExecContext::store_array_assignment(
   }
 }
 
+///|
 fn ExecContext::store_array_element_assignment(
   self : ExecContext,
   base : String,
   index : String,
   value : String,
-  append : Bool
+  append : Bool,
 ) -> Unit {
   if trim_ascii_space_for_array_index(index).length() == 0 {
     self.emit_bad_array_subscript(base, "\{base}[]")
@@ -713,7 +755,11 @@ fn ExecContext::store_array_element_assignment(
   self.refresh_array_metadata(base)
 }
 
-fn ExecContext::refresh_array_metadata(self : ExecContext, name : String) -> Unit {
+///|
+fn ExecContext::refresh_array_metadata(
+  self : ExecContext,
+  name : String,
+) -> Unit {
   let prefix = name + "["
   let count_key = "__MOON_BASH_ARRAY_COUNT__" + name
   let keys : Array[String] = []
@@ -722,9 +768,12 @@ fn ExecContext::refresh_array_metadata(self : ExecContext, name : String) -> Uni
     if key == name + "[@]" || key == name + "[*]" {
       continue
     }
-    if string_has_prefix(key, prefix) && key.length() > prefix.length() &&
+    if string_has_prefix(key, prefix) &&
+      key.length() > prefix.length() &&
       key[key.length() - 1] == ']' {
-      let inner = key.view(start_offset=prefix.length(), end_offset=key.length() - 1).to_string()
+      let inner = key
+        .view(start_offset=prefix.length(), end_offset=key.length() - 1)
+        .to_owned()
       if inner != "@" && inner != "*" {
         keys.push(inner)
       }
@@ -746,6 +795,7 @@ fn ExecContext::refresh_array_metadata(self : ExecContext, name : String) -> Uni
   self.env[name] = self.env.get(name + "[0]").unwrap_or("")
 }
 
+///|
 fn join_values_for_array_storage(values : Array[String]) -> String {
   let out = StringBuilder::new()
   for i = 0; i < values.length(); i = i + 1 {
@@ -757,6 +807,7 @@ fn join_values_for_array_storage(values : Array[String]) -> String {
   out.to_string()
 }
 
+///|
 fn string_has_prefix(s : String, prefix : String) -> Bool {
   if prefix.length() > s.length() {
     return false
@@ -769,6 +820,7 @@ fn string_has_prefix(s : String, prefix : String) -> Bool {
   true
 }
 
+///|
 fn parse_array_element_assignment_name(name : String) -> (String, String)? {
   if name.length() < 3 || name[name.length() - 1] != ']' {
     return None
@@ -785,17 +837,20 @@ fn parse_array_element_assignment_name(name : String) -> (String, String)? {
     return None
   }
 
-  let base = name.view(start_offset=0, end_offset=bracket).to_string()
-  if !(is_valid_shell_name(base)) {
+  let base = name.view(start_offset=0, end_offset=bracket).to_owned()
+  if !is_valid_shell_name(base) {
     return None
   }
 
-  let raw_index = name.view(start_offset=bracket + 1, end_offset=name.length() - 1).to_string()
+  let raw_index = name
+    .view(start_offset=bracket + 1, end_offset=name.length() - 1)
+    .to_owned()
   let index = normalize_array_assignment_index(raw_index)
 
   Some((base, index))
 }
 
+///|
 fn normalize_array_assignment_index(raw_index : String) -> String {
   let trimmed = trim_ascii_space_for_array_index(raw_index)
   let cleaned = strip_array_assignment_index_markers(trimmed)
@@ -803,12 +858,15 @@ fn normalize_array_assignment_index(raw_index : String) -> String {
     let first = cleaned[0].to_int().unsafe_to_char()
     let last = cleaned[cleaned.length() - 1].to_int().unsafe_to_char()
     if (first == '"' && last == '"') || (first == '\'' && last == '\'') {
-      return cleaned.view(start_offset=1, end_offset=cleaned.length() - 1).to_string()
+      return cleaned
+        .view(start_offset=1, end_offset=cleaned.length() - 1)
+        .to_owned()
     }
   }
   cleaned
 }
 
+///|
 fn trim_ascii_space_for_array_index(s : String) -> String {
   let mut start = 0
   let mut end_ = s.length()
@@ -828,9 +886,10 @@ fn trim_ascii_space_for_array_index(s : String) -> String {
       break
     }
   }
-  s.view(start_offset=start, end_offset=end_).to_string()
+  s.view(start_offset=start, end_offset=end_).to_owned()
 }
 
+///|
 fn strip_array_assignment_index_markers(s : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -855,34 +914,32 @@ fn strip_array_assignment_index_markers(s : String) -> String {
   out.to_string()
 }
 
+///|
 fn is_valid_shell_name(name : String) -> Bool {
   if name.length() == 0 {
     return false
   }
 
   let first = name[0].to_int().unsafe_to_char()
-  if !(
-    (first >= 'a' && first <= 'z') ||
+  if !((first >= 'a' && first <= 'z') ||
     (first >= 'A' && first <= 'Z') ||
-    first == '_'
-  ) {
+    first == '_') {
     return false
   }
 
   for i = 1; i < name.length(); i = i + 1 {
     let ch = name[i].to_int().unsafe_to_char()
-    if !(
-      (ch >= 'a' && ch <= 'z') ||
+    if !((ch >= 'a' && ch <= 'z') ||
       (ch >= 'A' && ch <= 'Z') ||
       (ch >= '0' && ch <= '9') ||
-      ch == '_'
-    ) {
+      ch == '_') {
       return false
     }
   }
   true
 }
 
+///|
 fn parse_non_negative_int_for_sort(text : String) -> Int? {
   if text.length() == 0 {
     return None
@@ -898,16 +955,16 @@ fn parse_non_negative_int_for_sort(text : String) -> Int? {
   Some(value)
 }
 
-fn ExecContext::indexed_array_origin(self : ExecContext, name : String) -> Int64 {
+///|
+fn ExecContext::indexed_array_origin(
+  self : ExecContext,
+  name : String,
+) -> Int64 {
   let keys = self.collect_array_keys(name)
   let mut max_index = -1
   for key in keys {
     match parse_non_negative_int_for_sort(key) {
-      Some(idx) => {
-        if idx > max_index {
-          max_index = idx
-        }
-      }
+      Some(idx) => if idx > max_index { max_index = idx }
       None => ()
     }
   }
@@ -918,6 +975,7 @@ fn ExecContext::indexed_array_origin(self : ExecContext, name : String) -> Int64
   }
 }
 
+///|
 fn compare_text(a : String, b : String) -> Int {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
   for i = 0; i < min_len; i = i + 1 {
@@ -937,18 +995,12 @@ fn compare_text(a : String, b : String) -> Int {
   }
 }
 
+///|
 fn sort_array_keys(keys : Array[String]) -> Unit {
   keys.sort_by(fn(a, b) {
-    match (parse_non_negative_int_for_sort(a), parse_non_negative_int_for_sort(b)) {
-      (Some(ai), Some(bi)) => {
-        if ai < bi {
-          -1
-        } else if ai > bi {
-          1
-        } else {
-          0
-        }
-      }
+    match
+      (parse_non_negative_int_for_sort(a), parse_non_negative_int_for_sort(b)) {
+      (Some(ai), Some(bi)) => if ai < bi { -1 } else if ai > bi { 1 } else { 0 }
       (Some(_), None) => -1
       (None, Some(_)) => 1
       (None, None) => compare_text(a, b)
@@ -956,6 +1008,7 @@ fn sort_array_keys(keys : Array[String]) -> Unit {
   })
 }
 
+///|
 fn ExecContext::enforce_output_size_limit(self : ExecContext) -> Unit {
   if self.should_exit {
     return
@@ -966,11 +1019,12 @@ fn ExecContext::enforce_output_size_limit(self : ExecContext) -> Unit {
   }
 }
 
+///|
 fn snapshot_array_env_entries(
   env : Map[String, String],
-  name : String
+  name : String,
 ) -> Map[String, String] {
-  let saved : Map[String, String] = {}
+  let saved : Map[String, String] = Map([])
   let prefix = name + "["
   let count_key = "__MOON_BASH_ARRAY_COUNT__" + name
   for key, value in env {
@@ -985,10 +1039,11 @@ fn snapshot_array_env_entries(
   saved
 }
 
+///|
 fn ExecContext::restore_array_env_entries(
   self : ExecContext,
   name : String,
-  saved : Map[String, String]
+  saved : Map[String, String],
 ) -> Unit {
   let prefix = name + "["
   let count_key = "__MOON_BASH_ARRAY_COUNT__" + name
@@ -1010,7 +1065,11 @@ fn ExecContext::restore_array_env_entries(
   }
 }
 
-fn ExecContext::collect_array_values(self : ExecContext, name : String) -> Array[String] {
+///|
+fn ExecContext::collect_array_values(
+  self : ExecContext,
+  name : String,
+) -> Array[String] {
   let keys = self.collect_array_keys(name)
   let values : Array[String] = []
   for key in keys {
@@ -1019,10 +1078,13 @@ fn ExecContext::collect_array_values(self : ExecContext, name : String) -> Array
   values
 }
 
-fn ExecContext::build_external_command_env(self : ExecContext) -> Map[String, String] {
-  let out : Map[String, String] = {}
+///|
+fn ExecContext::build_external_command_env(
+  self : ExecContext,
+) -> Map[String, String] {
+  let out : Map[String, String] = Map([])
   for name, enabled in self.exported {
-    if !(enabled) {
+    if !enabled {
       continue
     }
     // Arrays are shell-only data structures and are not exported to external
@@ -1039,14 +1101,17 @@ fn ExecContext::build_external_command_env(self : ExecContext) -> Map[String, St
 // Command Dispatch
 // ============================================================================
 
+///|
 fn is_virtual_command_stub_content(content : String) -> Bool {
-  content.length() == 0 || string_has_prefix(content, command_stub_marker_prefix)
+  content.length() == 0 ||
+  string_has_prefix(content, command_stub_marker_prefix)
 }
 
+///|
 fn ExecContext::run_virtual_command(
   self : ExecContext,
   name : String,
-  args : Array[String]
+  args : Array[String],
 ) -> Bool {
   if self.run_builtin(name, args) {
     self.remember_hashed_command(name)
@@ -1073,10 +1138,11 @@ fn ExecContext::run_virtual_command(
   }
 }
 
+///|
 fn ExecContext::try_dispatch_virtual_command_stub(
   self : ExecContext,
   resolved_path : String,
-  args : Array[String]
+  args : Array[String],
 ) -> Bool {
   let parent = @fs.parent_path(resolved_path)
   if parent != "/bin" && parent != "/usr/bin" {
@@ -1085,7 +1151,7 @@ fn ExecContext::try_dispatch_virtual_command_stub(
 
   match self.fs.entries.get(resolved_path) {
     Some(@fs.FsEntry::File(data)) => {
-      if !(is_virtual_command_stub_content(data.content)) {
+      if !is_virtual_command_stub_content(data.content) {
         return false
       }
       let name = @fs.basename(resolved_path)
@@ -1095,24 +1161,21 @@ fn ExecContext::try_dispatch_virtual_command_stub(
   }
 }
 
+///|
 fn ExecContext::execute_script_file_command(
   self : ExecContext,
   resolved_path : String,
   args : Array[String],
-  display_name : String
+  display_name : String,
 ) -> Unit {
-  let content = try {
-    self.fs.read_file(resolved_path)
-  } catch {
+  let content = self.fs.read_file(resolved_path) catch {
     @fs.FsError(msg) => {
       self.stderr_buf.write_string("moon_bash: \{display_name}: \{msg}\n")
       self.exit_code = 126
       return
     }
   }
-  let parsed = try {
-    @parser.parse(content)
-  } catch {
+  let parsed = @parser.parse(content) catch {
     @ast.BashError(msg) => {
       self.stderr_buf.write_string("moon_bash: \{display_name}: \{msg}\n")
       self.exit_code = 2
@@ -1131,43 +1194,43 @@ fn ExecContext::execute_script_file_command(
   self.set_positional_parameters(saved_values)
 }
 
+///|
 fn ExecContext::try_execute_resolved_path_command(
   self : ExecContext,
   original_name : String,
   resolved_path : String,
-  args : Array[String]
+  args : Array[String],
 ) -> Bool {
   if self.try_dispatch_virtual_command_stub(resolved_path, args) {
     return true
   }
   match self.fs.entries.get(resolved_path) {
-    Some(entry) => {
+    Some(entry) =>
       match entry {
         @fs.FsEntry::Directory(_) => false
-        _ => {
-          if !(command_is_executable_entry(entry)) {
+        _ =>
+          if !command_is_executable_entry(entry) {
             false
           } else {
             self.execute_script_file_command(resolved_path, args, original_name)
             true
           }
-        }
       }
-    }
     None => false
   }
 }
 
+///|
 fn ExecContext::run_explicit_path_command(
   self : ExecContext,
   original_name : String,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
-  let resolved_path = try {
-    @fs.resolve_path(self.cwd, original_name)
-  } catch {
+  let resolved_path = @fs.resolve_path(self.cwd, original_name) catch {
     _ => {
-      self.stderr_buf.write_string("moon_bash: \{original_name}: command not found\n")
+      self.stderr_buf.write_string(
+        "moon_bash: \{original_name}: command not found\n",
+      )
       self.exit_code = 127
       return
     }
@@ -1175,7 +1238,9 @@ fn ExecContext::run_explicit_path_command(
 
   match self.fs.entries.get(resolved_path) {
     Some(@fs.FsEntry::Directory(_)) => {
-      self.stderr_buf.write_string("moon_bash: \{original_name}: Is a directory\n")
+      self.stderr_buf.write_string(
+        "moon_bash: \{original_name}: Is a directory\n",
+      )
       self.exit_code = 126
       return
     }
@@ -1183,8 +1248,10 @@ fn ExecContext::run_explicit_path_command(
       if self.try_dispatch_virtual_command_stub(resolved_path, args) {
         return
       }
-      if !(command_is_executable_entry(entry)) {
-        self.stderr_buf.write_string("moon_bash: \{original_name}: Permission denied\n")
+      if !command_is_executable_entry(entry) {
+        self.stderr_buf.write_string(
+          "moon_bash: \{original_name}: Permission denied\n",
+        )
         self.exit_code = 126
         return
       }
@@ -1197,7 +1264,8 @@ fn ExecContext::run_explicit_path_command(
   let parent = @fs.parent_path(resolved_path)
   if parent == "/bin" || parent == "/usr/bin" {
     let basename = @fs.basename(resolved_path)
-    if command_has_virtual_external(basename) || is_lookup_shell_builtin(basename) {
+    if command_has_virtual_external(basename) ||
+      is_lookup_shell_builtin(basename) {
       let saved_skip = self.env.get(command_skip_function_lookup_key)
       self.env[command_skip_function_lookup_key] = "1"
       self.run_command(basename, args)
@@ -1209,14 +1277,17 @@ fn ExecContext::run_explicit_path_command(
     }
   }
 
-  self.stderr_buf.write_string("moon_bash: \{original_name}: command not found\n")
+  self.stderr_buf.write_string(
+    "moon_bash: \{original_name}: command not found\n",
+  )
   self.exit_code = 127
 }
 
+///|
 fn ExecContext::run_command(
   self : ExecContext,
   name : String,
-  args : Array[String]
+  args : Array[String],
 ) -> Unit {
   let original_name = name
   let dispatch_name = name
@@ -1229,7 +1300,7 @@ fn ExecContext::run_command(
   }
 
   // 1. Check functions (unless command/builtin explicitly disabled function lookup).
-  if !(skip_functions) {
+  if !skip_functions {
     match self.functions.get(dispatch_name) {
       Some(fndef) => {
         self.call_depth += 1
@@ -1238,7 +1309,10 @@ fn ExecContext::run_command(
           self.call_depth -= 1
           return
         }
-        let saved_funcname_entries = snapshot_array_env_entries(self.env, "FUNCNAME")
+        let saved_funcname_entries = snapshot_array_env_entries(
+          self.env,
+          "FUNCNAME",
+        )
         let previous_func_stack = self.collect_array_values("FUNCNAME")
         let current_func_stack : Array[String] = [dispatch_name]
         for fn_name in previous_func_stack {
@@ -1248,10 +1322,15 @@ fn ExecContext::run_command(
         // Save positional params
         let saved_args = self.env.get("@").unwrap_or("")
         let saved_argc = self.env.get("#").unwrap_or("")
-        self.env["@"] = args.iter().fold(
-          init="",
-          fn(acc, a) { if acc.length() == 0 { a } else { acc + " " + a } },
-        )
+        self.env["@"] = args
+          .iter()
+          .fold(init="", fn(acc, a) {
+            if acc.length() == 0 {
+              a
+            } else {
+              acc + " " + a
+            }
+          })
         self.env["#"] = args.length().to_string()
         for i = 0; i < args.length(); i = i + 1 {
           self.env[(i + 1).to_string()] = args[i]
@@ -1275,8 +1354,10 @@ fn ExecContext::run_command(
   }
 
   // 2. Optional command allowlist
-  if !(self.command_allowed(dispatch_name)) {
-    self.stderr_buf.write_string("moon_bash: \{original_name}: command not found\n")
+  if !self.command_allowed(dispatch_name) {
+    self.stderr_buf.write_string(
+      "moon_bash: \{original_name}: command not found\n",
+    )
     self.exit_code = 127
     return
   }
@@ -1290,11 +1371,11 @@ fn ExecContext::run_command(
     } else {
       args[0]
     }
-    let resolved = try {
-      @fs.resolve_path(self.cwd, target)
-    } catch {
+    let resolved = @fs.resolve_path(self.cwd, target) catch {
       _ => {
-        self.stderr_buf.write_string("cd: No such file or directory: \{target}\n")
+        self.stderr_buf.write_string(
+          "cd: No such file or directory: \{target}\n",
+        )
         self.exit_code = 1
         return
       }
@@ -1314,7 +1395,9 @@ fn ExecContext::run_command(
         self.exit_code = 1
       }
       None => {
-        self.stderr_buf.write_string("cd: No such file or directory: \{target}\n")
+        self.stderr_buf.write_string(
+          "cd: No such file or directory: \{target}\n",
+        )
         self.exit_code = 1
       }
     }
@@ -1329,14 +1412,12 @@ fn ExecContext::run_command(
   }
 
   // 5. Check hashed path entries unless command -p forced default PATH.
-  if !(use_default_path) {
+  if !use_default_path {
     match self.lookup_hashed_command_path(dispatch_name) {
       Some(hashed_path) => {
         if self.try_execute_resolved_path_command(
-          original_name,
-          hashed_path,
-          args,
-        ) {
+            original_name, hashed_path, args,
+          ) {
           return
         }
         self.clear_hashed_command(dispatch_name)
@@ -1347,12 +1428,13 @@ fn ExecContext::run_command(
 
   // 6. Check PATH for executable files.
   match self.first_path_command_match(dispatch_name, use_default_path, false) {
-    Some((_display, resolved_path, _is_virtual)) => {
-      if self.try_execute_resolved_path_command(original_name, resolved_path, args) {
+    Some((_display, resolved_path, _is_virtual)) =>
+      if self.try_execute_resolved_path_command(
+          original_name, resolved_path, args,
+        ) {
         self.remember_hashed_command_path(dispatch_name, resolved_path)
         return
       }
-    }
     None => ()
   }
 
@@ -1362,10 +1444,13 @@ fn ExecContext::run_command(
   }
 
   // 8. Command not found
-  self.stderr_buf.write_string("moon_bash: \{original_name}: command not found\n")
+  self.stderr_buf.write_string(
+    "moon_bash: \{original_name}: command not found\n",
+  )
   self.exit_code = 127
 }
 
+///|
 fn contains_slash(name : String) -> Bool {
   for i = 0; i < name.length(); i = i + 1 {
     if name[i].to_int().unsafe_to_char() == '/' {
@@ -1375,28 +1460,26 @@ fn contains_slash(name : String) -> Bool {
   false
 }
 
+///|
 fn ExecContext::apply_errexit_after_pipeline(
   self : ExecContext,
   pipeline : @ast.Pipeline,
-  next_op : Int?
+  next_op : Int?,
 ) -> Unit {
-  if self.should_exit || !(self.options.errexit) || self.exit_code == 0 {
+  if self.should_exit || !self.options.errexit || self.exit_code == 0 {
     return
   }
   if pipeline.negated {
     return
   }
   match next_op {
-    Some(op) => {
-      if op == 1 || op == 2 {
-        return
-      }
-    }
+    Some(op) => if op == 1 || op == 2 { return }
     None => ()
   }
   self.should_exit = true
 }
 
+///|
 fn ExecContext::command_allowed(self : ExecContext, name : String) -> Bool {
   match self.env.get("__MOON_BASH_ALLOWED_COMMANDS") {
     None => true

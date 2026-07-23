@@ -1,7 +1,9 @@
 // moon_bash Interpreter - Alias Processing and Assignment Helpers
 
+///|
 let alias_runtime_disable_key : String = "__MOON_BASH_ALIAS_EXPANSION_DISABLED"
 
+///|
 fn alias_expansion_candidate_name(word : @ast.Word) -> String? {
   if word.parts.length() == 0 {
     return None
@@ -21,10 +23,12 @@ fn alias_expansion_candidate_name(word : @ast.Word) -> String? {
   }
 }
 
+///|
 fn alias_is_blank_char(ch : Char) -> Bool {
   ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }
 
+///|
 fn alias_is_operator_char(ch : Char) -> Bool {
   ch == ';' ||
   ch == '|' ||
@@ -37,11 +41,12 @@ fn alias_is_operator_char(ch : Char) -> Bool {
   ch == '}'
 }
 
+///|
 fn alias_first_word_span(source : String) -> (Int, Int, String)? {
   let mut i = 0
   while i < source.length() {
     let ch = source[i].to_int().unsafe_to_char()
-    if !(alias_is_blank_char(ch)) {
+    if !alias_is_blank_char(ch) {
       break
     }
     i += 1
@@ -77,6 +82,7 @@ fn alias_first_word_span(source : String) -> (Int, Int, String)? {
   }
 }
 
+///|
 fn append_alias_call_args(source : String, args : Array[String]) -> String {
   if args.length() == 0 {
     return source
@@ -86,7 +92,7 @@ fn append_alias_call_args(source : String, args : Array[String]) -> String {
   out.write_string(source)
   if source.length() > 0 {
     let last = source[source.length() - 1].to_int().unsafe_to_char()
-    if !(alias_is_blank_char(last)) {
+    if !alias_is_blank_char(last) {
       out.write_char(' ')
     }
   }
@@ -99,17 +105,18 @@ fn append_alias_call_args(source : String, args : Array[String]) -> String {
   out.to_string()
 }
 
+///|
 fn ExecContext::resolve_alias_command_source(
   self : ExecContext,
   alias_name : String,
-  args : Array[String]
+  args : Array[String],
 ) -> String? {
   let mut source = match self.lookup_alias_value(alias_name) {
     Some(value) => value
     None => return None
   }
 
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   seen[alias_name] = true
 
   let mut steps = 0
@@ -123,8 +130,7 @@ fn ExecContext::resolve_alias_command_source(
         match self.lookup_alias_value(first_word) {
           Some(next_value) => {
             seen[first_word] = true
-            source =
-              substring_slice(source, 0, start) +
+            source = substring_slice(source, 0, start) +
               next_value +
               substring_slice(source, end_, source.length())
           }
@@ -138,13 +144,14 @@ fn ExecContext::resolve_alias_command_source(
   Some(append_alias_call_args(source, args))
 }
 
+///|
 fn ExecContext::try_execute_alias_command(
   self : ExecContext,
   alias_candidate : String?,
   args : Array[String],
-  has_multiline_literal_arg : Bool
+  has_multiline_literal_arg : Bool,
 ) -> Bool {
-  if !(self.shopt_is_enabled("expand_aliases")) {
+  if !self.shopt_is_enabled("expand_aliases") {
     return false
   }
   if self.env.get(alias_runtime_disable_key).unwrap_or("") == "1" {
@@ -166,9 +173,7 @@ fn ExecContext::try_execute_alias_command(
     return true
   }
 
-  let parsed = try {
-    @parser.parse(source)
-  } catch {
+  let parsed = @parser.parse(source) catch {
     @ast.BashError(_msg) => {
       self.exit_code = 2
       return true
@@ -185,6 +190,7 @@ fn ExecContext::try_execute_alias_command(
   true
 }
 
+///|
 fn alias_call_has_multiline_literal_arg(words : Array[@ast.Word]) -> Bool {
   if words.length() <= 1 {
     return false
@@ -197,6 +203,7 @@ fn alias_call_has_multiline_literal_arg(words : Array[@ast.Word]) -> Bool {
   false
 }
 
+///|
 fn word_has_literal_newline(word : @ast.Word) -> Bool {
   for part in word.parts {
     if word_part_has_literal_newline(part) {
@@ -206,6 +213,7 @@ fn word_has_literal_newline(word : @ast.Word) -> Bool {
   false
 }
 
+///|
 fn word_part_has_literal_newline(part : @ast.WordPart) -> Bool {
   match part {
     @ast.WordPart::Literal(text) => contains_char(text, '\n')
@@ -222,6 +230,7 @@ fn word_part_has_literal_newline(part : @ast.WordPart) -> Bool {
   }
 }
 
+///|
 fn contains_char(text : String, target : Char) -> Bool {
   for i = 0; i < text.length(); i = i + 1 {
     if text[i].to_int().unsafe_to_char() == target {
@@ -231,9 +240,10 @@ fn contains_char(text : String, target : Char) -> Bool {
   false
 }
 
+///|
 fn ExecContext::resolve_array_assignment_target(
   self : ExecContext,
-  raw_name : String
+  raw_name : String,
 ) -> (String, String)? {
   match parse_array_element_assignment_name(raw_name) {
     Some((base, index_expr)) => {
@@ -246,7 +256,11 @@ fn ExecContext::resolve_array_assignment_target(
       if self.should_exit {
         return Some((base, index_expr))
       }
-      let mut resolved_index = if expanded_index.length() > 0 { expanded_index } else { trimmed }
+      let mut resolved_index = if expanded_index.length() > 0 {
+        expanded_index
+      } else {
+        trimmed
+      }
       if arith_is_identifier_text(trimmed) {
         let dynamic_raw = self.env.get(trimmed).unwrap_or("")
         if dynamic_raw.length() > 0 {
@@ -254,7 +268,11 @@ fn ExecContext::resolve_array_assignment_target(
           if self.should_exit {
             return Some((base, index_expr))
           }
-          resolved_index = if dynamic_expanded.length() > 0 { dynamic_expanded } else { dynamic_raw }
+          resolved_index = if dynamic_expanded.length() > 0 {
+            dynamic_expanded
+          } else {
+            dynamic_raw
+          }
         }
       }
       if contains_char(resolved_index, '$') {
@@ -297,6 +315,7 @@ fn ExecContext::resolve_array_assignment_target(
   }
 }
 
+///|
 fn word_has_status_sensitive_expansion(word : @ast.Word) -> Bool {
   for part in word.parts {
     if word_part_has_status_sensitive_expansion(part) {
@@ -306,6 +325,7 @@ fn word_has_status_sensitive_expansion(word : @ast.Word) -> Bool {
   false
 }
 
+///|
 fn word_part_has_status_sensitive_expansion(part : @ast.WordPart) -> Bool {
   match part {
     @ast.WordPart::CommandSubstitution(_) => true
@@ -334,20 +354,26 @@ fn word_part_has_status_sensitive_expansion(part : @ast.WordPart) -> Bool {
   }
 }
 
+///|
 fn param_expansion_has_status_sensitive_expansion(
-  expansion : @ast.ParamExpansion
+  expansion : @ast.ParamExpansion,
 ) -> Bool {
   match expansion {
-    @ast.ParamExpansion::Default(_, word, _) => word_has_status_sensitive_expansion(word)
-    @ast.ParamExpansion::Assign(_, word, _) => word_has_status_sensitive_expansion(word)
+    @ast.ParamExpansion::Default(_, word, _) =>
+      word_has_status_sensitive_expansion(word)
+    @ast.ParamExpansion::Assign(_, word, _) =>
+      word_has_status_sensitive_expansion(word)
     @ast.ParamExpansion::Error(_, maybe_word, _) =>
       match maybe_word {
         Some(word) => word_has_status_sensitive_expansion(word)
         None => false
       }
-    @ast.ParamExpansion::Alternative(_, word, _) => word_has_status_sensitive_expansion(word)
-    @ast.ParamExpansion::PrefixRemove(_, word, _) => word_has_status_sensitive_expansion(word)
-    @ast.ParamExpansion::SuffixRemove(_, word, _) => word_has_status_sensitive_expansion(word)
+    @ast.ParamExpansion::Alternative(_, word, _) =>
+      word_has_status_sensitive_expansion(word)
+    @ast.ParamExpansion::PrefixRemove(_, word, _) =>
+      word_has_status_sensitive_expansion(word)
+    @ast.ParamExpansion::SuffixRemove(_, word, _) =>
+      word_has_status_sensitive_expansion(word)
     @ast.ParamExpansion::Replace(_, pattern, maybe_repl, _) => {
       if word_has_status_sensitive_expansion(pattern) {
         return true
@@ -371,6 +397,7 @@ fn param_expansion_has_status_sensitive_expansion(
   }
 }
 
+///|
 fn is_grep_like_command(cmd_name : String) -> Bool {
   cmd_name == "grep" ||
   cmd_name == "egrep" ||
@@ -378,19 +405,21 @@ fn is_grep_like_command(cmd_name : String) -> Bool {
   cmd_name == "rg"
 }
 
+///|
 fn ExecContext::store_scalar_assignment(
   self : ExecContext,
   name : String,
-  value : String
+  value : String,
 ) -> Bool {
   self.store_scalar_assignment_with_options(name, value, true)
 }
 
+///|
 fn ExecContext::store_scalar_assignment_with_options(
   self : ExecContext,
   name : String,
   value : String,
-  enforce_readonly : Bool
+  enforce_readonly : Bool,
 ) -> Bool {
   if enforce_readonly && self.is_readonly_variable(name) {
     self.stderr_buf.write_string("moon_bash: \{name}: readonly variable\n")

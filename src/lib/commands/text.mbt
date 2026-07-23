@@ -1,6 +1,7 @@
 // moon_bash Commands - Text Processing
 // head, tail, wc
 
+///|
 /// Safely extract substring from start index to end of string.
 fn cmd_substr_from(s : String, start : Int) -> String {
   let buf = StringBuilder::new()
@@ -10,6 +11,7 @@ fn cmd_substr_from(s : String, start : Int) -> String {
   buf.to_string()
 }
 
+///|
 /// Safely extract substring from [start, end).
 fn cmd_substr_slice(s : String, start : Int, end_ : Int) -> String {
   let mut start = start
@@ -30,6 +32,7 @@ fn cmd_substr_slice(s : String, start : Int, end_ : Int) -> String {
   buf.to_string()
 }
 
+///|
 /// Helper to split string into lines
 fn cmd_split_lines(s : String) -> Array[String] {
   let result : Array[String] = []
@@ -50,6 +53,7 @@ fn cmd_split_lines(s : String) -> Array[String] {
   result
 }
 
+///|
 /// Helper to parse an integer from a string
 fn cmd_parse_int(s : String) -> Int64 {
   let mut result = 0L
@@ -69,9 +73,14 @@ fn cmd_parse_int(s : String) -> Int64 {
       break
     }
   }
-  if neg { -result } else { result }
+  if neg {
+    -result
+  } else {
+    result
+  }
 }
 
+///|
 /// head: output the first N lines (default 10)
 fn cmd_head(ctx : CommandContext) -> @ast.ExecResult {
   let mut num_lines = 10
@@ -112,7 +121,11 @@ fn cmd_head(ctx : CommandContext) -> @ast.ExecResult {
       }
       None => {
         let lines = cmd_split_lines(ctx.stdin_content)
-        let count = if num_lines < lines.length() { num_lines } else { lines.length() }
+        let count = if num_lines < lines.length() {
+          num_lines
+        } else {
+          lines.length()
+        }
         for j = 0; j < count; j = j + 1 {
           out.write_string(lines[j])
           out.write_char('\n')
@@ -124,14 +137,10 @@ fn cmd_head(ctx : CommandContext) -> @ast.ExecResult {
 
   for file_idx = 0; file_idx < input_files.length(); file_idx = file_idx + 1 {
     let path = input_files[file_idx]
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, path)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, path) catch {
       @fs.FsError(msg) => return @ast.ExecResult::err("head: \{msg}\n")
     }
-    let input = try {
-      ctx.fs.read_file(resolved)
-    } catch {
+    let input = ctx.fs.read_file(resolved) catch {
       @fs.FsError(msg) => return @ast.ExecResult::err("head: \{msg}\n")
     }
 
@@ -149,7 +158,11 @@ fn cmd_head(ctx : CommandContext) -> @ast.ExecResult {
       }
       None => {
         let lines = cmd_split_lines(input)
-        let count = if num_lines < lines.length() { num_lines } else { lines.length() }
+        let count = if num_lines < lines.length() {
+          num_lines
+        } else {
+          lines.length()
+        }
         for j = 0; j < count; j = j + 1 {
           out.write_string(lines[j])
           out.write_char('\n')
@@ -161,6 +174,7 @@ fn cmd_head(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::ok(out.to_string())
 }
 
+///|
 /// tail: output the last N lines (default 10)
 fn cmd_tail(ctx : CommandContext) -> @ast.ExecResult {
   let mut num_lines = 10
@@ -172,7 +186,7 @@ fn cmd_tail(ctx : CommandContext) -> @ast.ExecResult {
       let arg = ctx.args[i + 1]
       if arg.has_prefix("+") {
         // tail -n +N means starting from line N
-        num_lines = -(cmd_parse_int(cmd_substr_from(arg, 1)).to_int())
+        num_lines = -cmd_parse_int(cmd_substr_from(arg, 1)).to_int()
       } else {
         num_lines = cmd_parse_int(arg).to_int()
       }
@@ -180,7 +194,7 @@ fn cmd_tail(ctx : CommandContext) -> @ast.ExecResult {
     } else if ctx.args[i].has_prefix("-n") && ctx.args[i].length() > 2 {
       let arg = cmd_substr_from(ctx.args[i], 2)
       if arg.has_prefix("+") {
-        num_lines = -(cmd_parse_int(cmd_substr_from(arg, 1)).to_int())
+        num_lines = -cmd_parse_int(cmd_substr_from(arg, 1)).to_int()
       } else {
         num_lines = cmd_parse_int(arg).to_int()
       }
@@ -211,7 +225,9 @@ fn cmd_tail(ctx : CommandContext) -> @ast.ExecResult {
         } else {
           ctx.stdin_content.length() - count
         }
-        out.write_string(cmd_substr_slice(ctx.stdin_content, start, ctx.stdin_content.length()))
+        out.write_string(
+          cmd_substr_slice(ctx.stdin_content, start, ctx.stdin_content.length()),
+        )
       }
       None => {
         let lines = cmd_split_lines(ctx.stdin_content)
@@ -240,14 +256,10 @@ fn cmd_tail(ctx : CommandContext) -> @ast.ExecResult {
 
   for file_idx = 0; file_idx < input_files.length(); file_idx = file_idx + 1 {
     let path = input_files[file_idx]
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, path)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, path) catch {
       @fs.FsError(msg) => return @ast.ExecResult::err("tail: \{msg}\n")
     }
-    let input = try {
-      ctx.fs.read_file(resolved)
-    } catch {
+    let input = ctx.fs.read_file(resolved) catch {
       @fs.FsError(msg) => return @ast.ExecResult::err("tail: \{msg}\n")
     }
 
@@ -295,6 +307,7 @@ fn cmd_tail(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::ok(out.to_string())
 }
 
+///|
 /// wc: word, line, character count
 fn cmd_wc_count(input : String) -> (Int, Int, Int) {
   // Count lines
@@ -312,7 +325,7 @@ fn cmd_wc_count(input : String) -> (Int, Int, Int) {
     let ch = input[i].to_int().unsafe_to_char()
     if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
       in_word = false
-    } else if !(in_word) {
+    } else if !in_word {
       word_count += 1
       in_word = true
     }
@@ -323,6 +336,7 @@ fn cmd_wc_count(input : String) -> (Int, Int, Int) {
   (line_count, word_count, char_count)
 }
 
+///|
 fn cmd_wc_write_row(
   out : StringBuilder,
   line_count : Int,
@@ -334,11 +348,11 @@ fn cmd_wc_write_row(
   line_width : Int,
   word_width : Int,
   char_width : Int,
-  label : String?
+  label : String?,
 ) -> Unit {
   let mut first = true
   let write_col = (value : Int, width : Int) => {
-    if !(first) {
+    if !first {
       out.write_char(' ')
     }
     let text = value.to_string()
@@ -368,6 +382,7 @@ fn cmd_wc_write_row(
   out.write_char('\n')
 }
 
+///|
 fn cmd_wc(ctx : CommandContext) -> @ast.ExecResult {
   let mut flag_lines = false
   let mut flag_words = false
@@ -379,9 +394,18 @@ fn cmd_wc(ctx : CommandContext) -> @ast.ExecResult {
       "-l" => flag_lines = true
       "-w" => flag_words = true
       "-c" | "-m" => flag_chars = true
-      "-lw" | "-wl" => { flag_lines = true; flag_words = true }
-      "-lc" | "-cl" => { flag_lines = true; flag_chars = true }
-      "-wc" | "-cw" => { flag_words = true; flag_chars = true }
+      "-lw" | "-wl" => {
+        flag_lines = true
+        flag_words = true
+      }
+      "-lc" | "-cl" => {
+        flag_lines = true
+        flag_chars = true
+      }
+      "-wc" | "-cw" => {
+        flag_words = true
+        flag_chars = true
+      }
       "-lwc" | "-lcw" | "-wlc" | "-wcl" | "-clw" | "-cwl" => {
         flag_lines = true
         flag_words = true
@@ -392,7 +416,7 @@ fn cmd_wc(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   // Default: show all
-  if !(flag_lines) && !(flag_words) && !(flag_chars) {
+  if !flag_lines && !flag_words && !flag_chars {
     flag_lines = true
     flag_words = true
     flag_chars = true
@@ -425,14 +449,10 @@ fn cmd_wc(ctx : CommandContext) -> @ast.ExecResult {
 
   for path in input_files {
     let input = {
-      let resolved = try {
-        @fs.resolve_path(ctx.cwd, path)
-      } catch {
+      let resolved = @fs.resolve_path(ctx.cwd, path) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("wc: \{msg}\n")
       }
-      try {
-        ctx.fs.read_file(resolved)
-      } catch {
+      ctx.fs.read_file(resolved) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("wc: \{msg}\n")
       }
     }

@@ -5,6 +5,7 @@
 // Execution Context
 // ============================================================================
 
+///|
 pub(all) struct ExecContext {
   // Environment
   mut env : Map[String, String]
@@ -42,15 +43,16 @@ pub(all) struct ExecContext {
   mut current_script : String
 }
 
+///|
 /// Create a new execution context.
 pub fn ExecContext::new(
   fs : @fs.InMemoryFs,
-  env~ : Map[String, String] = {},
-  cwd~ : String = "/home/user",
-  limits~ : @ast.ExecutionLimits = @ast.ExecutionLimits::default()
+  env? : Map[String, String] = Map([]),
+  cwd? : String = "/home/user",
+  limits? : @ast.ExecutionLimits = @ast.ExecutionLimits::default(),
 ) -> ExecContext {
-  let default_env : Map[String, String] = {}
-  let default_exported : Map[String, Bool] = {}
+  let default_env : Map[String, String] = Map([])
+  let default_exported : Map[String, Bool] = Map([])
   default_env["HOME"] = "/home/user"
   default_env["PATH"] = "/usr/bin:/bin"
   default_env["USER"] = "user"
@@ -72,7 +74,7 @@ pub fn ExecContext::new(
     env: default_env,
     exported: default_exported,
     cwd,
-    functions: {},
+    functions: Map([]),
     options: @ast.ShellOptions::default(),
     stdin_buf: initial_stdin,
     stdout_buf: StringBuilder::new(),
@@ -93,10 +95,11 @@ pub fn ExecContext::new(
   }
 }
 
+///|
 /// Parse and execute a script string.
 pub fn ExecContext::execute(
   self : ExecContext,
-  script : String
+  script : String,
 ) -> @ast.ExecResult {
   // Reset I/O buffers
   self.stdout_buf = StringBuilder::new()
@@ -107,11 +110,12 @@ pub fn ExecContext::execute(
   self.glob_operations = 0
   self.current_script = script
 
-  let parsed = try {
-    @parser.parse(script)
-  } catch {
+  let parsed = @parser.parse(script) catch {
     @ast.BashError(msg) =>
-      return @ast.ExecResult::new(stderr="syntax error: " + msg + "\n", exit_code=2)
+      return @ast.ExecResult::new(
+        stderr="syntax error: " + msg + "\n",
+        exit_code=2,
+      )
   }
   self.execute_script(parsed)
   @ast.ExecResult::new(

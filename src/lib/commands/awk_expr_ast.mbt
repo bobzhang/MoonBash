@@ -1,5 +1,6 @@
 // moon_bash Commands - awk expression AST parser/evaluator
 
+///|
 priv enum AwkExprAst {
   Raw(String)
   Call(String, Array[AwkExprAst], Array[String])
@@ -12,21 +13,26 @@ priv enum AwkExprAst {
   Binary(String, AwkExprAst, AwkExprAst)
 } derive(Debug)
 
+///|
 priv struct AwkExprEvalState {
   mut out : StringBuilder?
 }
 
+///|
 let awk_expr_eval_state : AwkExprEvalState = { out: None }
 
+///|
 fn awk_set_active_expr_output(out : StringBuilder?) -> Unit {
   awk_expr_eval_state.out = out
 }
 
+///|
 fn awk_is_regex_literal_expr(text : String) -> Bool {
   let t = aj_trim(text)
   t.length() >= 2 && aj_starts_with(t, "/") && aj_ends_with(t, "/")
 }
 
+///|
 fn awk_expr_assignment_target_valid(lhs : String) -> Bool {
   let t = aj_trim(lhs)
   if awk_is_identifier(t) {
@@ -38,6 +44,7 @@ fn awk_expr_assignment_target_valid(lhs : String) -> Bool {
   }
 }
 
+///|
 fn awk_parse_expr_ast(expr : String) -> AwkExprAst {
   let t = awk_strip_outer_parens(aj_trim(expr))
   if t.length() == 0 {
@@ -79,7 +86,10 @@ fn awk_parse_expr_ast(expr : String) -> AwkExprAst {
     } else {
       None
     }
-    if prev != '!' && prev != '<' && prev != '>' && prev != '=' &&
+    if prev != '!' &&
+      prev != '<' &&
+      prev != '>' &&
+      prev != '=' &&
       next != Some('=') {
       let lhs = aj_trim(aj_substr(t, 0, eq_idx))
       if awk_expr_assignment_target_valid(lhs) {
@@ -260,6 +270,7 @@ fn awk_parse_expr_ast(expr : String) -> AwkExprAst {
   Raw(t)
 }
 
+///|
 fn awk_eval_call_expr_ast(
   call_name : String,
   args_ast : Array[AwkExprAst],
@@ -269,7 +280,7 @@ fn awk_eval_call_expr_ast(
   nr : Int,
   nf : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> String {
   let eval_arg = fn(idx : Int) {
     if idx >= 0 && idx < args_ast.length() {
@@ -333,47 +344,27 @@ fn awk_eval_call_expr_ast(
   }
 
   if call_name == "sin" {
-    let value = if args_ast.length() > 0 {
-      eval_arg_number(0)
-    } else {
-      0.0
-    }
+    let value = if args_ast.length() > 0 { eval_arg_number(0) } else { 0.0 }
     return awk_number_to_string(@math.sin(value))
   }
 
   if call_name == "cos" {
-    let value = if args_ast.length() > 0 {
-      eval_arg_number(0)
-    } else {
-      0.0
-    }
+    let value = if args_ast.length() > 0 { eval_arg_number(0) } else { 0.0 }
     return awk_number_to_string(@math.cos(value))
   }
 
   if call_name == "exp" {
-    let value = if args_ast.length() > 0 {
-      eval_arg_number(0)
-    } else {
-      0.0
-    }
+    let value = if args_ast.length() > 0 { eval_arg_number(0) } else { 0.0 }
     return awk_number_to_string(@math.exp(value))
   }
 
   if call_name == "log" {
-    let value = if args_ast.length() > 0 {
-      eval_arg_number(0)
-    } else {
-      0.0
-    }
+    let value = if args_ast.length() > 0 { eval_arg_number(0) } else { 0.0 }
     return awk_number_to_string(@math.ln(value))
   }
 
   if call_name == "sqrt" {
-    let value = if args_ast.length() > 0 {
-      eval_arg_number(0)
-    } else {
-      0.0
-    }
+    let value = if args_ast.length() > 0 { eval_arg_number(0) } else { 0.0 }
     return awk_number_to_string(value.sqrt())
   }
 
@@ -418,7 +409,15 @@ fn awk_eval_call_expr_ast(
       let source = eval_arg(0)
       let arr_name = aj_trim(args_raw[1])
       let delim = if args_raw.length() >= 3 {
-        awk_eval_split_delim(args_raw[2], line, fields, nr, nf, vars, array_vars)
+        awk_eval_split_delim(
+          args_raw[2],
+          line,
+          fields,
+          nr,
+          nf,
+          vars,
+          array_vars,
+        )
       } else {
         awk_current_fs(vars.get("FS").unwrap_or(" "), vars)
       }
@@ -453,41 +452,24 @@ fn awk_eval_call_expr_ast(
   }
 
   match awk_get_function(vars, call_name) {
-    Some(_) => {
+    Some(_) =>
       match awk_expr_eval_state.out {
-        Some(active_out) => {
+        Some(active_out) =>
           awk_eval_user_function(
-            call_name,
-            args_raw,
-            line,
-            fields,
-            nr,
-            nf,
-            vars,
-            array_vars,
-            active_out,
+            call_name, args_raw, line, fields, nr, nf, vars, array_vars, active_out,
           )
-        }
         None => {
           let fn_out = StringBuilder::new()
           awk_eval_user_function(
-            call_name,
-            args_raw,
-            line,
-            fields,
-            nr,
-            nf,
-            vars,
-            array_vars,
-            fn_out,
+            call_name, args_raw, line, fields, nr, nf, vars, array_vars, fn_out,
           )
         }
       }
-    }
     None => ""
   }
 }
 
+///|
 fn awk_eval_raw_expr_ast(
   text : String,
   line : String,
@@ -495,7 +477,7 @@ fn awk_eval_raw_expr_ast(
   nr : Int,
   nf : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> String {
   let t = awk_strip_outer_parens(aj_trim(text))
   if t.length() == 0 {
@@ -514,6 +496,7 @@ fn awk_eval_raw_expr_ast(
   awk_eval_atom(t, line, fields, nr, nf, vars, array_vars)
 }
 
+///|
 fn awk_eval_condition_ast(
   cond_ast : AwkExprAst,
   line : String,
@@ -521,11 +504,14 @@ fn awk_eval_condition_ast(
   nr : Int,
   nf : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> Bool {
-  awk_value_truthy(awk_eval_expr_ast(cond_ast, line, fields, nr, nf, vars, array_vars))
+  awk_value_truthy(
+    awk_eval_expr_ast(cond_ast, line, fields, nr, nf, vars, array_vars),
+  )
 }
 
+///|
 fn awk_eval_expr_ast(
   ast : AwkExprAst,
   line : String,
@@ -533,86 +519,106 @@ fn awk_eval_expr_ast(
   nr : Int,
   nf : Int,
   vars : Map[String, String],
-  array_vars : Map[String, String]
+  array_vars : Map[String, String],
 ) -> String {
   match ast {
-    Raw(text) => awk_eval_raw_expr_ast(text, line, fields, nr, nf, vars, array_vars)
+    Raw(text) =>
+      awk_eval_raw_expr_ast(text, line, fields, nr, nf, vars, array_vars)
     Call(call_name, args_ast, args_raw) =>
-      awk_eval_call_expr_ast(call_name, args_ast, args_raw, line, fields, nr, nf, vars, array_vars)
-    Mutate(target, delta, return_new) => {
-      match awk_mutate_numeric_reference(
-        target,
-        delta,
-        return_new,
-        line,
-        fields,
-        nr,
-        nf,
-        vars,
-        array_vars,
-      ) {
+      awk_eval_call_expr_ast(
+        call_name, args_ast, args_raw, line, fields, nr, nf, vars, array_vars,
+      )
+    Mutate(target, delta, return_new) =>
+      match
+        awk_mutate_numeric_reference(
+          target, delta, return_new, line, fields, nr, nf, vars, array_vars,
+        ) {
         Some(value) => value
         None => ""
       }
-    }
     UnaryNot(inner) =>
       awk_bool_to_string(
-        !(awk_value_truthy(awk_eval_expr_ast(inner, line, fields, nr, nf, vars, array_vars))),
+        !awk_value_truthy(
+          awk_eval_expr_ast(inner, line, fields, nr, nf, vars, array_vars),
+        ),
       )
     Concat(parts) => {
       let out = StringBuilder::new()
       for part in parts {
-        out.write_string(awk_eval_expr_ast(part, line, fields, nr, nf, vars, array_vars))
+        out.write_string(
+          awk_eval_expr_ast(part, line, fields, nr, nf, vars, array_vars),
+        )
       }
       out.to_string()
     }
-    Ternary(cond_ast, yes, no) => {
-      if awk_eval_condition_ast(cond_ast, line, fields, nr, nf, vars, array_vars) {
+    Ternary(cond_ast, yes, no) =>
+      if awk_eval_condition_ast(
+          cond_ast, line, fields, nr, nf, vars, array_vars,
+        ) {
         awk_eval_expr_ast(yes, line, fields, nr, nf, vars, array_vars)
       } else {
         awk_eval_expr_ast(no, line, fields, nr, nf, vars, array_vars)
       }
-    }
     Assign(lhs, rhs) => {
       let value = awk_eval_expr_ast(rhs, line, fields, nr, nf, vars, array_vars)
-      if awk_assign_reference(lhs, value, line, fields, nr, nf, vars, array_vars) {
+      if awk_assign_reference(
+          lhs, value, line, fields, nr, nf, vars, array_vars,
+        ) {
         value
       } else {
         ""
       }
     }
     In(left, arr_name) => {
-      let idx_value = awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars)
-      awk_bool_to_string(array_vars.contains(awk_array_key(arr_name, idx_value)))
+      let idx_value = awk_eval_expr_ast(
+        left, line, fields, nr, nf, vars, array_vars,
+      )
+      awk_bool_to_string(
+        array_vars.contains(awk_array_key(arr_name, idx_value)),
+      )
     }
     Binary(op, left, right) => {
       if op == "," {
-        let left_value = awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars)
-        let right_value = awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars)
+        let left_value = awk_eval_expr_ast(
+          left, line, fields, nr, nf, vars, array_vars,
+        )
+        let right_value = awk_eval_expr_ast(
+          right, line, fields, nr, nf, vars, array_vars,
+        )
         let subsep = vars.get("SUBSEP").unwrap_or("\u001c")
         return left_value + subsep + right_value
       }
 
       if op == "||" {
-        let left_value = awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars)
+        let left_value = awk_eval_expr_ast(
+          left, line, fields, nr, nf, vars, array_vars,
+        )
         if awk_value_truthy(left_value) {
           return "1"
         }
-        let right_value = awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars)
+        let right_value = awk_eval_expr_ast(
+          right, line, fields, nr, nf, vars, array_vars,
+        )
         return awk_bool_to_string(awk_value_truthy(right_value))
       }
 
       if op == "&&" {
-        let left_value = awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars)
-        if !(awk_value_truthy(left_value)) {
+        let left_value = awk_eval_expr_ast(
+          left, line, fields, nr, nf, vars, array_vars,
+        )
+        if !awk_value_truthy(left_value) {
           return "0"
         }
-        let right_value = awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars)
+        let right_value = awk_eval_expr_ast(
+          right, line, fields, nr, nf, vars, array_vars,
+        )
         return awk_bool_to_string(awk_value_truthy(right_value))
       }
 
       if op == "~" || op == "!~" {
-        let left_value = awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars)
+        let left_value = awk_eval_expr_ast(
+          left, line, fields, nr, nf, vars, array_vars,
+        )
         let right_raw = match right {
           Raw(text) => aj_trim(text)
           _ => ""
@@ -622,7 +628,9 @@ fn awk_eval_expr_ast(
           aj_ends_with(right_raw, "/") {
           right_raw
         } else {
-          "/" + awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars) + "/"
+          "/" +
+          awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars) +
+          "/"
         }
         let (rstart, _rlength) = awk_find_regex_match_range(pattern, left_value)
         return if op == "~" {
@@ -632,28 +640,51 @@ fn awk_eval_expr_ast(
         }
       }
 
-      if op == "==" || op == "!=" || op == ">=" || op == "<=" || op == ">" || op == "<" {
-        let left_value = awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars)
-        let right_value = awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars)
-        return awk_bool_to_string(awk_compare_values(left_value, right_value, op))
+      if op == "==" ||
+        op == "!=" ||
+        op == ">=" ||
+        op == "<=" ||
+        op == ">" ||
+        op == "<" {
+        let left_value = awk_eval_expr_ast(
+          left, line, fields, nr, nf, vars, array_vars,
+        )
+        let right_value = awk_eval_expr_ast(
+          right, line, fields, nr, nf, vars, array_vars,
+        )
+        return awk_bool_to_string(
+          awk_compare_values(left_value, right_value, op),
+        )
       }
 
       if op == "^" {
-        let left_n = awk_parse_number(awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars))
-        let right_n = awk_parse_number(awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars))
+        let left_n = awk_parse_number(
+          awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars),
+        )
+        let right_n = awk_parse_number(
+          awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars),
+        )
         return awk_number_to_string(@math.pow(left_n, right_n))
       }
 
       if op == "+" || op == "-" {
-        let left_n = awk_parse_number(awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars))
-        let right_n = awk_parse_number(awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars))
+        let left_n = awk_parse_number(
+          awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars),
+        )
+        let right_n = awk_parse_number(
+          awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars),
+        )
         let value = if op == "+" { left_n + right_n } else { left_n - right_n }
         return awk_number_to_string(value)
       }
 
       if op == "*" || op == "/" || op == "%" {
-        let left_n = awk_parse_number(awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars))
-        let right_n = awk_parse_number(awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars))
+        let left_n = awk_parse_number(
+          awk_eval_expr_ast(left, line, fields, nr, nf, vars, array_vars),
+        )
+        let right_n = awk_parse_number(
+          awk_eval_expr_ast(right, line, fields, nr, nf, vars, array_vars),
+        )
         if op == "*" {
           return awk_number_to_string(left_n * right_n)
         }

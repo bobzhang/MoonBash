@@ -5,23 +5,28 @@
 // Compressed data is stored in the VFS as Latin-1 encoded Strings
 // (each byte 0x00-0xFF maps to one Unicode char).
 
+///|
 /// The two-byte magic header that marks gzip format.
 let gzip_magic_0 : Int = 0x1F
 
+///|
 let gzip_magic_1 : Int = 0x8B
 
+///|
 /// Check whether content starts with the gzip magic header.
 fn is_gzip_content(content : String) -> Bool {
   content.length() >= 2 &&
-    content[0].to_int() == gzip_magic_0 &&
-    content[1].to_int() == gzip_magic_1
+  content[0].to_int() == gzip_magic_0 &&
+  content[1].to_int() == gzip_magic_1
 }
 
+///|
 /// Convert a MoonBit String to raw bytes (Latin-1: each char → low byte).
 fn string_to_raw_bytes(s : String) -> Array[Byte] {
   Array::makei(s.length(), fn(i) { (s[i].to_int() & 0xFF).to_byte() })
 }
 
+///|
 /// Convert raw bytes to a MoonBit String (Latin-1: each byte → one char).
 fn raw_bytes_to_string(b : @io.Slice[Byte]) -> String {
   String::from_array(
@@ -29,6 +34,7 @@ fn raw_bytes_to_string(b : @io.Slice[Byte]) -> String {
   )
 }
 
+///|
 /// Compress content using real gzip/DEFLATE.
 fn gzip_encode(content : String) -> String {
   let input_bytes = string_to_raw_bytes(content)
@@ -39,6 +45,7 @@ fn gzip_encode(content : String) -> String {
   raw_bytes_to_string(out_buf.to_slice())
 }
 
+///|
 /// Decompress gzip content.
 fn gzip_decode(content : String) -> String {
   let input_bytes = string_to_raw_bytes(content)
@@ -53,6 +60,7 @@ fn gzip_decode(content : String) -> String {
   raw_bytes_to_string(data)
 }
 
+///|
 /// Check whether a filename ends with a given suffix.
 fn str_ends_with(s : String, suffix : String) -> Bool {
   if suffix.length() > s.length() {
@@ -67,28 +75,30 @@ fn str_ends_with(s : String, suffix : String) -> Bool {
   true
 }
 
+///|
 /// Strip a suffix from a string if present, otherwise return the string.
 fn str_strip_suffix(s : String, suffix : String) -> String {
   if str_ends_with(s, suffix) {
-    s.view(start_offset=0, end_offset=s.length() - suffix.length()).to_string()
+    s.view(start_offset=0, end_offset=s.length() - suffix.length()).to_owned()
   } else {
     s
   }
 }
 
+///|
 /// Core gunzip logic shared by cmd_gunzip and cmd_gzip -d.
 fn gunzip_core(
   ctx : CommandContext,
   keep : Bool,
   to_stdout : Bool,
-  force : Bool
+  force : Bool,
 ) -> @ast.ExecResult {
   if ctx.args.length() == 0 && ctx.stdin_content.length() == 0 {
     return @ast.ExecResult::err("gunzip: missing operand\n")
   }
   // If no file args, decompress stdin to stdout
   if ctx.args.length() == 0 {
-    if !(is_gzip_content(ctx.stdin_content)) {
+    if !is_gzip_content(ctx.stdin_content) {
       return @ast.ExecResult::err("gunzip: stdin: not in gzip format\n")
     }
     return @ast.ExecResult::ok(gzip_decode(ctx.stdin_content))
@@ -97,31 +107,26 @@ fn gunzip_core(
   let errbuf = StringBuilder::new()
   let mut exit_code = 0
   for arg in ctx.args {
-    if !(str_ends_with(arg, ".gz")) && !(str_ends_with(arg, ".tgz")) &&
-      !(force) {
+    if !str_ends_with(arg, ".gz") && !str_ends_with(arg, ".tgz") && !force {
       errbuf.write_string("gunzip: \{arg}: unknown suffix -- ignored\n")
       exit_code = 1
       continue
     }
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, arg)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, arg) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("gunzip: \{msg}\n")
         exit_code = 1
         continue
       }
     }
-    let content = try {
-      ctx.fs.read_file(resolved)
-    } catch {
+    let content = ctx.fs.read_file(resolved) catch {
       @fs.FsError(_msg) => {
         errbuf.write_string("gunzip: \{arg}: No such file or directory\n")
         exit_code = 1
         continue
       }
     }
-    if !(is_gzip_content(content)) {
+    if !is_gzip_content(content) {
       errbuf.write_string("gunzip: \{arg}: not in gzip format\n")
       exit_code = 1
       continue
@@ -135,35 +140,29 @@ fn gunzip_core(
       } else {
         str_strip_suffix(arg, ".gz")
       }
-      let out_resolved = try {
-        @fs.resolve_path(ctx.cwd, out_name)
-      } catch {
+      let out_resolved = @fs.resolve_path(ctx.cwd, out_name) catch {
         @fs.FsError(msg) => {
           errbuf.write_string("gunzip: \{msg}\n")
           exit_code = 1
           continue
         }
       }
-      if !(force) && ctx.fs.exists(out_resolved) {
+      if !force && ctx.fs.exists(out_resolved) {
         errbuf.write_string(
           "gunzip: \{out_name}: already exists; not overwritten\n",
         )
         exit_code = 1
         continue
       }
-      try {
-        ctx.fs.write_file(out_resolved, decoded)
-      } catch {
+      ctx.fs.write_file(out_resolved, decoded) catch {
         @fs.FsError(msg) => {
           errbuf.write_string("gunzip: \{msg}\n")
           exit_code = 1
           continue
         }
       }
-      if !(keep) {
-        try {
-          ctx.fs.rm(resolved)
-        } catch {
+      if !keep {
+        ctx.fs.rm(resolved) catch {
           @fs.FsError(msg) => {
             errbuf.write_string("gunzip: \{msg}\n")
             exit_code = 1
@@ -175,10 +174,11 @@ fn gunzip_core(
   @ast.ExecResult::new(
     stdout=out.to_string(),
     stderr=errbuf.to_string(),
-    exit_code=exit_code,
+    exit_code~,
   )
 }
 
+///|
 /// gzip: compress files
 fn cmd_gzip(ctx : CommandContext) -> @ast.ExecResult {
   let mut keep = false
@@ -192,12 +192,30 @@ fn cmd_gzip(ctx : CommandContext) -> @ast.ExecResult {
       "-d" => decompress = true
       "-c" => to_stdout = true
       "-f" => force = true
-      "-kc" | "-ck" => { keep = true; to_stdout = true }
-      "-kf" | "-fk" => { keep = true; force = true }
-      "-cf" | "-fc" => { to_stdout = true; force = true }
-      "-dc" | "-cd" => { decompress = true; to_stdout = true }
-      "-df" | "-fd" => { decompress = true; force = true }
-      "-dk" | "-kd" => { decompress = true; keep = true }
+      "-kc" | "-ck" => {
+        keep = true
+        to_stdout = true
+      }
+      "-kf" | "-fk" => {
+        keep = true
+        force = true
+      }
+      "-cf" | "-fc" => {
+        to_stdout = true
+        force = true
+      }
+      "-dc" | "-cd" => {
+        decompress = true
+        to_stdout = true
+      }
+      "-df" | "-fd" => {
+        decompress = true
+        force = true
+      }
+      "-dk" | "-kd" => {
+        decompress = true
+        keep = true
+      }
       _ => files.push(arg)
     }
   }
@@ -224,22 +242,20 @@ fn cmd_gzip(ctx : CommandContext) -> @ast.ExecResult {
   let mut exit_code = 0
   for file in files {
     if str_ends_with(file, ".gz") {
-      errbuf.write_string("gzip: \{file}: already has .gz suffix -- unchanged\n")
+      errbuf.write_string(
+        "gzip: \{file}: already has .gz suffix -- unchanged\n",
+      )
       exit_code = 1
       continue
     }
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, file)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, file) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("gzip: \{msg}\n")
         exit_code = 1
         continue
       }
     }
-    let content = try {
-      ctx.fs.read_file(resolved)
-    } catch {
+    let content = ctx.fs.read_file(resolved) catch {
       @fs.FsError(_msg) => {
         errbuf.write_string("gzip: \{file}: No such file or directory\n")
         exit_code = 1
@@ -251,35 +267,29 @@ fn cmd_gzip(ctx : CommandContext) -> @ast.ExecResult {
       out.write_string(encoded)
     } else {
       let gz_name = file + ".gz"
-      let gz_resolved = try {
-        @fs.resolve_path(ctx.cwd, gz_name)
-      } catch {
+      let gz_resolved = @fs.resolve_path(ctx.cwd, gz_name) catch {
         @fs.FsError(msg) => {
           errbuf.write_string("gzip: \{msg}\n")
           exit_code = 1
           continue
         }
       }
-      if !(force) && ctx.fs.exists(gz_resolved) {
+      if !force && ctx.fs.exists(gz_resolved) {
         errbuf.write_string(
           "gzip: \{gz_name}: already exists; not overwritten\n",
         )
         exit_code = 1
         continue
       }
-      try {
-        ctx.fs.write_file(gz_resolved, encoded)
-      } catch {
+      ctx.fs.write_file(gz_resolved, encoded) catch {
         @fs.FsError(msg) => {
           errbuf.write_string("gzip: \{msg}\n")
           exit_code = 1
           continue
         }
       }
-      if !(keep) {
-        try {
-          ctx.fs.rm(resolved)
-        } catch {
+      if !keep {
+        ctx.fs.rm(resolved) catch {
           @fs.FsError(msg) => {
             errbuf.write_string("gzip: \{msg}\n")
             exit_code = 1
@@ -291,10 +301,11 @@ fn cmd_gzip(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(
     stdout=out.to_string(),
     stderr=errbuf.to_string(),
-    exit_code=exit_code,
+    exit_code~,
   )
 }
 
+///|
 /// gunzip: decompress files
 fn cmd_gunzip(ctx : CommandContext) -> @ast.ExecResult {
   let mut keep = false
@@ -306,9 +317,18 @@ fn cmd_gunzip(ctx : CommandContext) -> @ast.ExecResult {
       "-k" => keep = true
       "-c" => to_stdout = true
       "-f" => force = true
-      "-kc" | "-ck" => { keep = true; to_stdout = true }
-      "-kf" | "-fk" => { keep = true; force = true }
-      "-cf" | "-fc" => { to_stdout = true; force = true }
+      "-kc" | "-ck" => {
+        keep = true
+        to_stdout = true
+      }
+      "-kf" | "-fk" => {
+        keep = true
+        force = true
+      }
+      "-cf" | "-fc" => {
+        to_stdout = true
+        force = true
+      }
       _ => files.push(arg)
     }
   }
@@ -322,6 +342,7 @@ fn cmd_gunzip(ctx : CommandContext) -> @ast.ExecResult {
   gunzip_core(file_ctx, keep, to_stdout, force)
 }
 
+///|
 /// zcat: decompress to stdout (equivalent to gunzip -c)
 fn cmd_zcat(ctx : CommandContext) -> @ast.ExecResult {
   let files : Array[String] = []

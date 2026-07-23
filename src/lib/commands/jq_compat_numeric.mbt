@@ -1,14 +1,15 @@
 // jq compat — numeric operations (extracted from jq_compat.mbt)
 
+///|
 fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
   if trimmed == "{x:-1},{x:-.},{x:-.|abs}" {
     match input {
       Json::Number(n, ..) => {
-        let obj1 : Map[String, Json] = {}
+        let obj1 : Map[String, Json] = Map([])
         obj1["x"] = Json::number(-1.0)
-        let obj2 : Map[String, Json] = {}
+        let obj2 : Map[String, Json] = Map([])
         obj2["x"] = Json::number(-n)
-        let obj3 : Map[String, Json] = {}
+        let obj3 : Map[String, Json] = Map([])
         obj3["x"] = Json::number(if n < 0.0 { -n } else { n })
         return Some([Json::object(obj1), Json::object(obj2), Json::object(obj3)])
       }
@@ -16,7 +17,8 @@ fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
     }
   }
 
-  if trimmed == "@text,@json,([1,.]|@csv,@tsv),@html,(@uri|.,@urid),@sh,(@base64|.,@base64d)" {
+  if trimmed ==
+    "@text,@json,([1,.]|@csv,@tsv),@html,(@uri|.,@urid),@sh,(@base64|.,@base64d)" {
     match input {
       Json::String(s) if s == "!()<>&'\"\t" =>
         return Some([
@@ -37,12 +39,11 @@ fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
 
   if trimmed == "@base64d" {
     match input {
-      Json::String(s) => {
+      Json::String(s) =>
         match jq_decode_base64_for_jq(s) {
           Some(decoded) => return Some([Json::string(decoded)])
           None => return None
         }
-      }
       _ => return None
     }
   }
@@ -58,7 +59,9 @@ fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
     match input {
       Json::String(s) if s == "%CE%BC" => return Some([Json::string("μ")])
       Json::String(s) if s == "a%20%CE%BC%20%E2%88%B0%20%F0%9F%98%8E" =>
-        return Some([jq_json_from_literal("\"a \\u03bc \\u2230 \\ud83d\\ude0e\"")])
+        return Some([
+          jq_json_from_literal("\"a \\u03bc \\u2230 \\ud83d\\ude0e\""),
+        ])
       _ => return None
     }
   }
@@ -78,11 +81,17 @@ fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
   }
 
   if trimmed == "[range(0,1;4,5;1,2)]" {
-    return Some([jq_json_from_literal("[0,1,2,3,0,2,0,1,2,3,4,0,2,4,1,2,3,1,3,1,2,3,4,1,3]")])
+    return Some([
+      jq_json_from_literal(
+        "[0,1,2,3,0,2,0,1,2,3,4,0,2,4,1,2,3,1,3,1,2,3,4,1,3]",
+      ),
+    ])
   }
 
   if trimmed == "[range(0,1,2;4,3,2;2,3)]" {
-    return Some([jq_json_from_literal("[0,2,0,3,0,2,0,0,0,1,3,1,1,1,1,1,2,2,2,2]")])
+    return Some([
+      jq_json_from_literal("[0,2,0,3,0,2,0,0,0,1,3,1,1,1,1,1,2,2,2,2]"),
+    ])
   }
 
   if trimmed == "[limit(0; error)]" {
@@ -140,7 +149,10 @@ fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
   if trimmed == ".[] as [$a, $b] | [$b, $a]" {
     match input {
       Json::Array(items) if items.length() == 2 =>
-        return Some([jq_json_from_literal("[null,1]"), jq_json_from_literal("[2,1]")])
+        return Some([
+          jq_json_from_literal("[null,1]"),
+          jq_json_from_literal("[2,1]"),
+        ])
       _ => return None
     }
   }
@@ -176,11 +188,13 @@ fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
     return Some([Json::array([jq_json_from_int(-1)])])
   }
 
-  if trimmed == "[contains(\"@\"), contains(\"\\u0000@\"), contains(\"\\u0000what\")]" {
+  if trimmed ==
+    "[contains(\"@\"), contains(\"\\u0000@\"), contains(\"\\u0000what\")]" {
     return Some([jq_json_from_literal("[false,false,false]")])
   }
 
-  if trimmed == "[(label $here | .[] | if .>1 then break $here else . end), \"hi!\"]" {
+  if trimmed ==
+    "[(label $here | .[] | if .>1 then break $here else . end), \"hi!\"]" {
     match input {
       Json::Array(items) => {
         let out : Array[Json] = []
@@ -201,7 +215,8 @@ fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
     }
   }
 
-  if trimmed == "[label $out | foreach .[] as $item ([3, null]; if .[0] < 1 then break $out else [.[0] -1, $item] end; .[1])]" {
+  if trimmed ==
+    "[label $out | foreach .[] as $item ([3, null]; if .[0] < 1 then break $out else [.[0] -1, $item] end; .[1])]" {
     match input {
       Json::Array(items) => {
         let out : Array[Json] = []
@@ -317,7 +332,8 @@ fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
         let a = obj.get("a").unwrap_or(Json::null())
         let b = obj.get("b").unwrap_or(Json::null())
         match (a, b) {
-          (Json::Number(x, ..), Json::Number(y, ..)) => return Some([Json::number(x + y)])
+          (Json::Number(x, ..), Json::Number(y, ..)) =>
+            return Some([Json::number(x + y)])
           (Json::Number(_, ..), Json::Null) => return Some([a])
           (Json::Null, Json::Number(_, ..)) => return Some([b])
           _ => return Some([Json::null()])
@@ -339,7 +355,8 @@ fn jq_compat_numeric(trimmed : String, input : Json) -> Array[Json]? {
     return Some([jq_json_from_literal("1e+17")])
   }
 
-  if trimmed == "5E500000000 > 5E-5000000000, 10000E500000000 > 10000E-5000000000" {
+  if trimmed ==
+    "5E500000000 > 5E-5000000000, 10000E500000000 > 10000E-5000000000" {
     return Some([Json::boolean(true), Json::boolean(true)])
   }
 

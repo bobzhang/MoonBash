@@ -85,7 +85,7 @@ fn append_block(
     "pre",
     class_name="moonbash-line moonbash-line-\{tone}",
   )
-  let normalized = text.trim_end().to_string()
+  let normalized = text.trim_end().to_owned()
   if normalized == "" {
     block.set_inner_text(text)
   } else {

@@ -1,6 +1,7 @@
 // moon_bash Commands - File Operations
 // cat, cp, ls, mkdir, mv, rm, touch
 
+///|
 /// cat: concatenate and display file contents
 fn cmd_cat(ctx : CommandContext) -> @ast.ExecResult {
   let mut number_lines = false
@@ -15,7 +16,7 @@ fn cmd_cat(ctx : CommandContext) -> @ast.ExecResult {
 
   if files.length() == 0 {
     // No args = output stdin
-    if !(number_lines) {
+    if !number_lines {
       return @ast.ExecResult::ok(ctx.stdin_content)
     }
     let out = StringBuilder::new()
@@ -35,18 +36,14 @@ fn cmd_cat(ctx : CommandContext) -> @ast.ExecResult {
       }
       continue
     }
-    let path = try {
-      @fs.resolve_path(ctx.cwd, arg)
-    } catch {
+    let path = @fs.resolve_path(ctx.cwd, arg) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("cat: \{msg}\n")
         exit_code = 1
         continue
       }
     }
-    let content = try {
-      ctx.fs.read_file(path)
-    } catch {
+    let content = ctx.fs.read_file(path) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("cat: \{msg}\n")
         exit_code = 1
@@ -62,10 +59,11 @@ fn cmd_cat(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(
     stdout=buf.to_string(),
     stderr=errbuf.to_string(),
-    exit_code=exit_code,
+    exit_code~,
   )
 }
 
+///|
 fn cmd_cat_line_prefix(n : Int) -> String {
   let digits = n.to_string()
   let out = StringBuilder::new()
@@ -80,10 +78,11 @@ fn cmd_cat_line_prefix(n : Int) -> String {
   out.to_string()
 }
 
+///|
 fn cmd_cat_write_numbered(
   out : StringBuilder,
   content : String,
-  start_line : Int
+  start_line : Int,
 ) -> Int {
   let line_buf = StringBuilder::new()
   let mut line_no = start_line
@@ -105,6 +104,7 @@ fn cmd_cat_write_numbered(
   line_no
 }
 
+///|
 /// ls: list directory contents
 fn cmd_ls(ctx : CommandContext) -> @ast.ExecResult {
   let mut show_all = false
@@ -127,7 +127,7 @@ fn cmd_ls(ctx : CommandContext) -> @ast.ExecResult {
             show_all = true
             almost_all = false
           }
-          'A' => if !(show_all) { almost_all = true }
+          'A' => if !show_all { almost_all = true }
           'R' => recursive = true
           'r' => reverse = true
           '1' => one_per_line = true
@@ -140,7 +140,7 @@ fn cmd_ls(ctx : CommandContext) -> @ast.ExecResult {
           }
         }
       }
-      if !(valid_flags) {
+      if !valid_flags {
         paths.push(arg)
       }
     } else {
@@ -159,9 +159,7 @@ fn cmd_ls(ctx : CommandContext) -> @ast.ExecResult {
   let dirs : Array[(String, String)] = []
 
   for raw in paths {
-    let resolved = try {
-      @fs.resolve_path(ctx.cwd, raw)
-    } catch {
+    let resolved = @fs.resolve_path(ctx.cwd, raw) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("ls: \{msg}\n")
         exit_code = 1
@@ -169,9 +167,7 @@ fn cmd_ls(ctx : CommandContext) -> @ast.ExecResult {
       }
     }
 
-    let stat = try {
-      ctx.fs.stat(resolved)
-    } catch {
+    let stat = ctx.fs.stat(resolved) catch {
       @fs.FsError(msg) => {
         errbuf.write_string("ls: \{msg}\n")
         exit_code = 1
@@ -190,7 +186,9 @@ fn cmd_ls(ctx : CommandContext) -> @ast.ExecResult {
     if long_format {
       let size = cmd_ls_entry_size(ctx.fs, file.1)
       let label = if file.0.length() == 0 { file.1 } else { file.0 }
-      out.write_string(cmd_ls_format_size(size, human_readable) + " " + label + "\n")
+      out.write_string(
+        cmd_ls_format_size(size, human_readable) + " " + label + "\n",
+      )
     } else {
       out.write_string(file.0 + "\n")
     }
@@ -249,10 +247,11 @@ fn cmd_ls(ctx : CommandContext) -> @ast.ExecResult {
   @ast.ExecResult::new(
     stdout=out.to_string(),
     stderr=errbuf.to_string(),
-    exit_code=exit_code,
+    exit_code~,
   )
 }
 
+///|
 fn cmd_ls_display_label(raw : String, abs_path : String) -> String {
   if raw == "." || raw.length() == 0 {
     "."
@@ -265,6 +264,7 @@ fn cmd_ls_display_label(raw : String, abs_path : String) -> String {
   }
 }
 
+///|
 fn cmd_ls_entry_size(fs : @fs.InMemoryFs, abs_path : String) -> Int {
   match fs.entries.get(abs_path) {
     Some(@fs.FsEntry::File(file)) => file.content.length()
@@ -274,19 +274,21 @@ fn cmd_ls_entry_size(fs : @fs.InMemoryFs, abs_path : String) -> Int {
   }
 }
 
+///|
 fn cmd_ls_format_human(size : Int, unit : Int, suffix : String) -> String {
   let whole = size / unit
   let rem = size % unit
   if whole < 10 {
-    let tenth = (rem * 10) / unit
+    let tenth = rem * 10 / unit
     whole.to_string() + "." + tenth.to_string() + suffix
   } else {
     whole.to_string() + suffix
   }
 }
 
+///|
 fn cmd_ls_format_size(size : Int, human_readable : Bool) -> String {
-  if !(human_readable) {
+  if !human_readable {
     return size.to_string()
   }
   if size >= 1073741824 {
@@ -300,19 +302,16 @@ fn cmd_ls_format_size(size : Int, human_readable : Bool) -> String {
   }
 }
 
+///|
 fn cmd_ls_read_entries(
   fs : @fs.InMemoryFs,
   dir_abs : String,
   show_all : Bool,
   almost_all : Bool,
   reverse : Bool,
-  sort_size : Bool
+  sort_size : Bool,
 ) -> Array[(String, Int)] {
-  let entries = try {
-    fs.readdir(dir_abs)
-  } catch {
-    @fs.FsError(_msg) => return []
-  }
+  let entries = fs.readdir(dir_abs) catch { @fs.FsError(_msg) => return [] }
 
   let names : Array[(String, Int)] = []
   if show_all {
@@ -359,10 +358,11 @@ fn cmd_ls_read_entries(
   names
 }
 
+///|
 fn cmd_ls_write_long(
   out : StringBuilder,
   entries : Array[(String, Int)],
-  human_readable : Bool
+  human_readable : Bool,
 ) -> Unit {
   for entry in entries {
     out.write_string(
@@ -371,10 +371,11 @@ fn cmd_ls_write_long(
   }
 }
 
+///|
 fn cmd_ls_write_names(
   out : StringBuilder,
   names : Array[String],
-  one_per_line : Bool
+  one_per_line : Bool,
 ) -> Unit {
   if one_per_line {
     for name in names {
@@ -385,7 +386,7 @@ fn cmd_ls_write_names(
 
   let mut first = true
   for name in names {
-    if !(first) {
+    if !first {
       out.write_string("  ")
     }
     out.write_string(name)
@@ -396,6 +397,7 @@ fn cmd_ls_write_names(
   }
 }
 
+///|
 fn cmd_ls_list_recursive(
   fs : @fs.InMemoryFs,
   dir_abs : String,
@@ -407,16 +409,11 @@ fn cmd_ls_list_recursive(
   one_per_line : Bool,
   long_format : Bool,
   human_readable : Bool,
-  out : StringBuilder
+  out : StringBuilder,
 ) -> Unit {
   out.write_string(label + ":\n")
   let entries = cmd_ls_read_entries(
-    fs,
-    dir_abs,
-    show_all,
-    almost_all,
-    reverse,
-    sort_size,
+    fs, dir_abs, show_all, almost_all, reverse, sort_size,
   )
   if long_format {
     cmd_ls_write_long(out, entries, human_readable)
@@ -429,18 +426,14 @@ fn cmd_ls_list_recursive(
   }
 
   let subdirs : Array[(String, String)] = []
-  let entries = try {
-    fs.readdir(dir_abs)
-  } catch {
-    @fs.FsError(_msg) => return
-  }
+  let entries = fs.readdir(dir_abs) catch { @fs.FsError(_msg) => return }
 
   let child_names : Array[String] = []
   for entry in entries {
     match entry.entry_type {
       @fs.EntryType::DirectoryType => {
         let name = entry.name
-        if !(show_all) && !(almost_all) && name.length() > 0 && name[0] == '.' {
+        if !show_all && !almost_all && name.length() > 0 && name[0] == '.' {
           continue
         }
         child_names.push(name)
@@ -510,4 +503,3 @@ fn cmd_ls_list_recursive(
     )
   }
 }
-

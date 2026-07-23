@@ -5,14 +5,17 @@
 // Constants
 // ============================================================================
 
+///|
 let max_input_size : Int = 10 * 1024 * 1024 // 10 MB
 
+///|
 let max_tokens : Int = 100_000
 
 // ============================================================================
 // String Character Access Helper
 // ============================================================================
 
+///|
 /// Get character at index from a string, converting UInt16 to Char.
 fn char_at(s : String, i : Int) -> Char {
   s[i].to_int().unsafe_to_char()
@@ -22,6 +25,7 @@ fn char_at(s : String, i : Int) -> Char {
 // Lexer State
 // ============================================================================
 
+///|
 pub(all) struct Lexer {
   source : String
   mut pos : Int
@@ -32,6 +36,7 @@ pub(all) struct Lexer {
 // Public API
 // ============================================================================
 
+///|
 /// Tokenize a shell script string into an array of tokens.
 pub fn tokenize(input : String) -> Array[@ast.Token] raise @ast.BashError {
   if input.length() > max_input_size {
@@ -46,6 +51,7 @@ pub fn tokenize(input : String) -> Array[@ast.Token] raise @ast.BashError {
 // Character Helpers
 // ============================================================================
 
+///|
 fn Lexer::peek(self : Lexer) -> Char {
   if self.pos >= self.source.length() {
     '\u0000'
@@ -54,6 +60,7 @@ fn Lexer::peek(self : Lexer) -> Char {
   }
 }
 
+///|
 fn Lexer::peek_at(self : Lexer, offset : Int) -> Char {
   let idx = self.pos + offset
   if idx >= self.source.length() {
@@ -63,16 +70,19 @@ fn Lexer::peek_at(self : Lexer, offset : Int) -> Char {
   }
 }
 
+///|
 fn Lexer::advance(self : Lexer) -> Char {
   let ch = self.peek()
   self.pos += 1
   ch
 }
 
+///|
 fn Lexer::at_end(self : Lexer) -> Bool {
   self.pos >= self.source.length()
 }
 
+///|
 fn Lexer::emit(self : Lexer, tok : @ast.Token) -> Unit raise @ast.BashError {
   if self.tokens.length() >= max_tokens {
     raise @ast.BashError("token count exceeds maximum of 100000")
@@ -84,10 +94,12 @@ fn Lexer::emit(self : Lexer, tok : @ast.Token) -> Unit raise @ast.BashError {
 // Character Classification
 // ============================================================================
 
+///|
 fn is_whitespace(ch : Char) -> Bool {
   ch == ' ' || ch == '\t'
 }
 
+///|
 fn is_metachar(ch : Char) -> Bool {
   ch == '|' ||
   ch == '&' ||
@@ -101,6 +113,7 @@ fn is_metachar(ch : Char) -> Bool {
   ch == '\t'
 }
 
+///|
 fn is_brace_boundary_char(ch : Char) -> Bool {
   ch == '\u0000' ||
   ch == ' ' ||
@@ -115,16 +128,17 @@ fn is_brace_boundary_char(ch : Char) -> Bool {
   ch == '>'
 }
 
+///|
 fn is_digit(ch : Char) -> Bool {
   ch >= '0' && ch <= '9'
 }
 
+///|
 fn is_name_start(ch : Char) -> Bool {
-  (ch >= 'a' && ch <= 'z') ||
-  (ch >= 'A' && ch <= 'Z') ||
-  ch == '_'
+  (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
 }
 
+///|
 fn is_name_char(ch : Char) -> Bool {
   is_name_start(ch) || is_digit(ch)
 }
@@ -133,6 +147,7 @@ fn is_name_char(ch : Char) -> Bool {
 // Reserved Words
 // ============================================================================
 
+///|
 fn lookup_reserved(word : String) -> @ast.Token? {
   match word {
     "if" => Some(@ast.Token::If)
@@ -159,8 +174,9 @@ fn lookup_reserved(word : String) -> @ast.Token? {
 // Main Scanning Loop
 // ============================================================================
 
+///|
 fn Lexer::scan_tokens(self : Lexer) -> Unit raise @ast.BashError {
-  while !(self.at_end()) {
+  while !self.at_end() {
     let ch = self.peek()
 
     if is_whitespace(ch) {
@@ -194,8 +210,9 @@ fn Lexer::scan_tokens(self : Lexer) -> Unit raise @ast.BashError {
 // Comment Handling
 // ============================================================================
 
+///|
 fn Lexer::skip_comment(self : Lexer) -> Unit {
-  while !(self.at_end()) && self.peek() != '\n' {
+  while !self.at_end() && self.peek() != '\n' {
     self.pos += 1
   }
 }
@@ -204,6 +221,7 @@ fn Lexer::skip_comment(self : Lexer) -> Unit {
 // Operator Scanning
 // ============================================================================
 
+///|
 fn Lexer::try_scan_operator(self : Lexer) -> Bool raise @ast.BashError {
   let ch = self.peek()
 
@@ -260,7 +278,7 @@ fn Lexer::try_scan_operator(self : Lexer) -> Bool raise @ast.BashError {
       self.emit(@ast.Token::RightParen)
       true
     }
-    '{' => {
+    '{' =>
       if self.brace_is_operator() {
         self.pos += 1
         self.emit(@ast.Token::LeftBrace)
@@ -268,8 +286,7 @@ fn Lexer::try_scan_operator(self : Lexer) -> Bool raise @ast.BashError {
       } else {
         false
       }
-    }
-    '}' => {
+    '}' =>
       if self.brace_is_operator() {
         self.pos += 1
         self.emit(@ast.Token::RightBrace)
@@ -277,7 +294,6 @@ fn Lexer::try_scan_operator(self : Lexer) -> Bool raise @ast.BashError {
       } else {
         false
       }
-    }
     '<' => {
       self.scan_redirect_in()
       true
@@ -290,6 +306,7 @@ fn Lexer::try_scan_operator(self : Lexer) -> Bool raise @ast.BashError {
   }
 }
 
+///|
 fn Lexer::brace_is_operator(self : Lexer) -> Bool {
   let prev = if self.pos == 0 {
     '\u0000'
@@ -304,6 +321,7 @@ fn Lexer::brace_is_operator(self : Lexer) -> Bool {
 // Redirection Scanning
 // ============================================================================
 
+///|
 fn Lexer::scan_redirect_in(self : Lexer) -> Unit raise @ast.BashError {
   self.pos += 1 // consume '<'
   match self.peek() {
@@ -331,6 +349,7 @@ fn Lexer::scan_redirect_in(self : Lexer) -> Unit raise @ast.BashError {
   }
 }
 
+///|
 fn Lexer::scan_redirect_out(self : Lexer) -> Unit raise @ast.BashError {
   self.pos += 1 // consume '>'
   match self.peek() {
@@ -354,9 +373,10 @@ fn Lexer::scan_redirect_out(self : Lexer) -> Unit raise @ast.BashError {
 // Word Scanning
 // ============================================================================
 
+///|
 fn Lexer::scan_dollar_brace_into_word(
   self : Lexer,
-  buf : StringBuilder
+  buf : StringBuilder,
 ) -> Unit raise @ast.BashError {
   // Consume "${"
   buf.write_char(self.advance())
@@ -367,7 +387,7 @@ fn Lexer::scan_dollar_brace_into_word(
   let mut in_double = false
   let mut escaped = false
 
-  while !(self.at_end()) {
+  while !self.at_end() {
     let ch = self.advance()
     buf.write_char(ch)
 
@@ -420,10 +440,11 @@ fn Lexer::scan_dollar_brace_into_word(
   raise @ast.BashError("unterminated parameter expansion")
 }
 
+///|
 fn Lexer::scan_dollar_paren_into_word(
   self : Lexer,
   buf : StringBuilder,
-  arithmetic~ : Bool = false
+  arithmetic? : Bool = false,
 ) -> Unit raise @ast.BashError {
   // Consume "$("
   buf.write_char(self.advance())
@@ -439,11 +460,11 @@ fn Lexer::scan_dollar_paren_into_word(
   let mut in_double = false
   let mut escaped = false
 
-  while !(self.at_end()) {
+  while !self.at_end() {
     if arithmetic &&
-      !(in_single) &&
-      !(in_double) &&
-      !(escaped) &&
+      !in_single &&
+      !in_double &&
+      !escaped &&
       depth == 0 &&
       self.peek() == ')' &&
       self.peek_at(1) == ')' {
@@ -517,9 +538,10 @@ fn Lexer::scan_dollar_paren_into_word(
   }
 }
 
+///|
 fn Lexer::scan_dollar_bracket_into_word(
   self : Lexer,
-  buf : StringBuilder
+  buf : StringBuilder,
 ) -> Unit raise @ast.BashError {
   // Consume "$["
   buf.write_char(self.advance())
@@ -530,7 +552,7 @@ fn Lexer::scan_dollar_bracket_into_word(
   let mut in_double = false
   let mut escaped = false
 
-  while !(self.at_end()) {
+  while !self.at_end() {
     let ch = self.advance()
     buf.write_char(ch)
 
@@ -586,15 +608,16 @@ fn Lexer::scan_dollar_bracket_into_word(
   raise @ast.BashError("unterminated legacy arithmetic expansion")
 }
 
+///|
 fn Lexer::scan_backtick_into_word(
   self : Lexer,
-  buf : StringBuilder
+  buf : StringBuilder,
 ) -> Unit raise @ast.BashError {
   // Consume opening backtick.
   buf.write_char(self.advance())
 
   let mut escaped = false
-  while !(self.at_end()) {
+  while !self.at_end() {
     let ch = self.advance()
     buf.write_char(ch)
 
@@ -616,20 +639,21 @@ fn Lexer::scan_backtick_into_word(
   raise @ast.BashError("unterminated backtick command substitution")
 }
 
+///|
 fn Lexer::scan_parenthesized_assignment_value(
   self : Lexer,
-  buf : StringBuilder
+  buf : StringBuilder,
 ) -> Unit raise @ast.BashError {
   let mut depth = 0
   let mut in_single = false
   let mut in_double = false
   let mut single_quote_has_content = false
 
-  while !(self.at_end()) {
+  while !self.at_end() {
     if in_single {
       let ch = self.advance()
       if ch == '\'' {
-        if !(single_quote_has_content) {
+        if !single_quote_has_content {
           // Preserve empty single-quoted token (e.g. (''))
           // so word parser can materialize it as SingleQuoted("").
           buf.write_char('\u0001')
@@ -674,9 +698,13 @@ fn Lexer::scan_parenthesized_assignment_value(
         continue
       }
       if ch == '\\' {
-        if !(self.at_end()) {
+        if !self.at_end() {
           let next = self.peek()
-          if next == '$' || next == '`' || next == '"' || next == '\\' || next == '\n' {
+          if next == '$' ||
+            next == '`' ||
+            next == '"' ||
+            next == '\\' ||
+            next == '\n' {
             buf.write_char(self.advance())
           } else {
             buf.write_char('\\')
@@ -704,7 +732,7 @@ fn Lexer::scan_parenthesized_assignment_value(
       }
       '\\' => {
         self.pos += 1
-        if !(self.at_end()) {
+        if !self.at_end() {
           let next = self.advance()
           if next == '$' ||
             next == '`' ||
@@ -735,6 +763,7 @@ fn Lexer::scan_parenthesized_assignment_value(
   raise @ast.BashError("unterminated parenthesized assignment value")
 }
 
+///|
 fn word_looks_like_assignment_prefix(word : String) -> Bool {
   if word.length() < 2 {
     return false
@@ -748,6 +777,7 @@ fn word_looks_like_assignment_prefix(word : String) -> Bool {
   }
 }
 
+///|
 fn find_assignment_operator_pos(word : String) -> Int {
   let mut bracket_depth = 0
   for i = 0; i < word.length(); i = i + 1 {
@@ -769,11 +799,12 @@ fn find_assignment_operator_pos(word : String) -> Int {
   -1
 }
 
+///|
 fn assignment_name_prefix_bracket_depth(word : String) -> Int? {
   if word.length() == 0 {
     return None
   }
-  if !(is_name_start(char_at(word, 0))) {
+  if !is_name_start(char_at(word, 0)) {
     return None
   }
 
@@ -805,6 +836,7 @@ fn assignment_name_prefix_bracket_depth(word : String) -> Int? {
   Some(depth)
 }
 
+///|
 fn token_allows_assignment_prefix_continuation(tok : @ast.Token) -> Bool {
   match tok {
     @ast.Token::AssignmentWord(_, _, _) => true
@@ -825,6 +857,7 @@ fn token_allows_assignment_prefix_continuation(tok : @ast.Token) -> Bool {
   }
 }
 
+///|
 fn token_starts_new_command_context(tok : @ast.Token) -> Bool {
   match tok {
     @ast.Token::Newline
@@ -854,6 +887,7 @@ fn token_starts_new_command_context(tok : @ast.Token) -> Bool {
   }
 }
 
+///|
 fn Lexer::is_assignment_prefix_position(self : Lexer) -> Bool {
   if self.tokens.length() == 0 {
     return true
@@ -874,11 +908,12 @@ fn Lexer::is_assignment_prefix_position(self : Lexer) -> Bool {
   true
 }
 
+///|
 fn Lexer::scan_word(self : Lexer) -> Unit raise @ast.BashError {
   let buf = StringBuilder::new()
   let mut had_quoted = false
 
-  while !(self.at_end()) {
+  while !self.at_end() {
     let ch = self.peek()
 
     if ch == '$' && self.peek_at(1) == '{' {
@@ -920,7 +955,7 @@ fn Lexer::scan_word(self : Lexer) -> Unit raise @ast.BashError {
           None => ()
         }
       }
-      if !(keep_scanning) {
+      if !keep_scanning {
         break
       }
     }
@@ -940,16 +975,14 @@ fn Lexer::scan_word(self : Lexer) -> Unit raise @ast.BashError {
       }
       '\\' => {
         self.pos += 1
-        if !(self.at_end()) {
+        if !self.at_end() {
           let next = self.advance()
           if next != '\n' {
             buf.write_char(next)
           }
         }
       }
-      _ => {
-        buf.write_char(self.advance())
-      }
+      _ => buf.write_char(self.advance())
     }
   }
 
@@ -962,7 +995,7 @@ fn Lexer::scan_word(self : Lexer) -> Unit raise @ast.BashError {
   }
 
   // Check for fd number before redirect
-  if is_all_digits(word) && !(self.at_end()) {
+  if is_all_digits(word) && !self.at_end() {
     let next = self.peek()
     if next == '<' || next == '>' {
       let num = parse_int(word)
@@ -983,23 +1016,26 @@ fn Lexer::scan_word(self : Lexer) -> Unit raise @ast.BashError {
   // Check for reserved word
   match lookup_reserved(word) {
     Some(tok) => self.emit(tok)
-    None => {
+    None =>
       if is_all_digits(word) {
         self.emit(@ast.Token::Number(parse_int64(word)))
       } else {
         self.emit(@ast.Token::Word(word))
       }
-    }
   }
 }
 
-fn Lexer::scan_single_quote(self : Lexer, buf : StringBuilder) -> Unit raise @ast.BashError {
+///|
+fn Lexer::scan_single_quote(
+  self : Lexer,
+  buf : StringBuilder,
+) -> Unit raise @ast.BashError {
   self.pos += 1 // skip opening quote
   let mut has_content = false
-  while !(self.at_end()) {
+  while !self.at_end() {
     let ch = self.advance()
     if ch == '\'' {
-      if !(has_content) {
+      if !has_content {
         // Preserve explicit empty single-quoted literal ('').
         buf.write_char('\u0001')
         buf.write_char('\u0000')
@@ -1014,14 +1050,18 @@ fn Lexer::scan_single_quote(self : Lexer, buf : StringBuilder) -> Unit raise @as
   raise @ast.BashError("unterminated single quote")
 }
 
-fn Lexer::scan_ansi_c_quote(self : Lexer, buf : StringBuilder) -> Unit raise @ast.BashError {
+///|
+fn Lexer::scan_ansi_c_quote(
+  self : Lexer,
+  buf : StringBuilder,
+) -> Unit raise @ast.BashError {
   self.pos += 1 // skip opening quote
   let mut escaped = false
   let mut has_content = false
-  while !(self.at_end()) {
+  while !self.at_end() {
     let ch = self.advance()
-    if ch == '\'' && !(escaped) {
-      if !(has_content) {
+    if ch == '\'' && !escaped {
+      if !has_content {
         buf.write_char('\u0001')
         buf.write_char('\u0000')
       }
@@ -1031,7 +1071,7 @@ fn Lexer::scan_ansi_c_quote(self : Lexer, buf : StringBuilder) -> Unit raise @as
     buf.write_char('\u0001')
     buf.write_char(ch)
     has_content = true
-    if ch == '\\' && !(escaped) {
+    if ch == '\\' && !escaped {
       escaped = true
     } else {
       escaped = false
@@ -1040,16 +1080,21 @@ fn Lexer::scan_ansi_c_quote(self : Lexer, buf : StringBuilder) -> Unit raise @as
   raise @ast.BashError("unterminated ansi-c quote")
 }
 
+///|
 fn buf_has_trailing_dollar(buf : StringBuilder) -> Bool {
   let text = buf.to_string()
   text.length() > 0 && char_at(text, text.length() - 1) == '$'
 }
 
-fn Lexer::scan_double_quote(self : Lexer, buf : StringBuilder) -> Unit raise @ast.BashError {
+///|
+fn Lexer::scan_double_quote(
+  self : Lexer,
+  buf : StringBuilder,
+) -> Unit raise @ast.BashError {
   self.pos += 1 // skip opening quote
   // Mark double-quoted region so parser can preserve quote context.
   buf.write_char('\u0002')
-  while !(self.at_end()) {
+  while !self.at_end() {
     if self.peek() == '$' && self.peek_at(1) == '{' {
       self.scan_dollar_brace_into_word(buf)
       continue
@@ -1077,8 +1122,8 @@ fn Lexer::scan_double_quote(self : Lexer, buf : StringBuilder) -> Unit raise @as
         buf.write_char('\u0003')
         return
       }
-      '\\' => {
-        if !(self.at_end()) {
+      '\\' =>
+        if !self.at_end() {
           let next = self.peek()
           if next == '$' || next == '`' || next == '"' || next == '\\' {
             // Preserve escape marker for expansion parser.
@@ -1093,7 +1138,6 @@ fn Lexer::scan_double_quote(self : Lexer, buf : StringBuilder) -> Unit raise @as
         } else {
           buf.write_char('\\')
         }
-      }
       _ => buf.write_char(ch)
     }
   }
@@ -1104,6 +1148,7 @@ fn Lexer::scan_double_quote(self : Lexer, buf : StringBuilder) -> Unit raise @as
 // String Utilities
 // ============================================================================
 
+///|
 /// Extract a substring by charcode (UTF-16) indices.
 fn substr(s : String, start : Int, end : Int) -> String {
   let buf = StringBuilder::new()
@@ -1113,18 +1158,20 @@ fn substr(s : String, start : Int, end : Int) -> String {
   buf.to_string()
 }
 
+///|
 fn is_all_digits(s : String) -> Bool {
   if s.length() == 0 {
     return false
   }
   for i = 0; i < s.length(); i = i + 1 {
-    if !(is_digit(char_at(s, i))) {
+    if !is_digit(char_at(s, i)) {
       return false
     }
   }
   true
 }
 
+///|
 fn parse_int(s : String) -> Int {
   let mut result = 0
   for i = 0; i < s.length(); i = i + 1 {
@@ -1133,6 +1180,7 @@ fn parse_int(s : String) -> Int {
   result
 }
 
+///|
 fn parse_int64(s : String) -> Int64 {
   let mut result = 0L
   for i = 0; i < s.length(); i = i + 1 {
@@ -1141,6 +1189,7 @@ fn parse_int64(s : String) -> Int64 {
   result
 }
 
+///|
 /// Try to split a word into an assignment: NAME=VALUE or NAME+=VALUE.
 /// Returns Some((name, value, append)) or None.
 fn try_split_assignment(word : String) -> (String, String, Bool)? {
@@ -1158,6 +1207,7 @@ fn try_split_assignment(word : String) -> (String, String, Bool)? {
   Some((name, value, append))
 }
 
+///|
 /// Parse assignment variable name end position before '='.
 /// Supports NAME, NAME+=, NAME[INDEX], and NAME[INDEX]+= forms.
 fn parse_assignment_name_end(word : String, eq_pos : Int) -> Int? {
@@ -1171,7 +1221,7 @@ fn parse_assignment_name_end(word : String, eq_pos : Int) -> Int? {
     return None
   }
 
-  if !(is_name_start(char_at(word, 0))) {
+  if !is_name_start(char_at(word, 0)) {
     return None
   }
 

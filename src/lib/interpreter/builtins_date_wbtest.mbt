@@ -1,5 +1,6 @@
 // moon_bash Interpreter - Date builtin white-box tests
 
+///|
 #cfg(target="js")
 extern "js" fn test_set_wall_now_ms(text : String) =
   #| function(text) {
@@ -7,17 +8,20 @@ extern "js" fn test_set_wall_now_ms(text : String) =
   #|   globalThis.__moon_bash_wall_now = () => (Number.isFinite(value) ? value : 0);
   #| }
 
+///|
 #cfg(not(target="js"))
 fn test_set_wall_now_ms(_text : String) -> Unit {
   ()
 }
 
+///|
 #cfg(target="js")
 extern "js" fn test_clear_wall_now_ms() =
   #| function() {
   #|   delete globalThis.__moon_bash_wall_now;
   #| }
 
+///|
 #cfg(not(target="js"))
 fn test_clear_wall_now_ms() -> Unit {
   ()

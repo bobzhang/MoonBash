@@ -1,5 +1,6 @@
 // moon_bash Interpreter - Sed Parser
 
+///|
 fn trim_ascii_left(s : String) -> String {
   let i = skip_ascii_space(s, 0)
   if i <= 0 {
@@ -11,6 +12,7 @@ fn trim_ascii_left(s : String) -> String {
   }
 }
 
+///|
 priv struct SedSubstituteFlags {
   global : Bool
   ignore_case : Bool
@@ -19,10 +21,8 @@ priv struct SedSubstituteFlags {
   write_file : String?
 }
 
-fn parse_sed_command(
-  expr : String,
-  extended~ : Bool = false
-) -> SedCommand? {
+///|
+fn parse_sed_command(expr : String, extended? : Bool = false) -> SedCommand? {
   let trimmed = trim_ascii_left(expr)
   if trim_ascii_space(trimmed).length() == 0 {
     return None
@@ -51,50 +51,55 @@ fn parse_sed_command(
   let op = trimmed[i].to_int().unsafe_to_char()
   match op {
     'd' => parse_sed_simple_command(trimmed, i, address, Delete, negated~)
-    'D' => parse_sed_simple_command(trimmed, i, address, DeleteFirstLine, negated~)
+    'D' =>
+      parse_sed_simple_command(trimmed, i, address, DeleteFirstLine, negated~)
     'p' => parse_sed_simple_command(trimmed, i, address, PrintPattern, negated~)
-    'P' => parse_sed_simple_command(trimmed, i, address, PrintFirstLine, negated~)
-    'N' => parse_sed_simple_command(trimmed, i, address, AppendNextLine, negated~)
+    'P' =>
+      parse_sed_simple_command(trimmed, i, address, PrintFirstLine, negated~)
+    'N' =>
+      parse_sed_simple_command(trimmed, i, address, AppendNextLine, negated~)
     'n' => parse_sed_simple_command(trimmed, i, address, NextLine, negated~)
-    '=' => parse_sed_simple_command(trimmed, i, address, PrintLineNumber, negated~)
+    '=' =>
+      parse_sed_simple_command(trimmed, i, address, PrintLineNumber, negated~)
     'h' => parse_sed_simple_command(trimmed, i, address, HoldSet, negated~)
     'H' => parse_sed_simple_command(trimmed, i, address, HoldAppend, negated~)
     'g' => parse_sed_simple_command(trimmed, i, address, HoldGet, negated~)
-    'G' => parse_sed_simple_command(trimmed, i, address, HoldAppendGet, negated~)
+    'G' =>
+      parse_sed_simple_command(trimmed, i, address, HoldAppendGet, negated~)
     'x' => parse_sed_simple_command(trimmed, i, address, ExchangeHold, negated~)
     'q' => parse_sed_simple_command(trimmed, i, address, Quit, negated~)
     'v' => parse_sed_version_command(trimmed, i, address, negated~)
-    ':' | 'b' | 't' | 'T' => parse_sed_flow_command(trimmed, i, address, negated~)
+    ':' | 'b' | 't' | 'T' =>
+      parse_sed_flow_command(trimmed, i, address, negated~)
     'a' | 'i' | 'c' => parse_sed_text_command(trimmed, i, address, negated~)
     'w' => parse_sed_write_command(trimmed, i, address, negated~)
     'y' => parse_sed_translit_command(trimmed, i, address, negated~)
-    's' => parse_sed_substitute_command(trimmed, i, address, extended~, negated~)
+    's' =>
+      parse_sed_substitute_command(trimmed, i, address, extended~, negated~)
     _ => None
   }
 }
 
+///|
 fn parse_sed_simple_command(
   expr : String,
   op_idx : Int,
   address : SedAddressRange?,
   kind : SedCommandKind,
-  negated~ : Bool = false
+  negated? : Bool = false,
 ) -> SedCommand? {
   if skip_ascii_space(expr, op_idx + 1) != expr.length() {
     return None
   }
-  Some({
-    address,
-    kind,
-    negated,
-  })
+  Some({ address, kind, negated })
 }
 
+///|
 fn parse_sed_version_command(
   expr : String,
   op_idx : Int,
   address : SedAddressRange?,
-  negated~ : Bool = false
+  negated? : Bool = false,
 ) -> SedCommand? {
   let i = op_idx + 1
   let version = if i >= expr.length() {
@@ -111,18 +116,15 @@ fn parse_sed_version_command(
       Some(rest)
     }
   }
-  Some({
-    address,
-    kind: VersionCheck(version),
-    negated,
-  })
+  Some({ address, kind: VersionCheck(version), negated })
 }
 
+///|
 fn parse_sed_flow_command(
   expr : String,
   op_idx : Int,
   address : SedAddressRange?,
-  negated~ : Bool = false
+  negated? : Bool = false,
 ) -> SedCommand? {
   let op = expr[op_idx].to_int().unsafe_to_char()
   let rest = trim_ascii_space(substring_slice(expr, op_idx + 1, expr.length()))
@@ -138,21 +140,19 @@ fn parse_sed_flow_command(
       BranchIfNotSubst(label)
     }
   }
-  Some({
-    address,
-    kind,
-    negated,
-  })
+  Some({ address, kind, negated })
 }
 
+///|
 fn parse_sed_text_command(
   expr : String,
   op_idx : Int,
   address : SedAddressRange?,
-  negated~ : Bool = false
+  negated? : Bool = false,
 ) -> SedCommand? {
   let op = expr[op_idx].to_int().unsafe_to_char()
-  guard parse_sed_text_payload(substring_slice(expr, op_idx + 1, expr.length())) is Some(text) else {
+  guard parse_sed_text_payload(substring_slice(expr, op_idx + 1, expr.length()))
+    is Some(text) else {
     return None
   }
   let kind = if op == 'a' {
@@ -162,43 +162,38 @@ fn parse_sed_text_command(
   } else {
     ChangeText(text)
   }
-  Some({
-    address,
-    kind,
-    negated,
-  })
+  Some({ address, kind, negated })
 }
 
+///|
 fn parse_sed_write_command(
   expr : String,
   op_idx : Int,
   address : SedAddressRange?,
-  negated~ : Bool = false
+  negated? : Bool = false,
 ) -> SedCommand? {
   let rest = substring_slice(expr, op_idx + 1, expr.length())
-  let has_space = rest.length() > 0 && (
-    rest[0].to_int().unsafe_to_char() == ' ' ||
-    rest[0].to_int().unsafe_to_char() == '\t'
-  )
-  if address is None && !(has_space) {
+  let has_space = rest.length() > 0 &&
+    (
+      rest[0].to_int().unsafe_to_char() == ' ' ||
+      rest[0].to_int().unsafe_to_char() == '\t'
+    )
+  if address is None && !has_space {
     return None
   }
   let path = trim_ascii_space(rest)
   if path.length() == 0 {
     return None
   }
-  Some({
-    address,
-    kind: WriteFile(path),
-    negated,
-  })
+  Some({ address, kind: WriteFile(path), negated })
 }
 
+///|
 fn parse_sed_translit_command(
   expr : String,
   op_idx : Int,
   address : SedAddressRange?,
-  negated~ : Bool = false
+  negated? : Bool = false,
 ) -> SedCommand? {
   let mut i = op_idx + 1
   if i >= expr.length() {
@@ -209,7 +204,8 @@ fn parse_sed_translit_command(
   guard parse_sed_translit_part(expr, i, delim) is Some((source, target_start)) else {
     return None
   }
-  guard parse_sed_translit_part(expr, target_start, delim) is Some((target, end_idx)) else {
+  guard parse_sed_translit_part(expr, target_start, delim)
+    is Some((target, end_idx)) else {
     return None
   }
   if source.length() != target.length() {
@@ -218,30 +214,29 @@ fn parse_sed_translit_command(
   if skip_ascii_space(expr, end_idx) != expr.length() {
     return None
   }
-  Some({
-    address,
-    kind: Transliterate({
-      source,
-      target,
-    }),
-    negated,
-  })
+  Some({ address, kind: Transliterate({ source, target }), negated })
 }
 
+///|
 fn parse_sed_substitute_command(
   expr : String,
   op_idx : Int,
   address : SedAddressRange?,
-  extended~ : Bool = false,
-  negated~ : Bool = false
+  extended? : Bool = false,
+  negated? : Bool = false,
 ) -> SedCommand? {
-  guard parse_sed_substitute_parts(expr, op_idx) is Some((pattern, replacement, flags_text, delim)) else {
+  guard parse_sed_substitute_parts(expr, op_idx)
+    is Some((pattern, replacement, flags_text, delim)) else {
     return None
   }
   guard parse_sed_substitute_flags(flags_text) is Some(flags) else {
     return None
   }
-  let matcher = parse_sed_substitute_matcher(pattern, extended~, ignore_case=flags.ignore_case)
+  let matcher = parse_sed_substitute_matcher(
+    pattern,
+    extended~,
+    ignore_case=flags.ignore_case,
+  )
   if pattern.length() > 0 && matcher is None {
     return None
   }
@@ -261,9 +256,10 @@ fn parse_sed_substitute_command(
   })
 }
 
+///|
 fn parse_sed_substitute_parts(
   expr : String,
-  op_idx : Int
+  op_idx : Int,
 ) -> (String, String, String, Char)? {
   let mut i = op_idx + 1
   if i >= expr.length() {
@@ -272,17 +268,22 @@ fn parse_sed_substitute_parts(
   let delim = expr[i].to_int().unsafe_to_char()
   i += 1
 
-  guard parse_sed_until_delim(expr, i, delim, regex_part=true) is Some((pattern, replacement_start)) else {
+  guard parse_sed_until_delim(expr, i, delim, regex_part=true)
+    is Some((pattern, replacement_start)) else {
     return None
   }
-  guard parse_sed_until_delim(expr, replacement_start, delim, regex_part=false) is Some((replacement, flags_start)) else {
+  guard parse_sed_until_delim(expr, replacement_start, delim, regex_part=false)
+    is Some((replacement, flags_start)) else {
     return None
   }
 
-  let flags_text = trim_ascii_space(substring_slice(expr, flags_start, expr.length()))
+  let flags_text = trim_ascii_space(
+    substring_slice(expr, flags_start, expr.length()),
+  )
   Some((pattern, replacement, flags_text, delim))
 }
 
+///|
 fn parse_sed_substitute_flags(flags_text : String) -> SedSubstituteFlags? {
   let mut global = false
   let mut ignore_case = false
@@ -313,7 +314,9 @@ fn parse_sed_substitute_flags(flags_text : String) -> SedSubstituteFlags? {
       'i' | 'I' => ignore_case = true
       'p' => print_on_subst = true
       'w' => {
-        let path = trim_ascii_space(substring_slice(flags_text, j + 1, flags_text.length()))
+        let path = trim_ascii_space(
+          substring_slice(flags_text, j + 1, flags_text.length()),
+        )
         if path.length() == 0 {
           return None
         }
@@ -326,19 +329,14 @@ fn parse_sed_substitute_flags(flags_text : String) -> SedSubstituteFlags? {
     }
     j += 1
   }
-  Some({
-    global,
-    ignore_case,
-    occurrence,
-    print_on_subst,
-    write_file,
-  })
+  Some({ global, ignore_case, occurrence, print_on_subst, write_file })
 }
 
+///|
 fn parse_sed_substitute_matcher(
   pattern : String,
-  extended~ : Bool = false,
-  ignore_case~ : Bool = false
+  extended? : Bool = false,
+  ignore_case? : Bool = false,
 ) -> @regex.GrepMatcher? {
   if pattern.length() == 0 {
     return None
@@ -347,26 +345,17 @@ fn parse_sed_substitute_matcher(
   if sed_pattern_has_python_comment_group(pattern) {
     return None
   }
-  let compiled = try {
-    @regex.compile_grep_matcher(
-      pattern,
-      extended~,
-      fixed=false,
-      ignore_case~,
-    )
-  } catch {
+  let compiled = @regex.compile_grep_matcher(
+    pattern,
+    extended~,
+    fixed=false,
+    ignore_case~,
+  ) catch {
     _ => {
       if sed_pattern_has_regex_meta(pattern) {
         return None
       }
-      try {
-        @regex.compile_grep_matcher(
-          pattern,
-          extended~,
-          fixed=true,
-          ignore_case~,
-        )
-      } catch {
+      @regex.compile_grep_matcher(pattern, extended~, fixed=true, ignore_case~) catch {
         _ => return None
       }
     }
@@ -374,6 +363,7 @@ fn parse_sed_substitute_matcher(
   Some(compiled)
 }
 
+///|
 fn sed_pattern_has_regex_meta(pattern : String) -> Bool {
   for i = 0; i < pattern.length(); i = i + 1 {
     let ch = pattern[i].to_int().unsafe_to_char()
@@ -397,6 +387,7 @@ fn sed_pattern_has_regex_meta(pattern : String) -> Bool {
   false
 }
 
+///|
 fn sed_pattern_has_python_comment_group(pattern : String) -> Bool {
   let mut i = 0
   while i + 4 < pattern.length() {
@@ -413,9 +404,10 @@ fn sed_pattern_has_python_comment_group(pattern : String) -> Bool {
   false
 }
 
+///|
 fn parse_sed_address_prefix(
   expr : String,
-  extended~ : Bool = false
+  extended? : Bool = false,
 ) -> (SedAddressRange?, Int)? {
   let i = skip_ascii_space(expr, 0)
   if i >= expr.length() {
@@ -426,7 +418,8 @@ fn parse_sed_address_prefix(
     return Some((None, i))
   }
 
-  guard parse_sed_address(expr, i, extended~, allow_relative=false) is Some((start_addr, after_start)) else {
+  guard parse_sed_address(expr, i, extended~, allow_relative=false)
+    is Some((start_addr, after_start)) else {
     return None
   }
 
@@ -434,27 +427,17 @@ fn parse_sed_address_prefix(
   if j < expr.length() && expr[j].to_int().unsafe_to_char() == ',' {
     j += 1
     j = skip_ascii_space(expr, j)
-    guard parse_sed_address(expr, j, extended~, allow_relative=true) is Some((end_addr, after_end)) else {
+    guard parse_sed_address(expr, j, extended~, allow_relative=true)
+      is Some((end_addr, after_end)) else {
       return None
     }
-    Some((
-      Some({
-        start: start_addr,
-        end: Some(end_addr),
-      }),
-      after_end,
-    ))
+    Some((Some({ start: start_addr, end: Some(end_addr) }), after_end))
   } else {
-    Some((
-      Some({
-        start: start_addr,
-        end: None,
-      }),
-      j,
-    ))
+    Some((Some({ start: start_addr, end: None }), j))
   }
 }
 
+///|
 fn is_sed_command_start_char(ch : Char) -> Bool {
   ch == 's' ||
   ch == 'd' ||
@@ -483,11 +466,12 @@ fn is_sed_command_start_char(ch : Char) -> Bool {
   ch == '{'
 }
 
+///|
 fn parse_sed_address(
   expr : String,
   start : Int,
-  extended~ : Bool = false,
-  allow_relative~ : Bool = false
+  extended? : Bool = false,
+  allow_relative? : Bool = false,
 ) -> (SedAddress, Int)? {
   if start >= expr.length() {
     return None
@@ -510,7 +494,9 @@ fn parse_sed_address(
     if i == start + 1 {
       return None
     }
-    return Some((Relative(parse_int32_str(substring_slice(expr, start + 1, i))), i))
+    return Some(
+      (Relative(parse_int32_str(substring_slice(expr, start + 1, i))), i),
+    )
   }
   if ch == '$' {
     return Some((LastLine, start + 1))
@@ -528,7 +514,8 @@ fn parse_sed_address(
     return Some((Line(parse_int32_str(substring_slice(expr, start, i))), i))
   }
   if ch == '/' {
-    guard parse_sed_until_delim(expr, start + 1, '/', regex_part=true) is Some((pattern, next_idx)) else {
+    guard parse_sed_until_delim(expr, start + 1, '/', regex_part=true)
+      is Some((pattern, next_idx)) else {
       return None
     }
     if pattern.length() == 0 {
@@ -537,14 +524,12 @@ fn parse_sed_address(
     if sed_pattern_has_python_comment_group(pattern) {
       return None
     }
-    let matcher = try {
-      @regex.compile_grep_matcher(
-        pattern,
-        extended~,
-        fixed=false,
-        ignore_case=false,
-      )
-    } catch {
+    let matcher = @regex.compile_grep_matcher(
+      pattern,
+      extended~,
+      fixed=false,
+      ignore_case=false,
+    ) catch {
       _ => return None
     }
     return Some((Regex(matcher), next_idx))
@@ -553,11 +538,12 @@ fn parse_sed_address(
   None
 }
 
+///|
 fn parse_sed_until_delim(
   expr : String,
   start : Int,
   delim : Char,
-  regex_part~ : Bool = false
+  regex_part? : Bool = false,
 ) -> (String, Int)? {
   let buf = StringBuilder::new()
   let mut i = start
@@ -581,13 +567,13 @@ fn parse_sed_until_delim(
       continue
     }
     if regex_part {
-      if ch == '[' && !(in_char_class) {
+      if ch == '[' && !in_char_class {
         in_char_class = true
       } else if ch == ']' && in_char_class {
         in_char_class = false
       }
     }
-    if ch == delim && !(in_char_class) {
+    if ch == delim && !in_char_class {
       return Some((buf.to_string(), i + 1))
     }
     buf.write_char(ch)
@@ -596,10 +582,11 @@ fn parse_sed_until_delim(
   None
 }
 
+///|
 fn parse_sed_translit_part(
   expr : String,
   start : Int,
-  delim : Char
+  delim : Char,
 ) -> (String, Int)? {
   let buf = StringBuilder::new()
   let mut i = start
@@ -628,6 +615,7 @@ fn parse_sed_translit_part(
   None
 }
 
+///|
 fn parse_sed_text_payload(raw : String) -> String? {
   let mut i = 0
   while i < raw.length() {
@@ -643,12 +631,13 @@ fn parse_sed_text_payload(raw : String) -> String? {
   }
 
   let mut payload = substring_slice(raw, i, raw.length())
-  if payload[0].to_int().unsafe_to_char() == '\\' && (
-    payload.length() == 1 ||
-    payload[1].to_int().unsafe_to_char() == '\n' ||
-    payload[1].to_int().unsafe_to_char() == ' ' ||
-    payload[1].to_int().unsafe_to_char() == '\t'
-  ) {
+  if payload[0].to_int().unsafe_to_char() == '\\' &&
+    (
+      payload.length() == 1 ||
+      payload[1].to_int().unsafe_to_char() == '\n' ||
+      payload[1].to_int().unsafe_to_char() == ' ' ||
+      payload[1].to_int().unsafe_to_char() == '\t'
+    ) {
     payload = substring_slice(payload, 1, payload.length())
     if payload.length() > 0 && payload[0].to_int().unsafe_to_char() == '\n' {
       payload = substring_slice(payload, 1, payload.length())
@@ -660,6 +649,7 @@ fn parse_sed_text_payload(raw : String) -> String? {
   Some(decode_sed_escapes(payload))
 }
 
+///|
 fn decode_sed_escapes(text : String) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -682,6 +672,7 @@ fn decode_sed_escapes(text : String) -> String {
   out.to_string()
 }
 
+///|
 fn parse_sed_inline_directives(expr : String) -> (Bool, Bool)? {
   let trimmed = trim_ascii_left(expr)
   if trimmed.length() < 2 || trimmed[0].to_int().unsafe_to_char() != '#' {
@@ -716,9 +707,10 @@ fn parse_sed_inline_directives(expr : String) -> (Bool, Bool)? {
   }
 }
 
+///|
 fn parse_sed_script_commands(
   expr : String,
-  extended~ : Bool = false
+  extended? : Bool = false,
 ) -> Array[SedCommand]? {
   let normalized = trim_ascii_left(expr)
   if trim_ascii_space(normalized).length() == 0 {
@@ -744,9 +736,7 @@ fn parse_sed_script_commands(
       sep_idx += 1
       parsed = parse_sed_single_piece(candidate, extended~)
     }
-    guard parsed is Some(cmds) else {
-      return None
-    }
+    guard parsed is Some(cmds) else { return None }
     for cmd in cmds {
       merged.push(cmd)
     }
@@ -756,9 +746,10 @@ fn parse_sed_script_commands(
   Some(merged)
 }
 
+///|
 fn parse_sed_single_piece(
   expr : String,
-  extended~ : Bool = false
+  extended? : Bool = false,
 ) -> Array[SedCommand]? {
   let trimmed = trim_ascii_left(expr)
   if trim_ascii_space(trimmed).length() == 0 {
@@ -781,11 +772,13 @@ fn parse_sed_single_piece(
   None
 }
 
+///|
 fn parse_sed_group_commands(
   expr : String,
-  extended~ : Bool = false
+  extended? : Bool = false,
 ) -> Array[SedCommand]? {
-  guard parse_sed_group_open(expr, extended~) is Some((address, outer_negated, open_idx)) else {
+  guard parse_sed_group_open(expr, extended~)
+    is Some((address, outer_negated, open_idx)) else {
     return None
   }
   guard parse_sed_group_close_index(expr, open_idx) is Some(close_idx) else {
@@ -801,25 +794,18 @@ fn parse_sed_group_commands(
   }
 
   let wrapped : Array[SedCommand] = []
-  wrapped.push({
-    address,
-    kind: GroupStart,
-    negated: outer_negated,
-  })
+  wrapped.push({ address, kind: GroupStart, negated: outer_negated })
   for cmd in inner_cmds {
     wrapped.push(cmd)
   }
-  wrapped.push({
-    address: None,
-    kind: GroupEnd,
-    negated: false,
-  })
+  wrapped.push({ address: None, kind: GroupEnd, negated: false })
   Some(wrapped)
 }
 
+///|
 fn parse_sed_group_open(
   expr : String,
-  extended~ : Bool = false
+  extended? : Bool = false,
 ) -> (SedAddressRange?, Bool, Int)? {
   guard parse_sed_address_prefix(expr, extended~) is Some((address, cmd_idx)) else {
     return None
@@ -834,13 +820,15 @@ fn parse_sed_group_open(
   if outer_negated && address is None {
     return None
   }
-  if open_idx >= expr.length() || expr[open_idx].to_int().unsafe_to_char() != '{' {
+  if open_idx >= expr.length() ||
+    expr[open_idx].to_int().unsafe_to_char() != '{' {
     return None
   }
 
   Some((address, outer_negated, open_idx))
 }
 
+///|
 fn parse_sed_group_close_index(expr : String, open_idx : Int) -> Int? {
   let mut depth = 1
   let mut i = open_idx + 1
@@ -868,6 +856,7 @@ fn parse_sed_group_close_index(expr : String, open_idx : Int) -> Int? {
   None
 }
 
+///|
 fn split_sed_top_level_parts(expr : String) -> (Array[String], Array[String]) {
   let segments : Array[String] = []
   let separators : Array[String] = []
@@ -904,6 +893,7 @@ fn split_sed_top_level_parts(expr : String) -> (Array[String], Array[String]) {
   (segments, separators)
 }
 
+///|
 fn skip_ascii_space(s : String, start : Int) -> Int {
   let mut i = start
   while i < s.length() {
@@ -917,6 +907,7 @@ fn skip_ascii_space(s : String, start : Int) -> Int {
   i
 }
 
+///|
 fn trim_ascii_space(s : String) -> String {
   let start = skip_ascii_space(s, 0)
   if start >= s.length() {

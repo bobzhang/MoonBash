@@ -1,5 +1,6 @@
 // moon_bash Commands - awk command entry point (cmd_awk)
 
+///|
 fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
   let mut fs = " "
   let mut program : String? = None
@@ -15,7 +16,10 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
       }
       match awk_parse_var_assignment(ctx.args[i + 1]) {
         Some((name, value)) => initial_vars.push((name, value))
-        None => return @ast.ExecResult::err("awk: invalid -v assignment: \{ctx.args[i + 1]}\n")
+        None =>
+          return @ast.ExecResult::err(
+            "awk: invalid -v assignment: \{ctx.args[i + 1]}\n",
+          )
       }
       i += 2
       continue
@@ -24,7 +28,8 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
       let spec = aj_substr(arg, 2, arg.length())
       match awk_parse_var_assignment(spec) {
         Some((name, value)) => initial_vars.push((name, value))
-        None => return @ast.ExecResult::err("awk: invalid -v assignment: \{spec}\n")
+        None =>
+          return @ast.ExecResult::err("awk: invalid -v assignment: \{spec}\n")
       }
       i += 1
       continue
@@ -62,7 +67,9 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
     aj_find_substring(normalized_prog_src, "\r'") >= 0 {
     return @ast.ExecResult::err("awk: syntax error\n")
   }
-  let (program_without_functions, functions) = awk_extract_functions(normalized_prog_src)
+  let (program_without_functions, functions) = awk_extract_functions(
+    normalized_prog_src,
+  )
   let prog = awk_parse_program(program_without_functions)
 
   let (input, filename) = if files.length() > 0 {
@@ -72,14 +79,10 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
     } else if path == "/dev/null" {
       ("", "/dev/null")
     } else {
-      let resolved = try {
-        @fs.resolve_path(ctx.cwd, path)
-      } catch {
+      let resolved = @fs.resolve_path(ctx.cwd, path) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("awk: \{msg}\n")
       }
-      let content = try {
-        ctx.fs.read_file(resolved)
-      } catch {
+      let content = ctx.fs.read_file(resolved) catch {
         @fs.FsError(msg) => return @ast.ExecResult::err("awk: \{msg}\n")
       }
       (content, path)
@@ -89,8 +92,8 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   let out = StringBuilder::new()
-  let vars : Map[String, String] = {}
-  let array_vars : Map[String, String] = {}
+  let vars : Map[String, String] = Map([])
+  let array_vars : Map[String, String] = Map([])
   let lines = aj_split_lines_records(input)
   let mut nr = 0
   vars["FS"] = fs
@@ -110,22 +113,22 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
     if vars.contains(awk_ctrl_exit_key) {
       break
     }
-      let (_, _, _, new_nr) = awk_execute_action(
-        ctx,
-        action,
-        lines,
-        -1,
-        "",
-        [],
-        nr,
-        0,
-        fs,
-        filename,
-        vars,
-        array_vars,
-        out,
-      )
-      nr = new_nr
+    let (_, _, _, new_nr) = awk_execute_action(
+      ctx,
+      action,
+      lines,
+      -1,
+      "",
+      [],
+      nr,
+      0,
+      fs,
+      filename,
+      vars,
+      array_vars,
+      out,
+    )
+    nr = new_nr
   }
 
   let mut line_idx = 0
@@ -145,14 +148,7 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
     vars["NF"] = nf.to_string()
     vars.remove(awk_ctrl_next_key)
     let (matched, next_range) = awk_pattern_match_program(
-      prog,
-      line,
-      fields,
-      nr,
-      nf,
-      vars,
-      array_vars,
-      in_range,
+      prog, line, fields, nr, nf, vars, array_vars, in_range,
     )
     in_range = next_range
     if matched {
@@ -187,31 +183,31 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
     None => ()
   }
 
-  if !(vars.contains(awk_ctrl_error_key)) {
+  if !vars.contains(awk_ctrl_error_key) {
     for action in prog.end_actions {
       if vars.contains(awk_ctrl_exit_key) {
         break
       }
-        let end_idx = if lines.length() > 0 { lines.length() - 1 } else { -1 }
-        let (_, _, _, _) = awk_execute_action(
-          ctx,
-          action,
-          lines,
-          end_idx,
-          "",
-          [],
-          nr,
-          0,
-          fs,
-          filename,
-          vars,
-          array_vars,
-          out,
-        )
+      let end_idx = if lines.length() > 0 { lines.length() - 1 } else { -1 }
+      let (_, _, _, _) = awk_execute_action(
+        ctx,
+        action,
+        lines,
+        end_idx,
+        "",
+        [],
+        nr,
+        0,
+        fs,
+        filename,
+        vars,
+        array_vars,
+        out,
+      )
     }
   }
 
-  if !(vars.contains(awk_ctrl_exit_key)) {
+  if !vars.contains(awk_ctrl_exit_key) {
     match begin_exit {
       Some(code) => vars[awk_ctrl_exit_key] = code
       None => ()
@@ -227,5 +223,5 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
     None => ""
   }
   awk_set_active_expr_output(None)
-  @ast.ExecResult::new(stdout=out.to_string(), stderr=stderr, exit_code=exit_code)
+  @ast.ExecResult::new(stdout=out.to_string(), stderr~, exit_code~)
 }
