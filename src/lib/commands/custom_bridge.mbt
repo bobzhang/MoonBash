@@ -23,7 +23,7 @@ fn custom_hex_digit(n : Int32) -> Char {
 
 ///|
 fn custom_json_escape_string(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('"')
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
@@ -51,7 +51,7 @@ fn custom_json_escape_string(s : String) -> String {
 
 ///|
 fn custom_args_to_json(args : Array[String]) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('[')
   for i = 0; i < args.length(); i = i + 1 {
     if i > 0 {
@@ -70,7 +70,7 @@ fn custom_env_to_json(env : Map[String, String]) -> String {
     keys.push(key)
   }
   keys.sort_by(fn(a, b) { if a < b { -1 } else if a > b { 1 } else { 0 } })
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('{')
   for i = 0; i < keys.length(); i = i + 1 {
     if i > 0 {
@@ -96,7 +96,7 @@ fn custom_files_to_json(fs : @fs.InMemoryFs) -> String {
     }
   }
   keys.sort_by(fn(a, b) { if a < b { -1 } else if a > b { 1 } else { 0 } })
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('{')
   for i = 0; i < keys.length(); i = i + 1 {
     if i > 0 {
@@ -121,7 +121,7 @@ fn custom_build_request_json(
   args : Array[String],
   ctx : CommandContext,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('{')
   out.write_string("\"name\":")
   out.write_string(custom_json_escape_string(name))
@@ -338,7 +338,7 @@ fn cmd_custom_bridge(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   if response.error.length() > 0 {
-    let err = StringBuilder::new()
+    let err = StringBuilder::StringBuilder()
     if response.stderr.length() > 0 {
       err.write_string(custom_stderr_with_newline(response.stderr))
     }

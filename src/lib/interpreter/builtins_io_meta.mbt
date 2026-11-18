@@ -12,7 +12,7 @@ fn ExecContext::builtin_read(self : ExecContext, args : Array[String]) -> Unit {
       break
     }
   }
-  let line = input.view(start_offset=0, end_offset=line_end).to_owned()
+  let line = input.clamped_view(start=0, end=line_end).to_owned()
 
   // Parse flags
   let var_names : Array[String] = []
@@ -60,7 +60,7 @@ fn ExecContext::builtin_read(self : ExecContext, args : Array[String]) -> Unit {
           self.env[var_names[j]] = value
           // Last variable - assign rest of line
         } else if j < words.length() {
-          let buf = StringBuilder::new()
+          let buf = StringBuilder::StringBuilder()
           for k = j; k < words.length(); k = k + 1 {
             if k > j {
               buf.write_string(" ")
@@ -76,7 +76,7 @@ fn ExecContext::builtin_read(self : ExecContext, args : Array[String]) -> Unit {
 
   // Consume the line from stdin
   if line_end < input.length() {
-    self.stdin_buf = input.view(start_offset=line_end + 1).to_owned()
+    self.stdin_buf = input.clamped_view(start=line_end + 1).to_owned()
   } else {
     self.stdin_buf = ""
   }
@@ -129,7 +129,7 @@ fn ExecContext::builtin_mapfile(
     self.env.remove(key)
   }
 
-  let joined = StringBuilder::new()
+  let joined = StringBuilder::StringBuilder()
   for idx = 0; idx < lines.length(); idx = idx + 1 {
     let value = lines[idx]
     self.env["\{array_name}[\{idx.to_string()}]"] = value
@@ -147,7 +147,7 @@ fn ExecContext::builtin_mapfile(
 ///|
 fn mapfile_split_lines(input : String, strip_newline : Bool) -> Array[String] {
   let lines : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
     if ch == '\n' {
@@ -739,7 +739,7 @@ fn type_word_part_to_text(part : @ast.WordPart) -> String {
     @ast.WordPart::Literal(text) => text
     @ast.WordPart::SingleQuoted(text) => text
     @ast.WordPart::DoubleQuoted(parts) => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder::StringBuilder()
       for inner in parts {
         buf.write_string(type_word_part_to_text(inner))
       }
@@ -757,7 +757,7 @@ fn type_word_part_to_text(part : @ast.WordPart) -> String {
 
 ///|
 fn type_word_to_text(word : @ast.Word) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for part in word.parts {
     buf.write_string(type_word_part_to_text(part))
   }

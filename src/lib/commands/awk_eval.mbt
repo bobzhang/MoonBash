@@ -88,7 +88,7 @@ fn awk_eval_atom(
 ///|
 fn awk_tokenize_expr(expr : String) -> Array[String] {
   let tokens : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut quote : Char? = None
   let mut paren_depth = 0
   let mut bracket_depth = 0

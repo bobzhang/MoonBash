@@ -19,12 +19,12 @@ fn cmd_cat(ctx : CommandContext) -> @ast.ExecResult {
     if !number_lines {
       return @ast.ExecResult::ok(ctx.stdin_content)
     }
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     ignore(cmd_cat_write_numbered(out, ctx.stdin_content, 1))
     return @ast.ExecResult::ok(out.to_string())
   }
-  let buf = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   let mut line_no = 1
   for arg in files {
@@ -66,7 +66,7 @@ fn cmd_cat(ctx : CommandContext) -> @ast.ExecResult {
 ///|
 fn cmd_cat_line_prefix(n : Int32) -> String {
   let digits = n.to_string()
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let pad = 6 - digits.length()
   let mut i = 0
   while i < pad {
@@ -84,7 +84,7 @@ fn cmd_cat_write_numbered(
   content : String,
   start_line : Int32,
 ) -> Int32 {
-  let line_buf = StringBuilder::new()
+  let line_buf = StringBuilder::StringBuilder()
   let mut line_no = start_line
   for i = 0; i < content.length(); i = i + 1 {
     let ch = content[i].to_int().unsafe_to_char()
@@ -152,8 +152,8 @@ fn cmd_ls(ctx : CommandContext) -> @ast.ExecResult {
     paths.push(".")
   }
 
-  let out = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   let files : Array[(String, String)] = []
   let dirs : Array[(String, String)] = []

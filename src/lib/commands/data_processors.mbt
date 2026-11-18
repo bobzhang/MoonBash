@@ -60,7 +60,7 @@ fn yq_apply_filter(y : @yaml.Yaml, filter : String) -> (@yaml.Yaml, Bool) {
 /// Parse a filter string like ".key.subkey.[0].[]" into segments
 fn yq_parse_filter(filter : String) -> Array[String] {
   let segments : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = 0
   // Skip leading dot
   if filter.length() > 0 && filter[0] == '.' {
@@ -83,7 +83,7 @@ fn yq_parse_filter(filter : String) -> Array[String] {
         buf.reset()
       }
       // Collect bracket content including brackets
-      let bracket_buf = StringBuilder::new()
+      let bracket_buf = StringBuilder::StringBuilder()
       bracket_buf.write_char('[')
       i += 1
       while i < filter.length() {
@@ -159,7 +159,7 @@ fn cmd_yq(ctx : CommandContext) -> @ast.ExecResult {
 
   let doc = docs[0]
   let (result, iterate) = yq_apply_filter(doc, config.filter)
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
 
   if iterate {
     match result {
@@ -251,7 +251,7 @@ fn xan_headers(ctx : CommandContext) -> @ast.ExecResult {
     Err(msg) => @ast.ExecResult::err(msg)
     Ok(data) => {
       let csv = @nyacsv.CSV::parse_string(data)
-      let out = StringBuilder::new()
+      let out = StringBuilder::StringBuilder()
       let headers = csv.header()
       for i = 0; i < headers.length(); i = i + 1 {
         out.write_string(headers[i])
@@ -293,7 +293,7 @@ fn xan_select(ctx : CommandContext) -> @ast.ExecResult {
       if indices.length() == 0 {
         return @ast.ExecResult::err("xan select: no matching columns found\n")
       }
-      let out = StringBuilder::new()
+      let out = StringBuilder::StringBuilder()
       // Output selected headers
       for i = 0; i < indices.length(); i = i + 1 {
         if i > 0 {
@@ -357,7 +357,7 @@ fn xan_slice(ctx : CommandContext) -> @ast.ExecResult {
   } else {
     config.start
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   // Output headers
   out.write_string(headers.join(","))
   out.write_char('\n')
@@ -423,7 +423,7 @@ fn xan_get_input(
 /// Split comma-separated column spec (e.g. "a,b,c") into column names.
 fn xan_split_col_spec(spec : String) -> Array[String] {
   let parts : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder::StringBuilder()
   for i = 0; i < spec.length(); i = i + 1 {
     let ch = spec[i].to_int().unsafe_to_char()
     if ch == ',' {
@@ -460,7 +460,7 @@ fn xan_view(csv : @nyacsv.CSV) -> String {
       }
     }
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   // Top border
   xan_draw_border(out, widths)
   // Header row

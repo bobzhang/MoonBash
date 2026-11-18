@@ -103,7 +103,7 @@ fn sed_split_lines_with_flags(input : String) -> Array[(String, Bool)] {
     return lines
   }
 
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
     if ch == '\n' {
@@ -134,7 +134,7 @@ fn ExecContext::sed_append_write(
     Some(@fs.FsEntry::File(file)) => file.content
     _ => ""
   }
-  let next = StringBuilder::new()
+  let next = StringBuilder::StringBuilder()
   next.write_string(existing)
   if existing.length() > 0 &&
     existing[existing.length() - 1].to_int().unsafe_to_char() != '\n' {
@@ -439,7 +439,7 @@ fn sed_substitute_line(
       None => (line, false)
     }
   } else {
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     let mut cursor = 0
     let mut changed = false
     let mut done = false
@@ -503,7 +503,7 @@ fn sed_transliterate_line(
   if source.length() == 0 || target.length() == 0 {
     return line
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < line.length(); i = i + 1 {
     let ch = line[i]
     let mut replaced = false
@@ -528,7 +528,7 @@ fn apply_sed_replacement(
   groups : Array[String],
   literal_ampersand~ : Bool = false,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < template.length() {
     let ch = template[i].to_int().unsafe_to_char()

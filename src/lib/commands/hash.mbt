@@ -1,10 +1,10 @@
 // moon_bash Commands - Hash commands (md5sum, sha1sum, sha256sum)
-// Uses community packages: gmlewis/md5, gmlewis/sha1, shu-kitamura/sha256
+// Uses community packages: gmlewis/md5, gmlewis/sha1, moonbitlang/x/crypto
 
 ///|
 /// Convert a string to an array of bytes (treating each char as a byte).
 fn string_to_bytes(s : String) -> Bytes {
-  let arr : Array[Byte] = Array::new()
+  let arr : Array[Byte] = Array()
   for i = 0; i < s.length(); i = i + 1 {
     arr.push((s[i].to_int() & 0xFF).to_byte())
   }
@@ -34,8 +34,8 @@ fn cmd_md5sum(ctx : CommandContext) -> @ast.ExecResult {
     return @ast.ExecResult::ok(hash + "  -\n")
   }
 
-  let buf = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut had_error = false
   for file in files {
     let resolved = @fs.resolve_path(ctx.cwd, file) catch { _ => file }
@@ -78,8 +78,8 @@ fn cmd_sha1sum(ctx : CommandContext) -> @ast.ExecResult {
     return @ast.ExecResult::ok(hash + "  -\n")
   }
 
-  let buf = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut had_error = false
   for file in files {
     let resolved = @fs.resolve_path(ctx.cwd, file) catch { _ => file }
@@ -122,8 +122,8 @@ fn cmd_sha256sum(ctx : CommandContext) -> @ast.ExecResult {
     return @ast.ExecResult::ok(hash + "  -\n")
   }
 
-  let buf = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut had_error = false
   for file in files {
     let resolved = @fs.resolve_path(ctx.cwd, file) catch { _ => file }
@@ -168,7 +168,7 @@ fn compute_sha1(input : String) -> String {
 /// Compute SHA256 hash of a string, returns hex digest.
 fn compute_sha256(input : String) -> String {
   let bytes = string_to_bytes(input)
-  @sha256.sha256_hexdigest(bytes)
+  @hex.encode(Bytes::from_array(@crypto.sha256(bytes)))
 }
 
 ///|
@@ -190,8 +190,8 @@ fn hash_check(
     ctx.stdin_content
   }
 
-  let buf = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut failures = 0
   let lines = hash_split_lines(check_content)
   for line in lines {
@@ -247,7 +247,7 @@ fn hash_check(
 /// Split a string into lines, excluding trailing empty line.
 fn hash_split_lines(s : String) -> Array[String] {
   let lines : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     if s[i] == '\n' {
       lines.push(buf.to_string())
@@ -275,7 +275,7 @@ fn hash_parse_check_line(line : String) -> (String, String)? {
   if i == 0 || i >= line.length() {
     return None
   }
-  let hash = line.view(start_offset=0, end_offset=i).to_owned()
+  let hash = line.clamped_view(start=0, end=i).to_owned()
   // Skip whitespace (typically two spaces or space+asterisk)
   while i < line.length() &&
         (line[i] == ' ' || line[i] == '\t' || line[i] == '*') {
@@ -284,6 +284,6 @@ fn hash_parse_check_line(line : String) -> (String, String)? {
   if i >= line.length() {
     return None
   }
-  let filename = line.view(start_offset=i).to_owned()
+  let filename = line.clamped_view(start=i).to_owned()
   Some((hash, filename))
 }

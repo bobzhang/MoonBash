@@ -44,7 +44,7 @@ fn ExecContext::builtin_sed(self : ExecContext, args : Array[String]) -> Unit {
           j += 1
         } else if flag == 'e' {
           if j + 1 < arg.length() {
-            expressions.push(arg.view(start_offset=j + 1).to_owned())
+            expressions.push(arg.clamped_view(start=j + 1).to_owned())
           } else if i + 1 < args.length() {
             i += 1
             expressions.push(args[i])
@@ -102,7 +102,7 @@ fn ExecContext::builtin_sed(self : ExecContext, args : Array[String]) -> Unit {
       expressions.push(args[i])
       script_taken = true
     } else if arg.has_prefix("-e") && arg.length() > 2 {
-      expressions.push(arg.view(start_offset=2).to_owned())
+      expressions.push(arg.clamped_view(start=2).to_owned())
       script_taken = true
     } else if !script_taken {
       let mut candidate = arg
@@ -146,7 +146,7 @@ fn ExecContext::builtin_sed(self : ExecContext, args : Array[String]) -> Unit {
     }
   }
 
-  let script_builder = StringBuilder::new()
+  let script_builder = StringBuilder::StringBuilder()
   for idx = 0; idx < expressions.length(); idx = idx + 1 {
     let normalized_expr = trim_ascii_left(expressions[idx])
     if normalized_expr == "..." {
@@ -233,7 +233,7 @@ fn ExecContext::builtin_sed(self : ExecContext, args : Array[String]) -> Unit {
       }
     }
   } else {
-    let merged_input = StringBuilder::new()
+    let merged_input = StringBuilder::StringBuilder()
     let mut prev_missing_newline = false
     for idx = 0; idx < inputs.length(); idx = idx + 1 {
       let chunk = inputs[idx]
@@ -283,7 +283,7 @@ fn sed_build_runtime(
     range_states: Array::makei(commands.length(), _ => sed_empty_range_state()),
     label_names,
     label_indices,
-    out: StringBuilder::new(),
+    out: StringBuilder::StringBuilder(),
   }
 }
 

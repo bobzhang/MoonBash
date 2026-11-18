@@ -4,7 +4,7 @@
 ///|
 /// Safely extract substring from start index to end of string.
 fn cmd_substr_from(s : String, start : Int32) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = start; i < s.length(); i = i + 1 {
     buf.write_char(s[i].to_int().unsafe_to_char())
   }
@@ -25,7 +25,7 @@ fn cmd_substr_slice(s : String, start : Int32, end_ : Int32) -> String {
   if start >= end_ {
     return ""
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = start; i < end_; i = i + 1 {
     buf.write_char(s[i].to_int().unsafe_to_char())
   }
@@ -36,7 +36,7 @@ fn cmd_substr_slice(s : String, start : Int32, end_ : Int32) -> String {
 /// Helper to split string into lines
 fn cmd_split_lines(s : String) -> Array[String] {
   let result : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch == '\n' {
@@ -111,7 +111,7 @@ fn cmd_head(ctx : CommandContext) -> @ast.ExecResult {
     }
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
 
   if input_files.length() == 0 {
     match num_bytes {
@@ -214,7 +214,7 @@ fn cmd_tail(ctx : CommandContext) -> @ast.ExecResult {
     }
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
 
   if input_files.length() == 0 {
     match num_bytes {
@@ -422,7 +422,7 @@ fn cmd_wc(ctx : CommandContext) -> @ast.ExecResult {
     flag_chars = true
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
 
   if input_files.length() == 0 {
     let (line_count, word_count, char_count) = cmd_wc_count(ctx.stdin_content)

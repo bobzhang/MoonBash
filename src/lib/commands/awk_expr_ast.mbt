@@ -460,7 +460,7 @@ fn awk_eval_call_expr_ast(
             call_name, args_raw, line, fields, nr, nf, vars, array_vars, active_out,
           )
         None => {
-          let fn_out = StringBuilder::new()
+          let fn_out = StringBuilder::StringBuilder()
           awk_eval_user_function(
             call_name, args_raw, line, fields, nr, nf, vars, array_vars, fn_out,
           )
@@ -544,7 +544,7 @@ fn awk_eval_expr_ast(
         ),
       )
     Concat(parts) => {
-      let out = StringBuilder::new()
+      let out = StringBuilder::StringBuilder()
       for part in parts {
         out.write_string(
           awk_eval_expr_ast(part, line, fields, nr, nf, vars, array_vars),

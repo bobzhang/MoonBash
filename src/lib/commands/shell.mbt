@@ -4,7 +4,7 @@
 ///|
 /// echo: print arguments to stdout
 fn cmd_echo(ctx : CommandContext) -> @ast.ExecResult {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut no_newline = false
   let mut interpret_escapes = false
   let mut start = 0
@@ -50,7 +50,7 @@ fn cmd_echo(ctx : CommandContext) -> @ast.ExecResult {
 ///|
 /// Process escape sequences for echo -e
 fn process_echo_escapes(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()

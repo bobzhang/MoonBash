@@ -28,7 +28,7 @@ fn awk_split_fields(line : String, fs : String) -> Array[String] {
   }
   if fs == " " {
     let fields : Array[String] = []
-    let buf = StringBuilder::new()
+    let buf = StringBuilder::StringBuilder()
     let mut in_field = false
     for i = 0; i < line.length(); i = i + 1 {
       let ch = line[i].to_int().unsafe_to_char()
@@ -277,7 +277,7 @@ fn awk_function_param_is_array(fn_def : AwkFunction, param : String) -> Bool {
 
 ///|
 fn awk_to_lower(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch >= 'A' && ch <= 'Z' {
@@ -297,7 +297,7 @@ fn awk_to_lower(s : String) -> String {
 
 ///|
 fn awk_to_upper(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch >= 'a' && ch <= 'z' {
@@ -317,7 +317,7 @@ fn awk_to_upper(s : String) -> String {
 
 ///|
 fn awk_join_fields(fields : Array[String], sep : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < fields.length(); i = i + 1 {
     if i > 0 {
       out.write_string(sep)
@@ -530,7 +530,7 @@ fn awk_replace_all_literal(
     pattern[0].to_int().unsafe_to_char() == '[' &&
     pattern[pattern.length() - 1].to_int().unsafe_to_char() == ']' {
     let class_chars = aj_substr(pattern, 1, pattern.length() - 1)
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     let mut count = 0
     for i = 0; i < source.length(); i = i + 1 {
       let ch = source[i].to_int().unsafe_to_char()
@@ -543,7 +543,7 @@ fn awk_replace_all_literal(
     }
     return (out.to_string(), count)
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut cursor = 0
   let mut count = 0
   while cursor <= source.length() {

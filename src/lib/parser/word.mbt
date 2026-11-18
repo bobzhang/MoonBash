@@ -25,7 +25,7 @@ fn parse_word_parts_with_context(
   parse_raw_quotes~ : Bool = false,
 ) -> Array[@ast.WordPart] {
   let parts : Array[@ast.WordPart] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = 0
   let len = s.length()
 
@@ -50,7 +50,7 @@ fn parse_word_parts_with_context(
       }
 
       i += 1
-      let quoted = StringBuilder::new()
+      let quoted = StringBuilder::StringBuilder()
       while i < len && wchar_at(s, i) != '\u0003' {
         quoted.write_char(wchar_at(s, i))
         i += 1
@@ -82,7 +82,7 @@ fn parse_word_parts_with_context(
         }
         buf.reset()
       }
-      let quoted = StringBuilder::new()
+      let quoted = StringBuilder::StringBuilder()
       while i + 1 < len && wchar_at(s, i) == '\u0001' {
         quoted.write_char(wchar_at(s, i + 1))
         i += 2
@@ -329,7 +329,7 @@ fn parse_raw_single_quoted_segment(
   start : Int32,
   ansi_c_quote : Bool,
 ) -> (String, Int32) {
-  let quoted = StringBuilder::new()
+  let quoted = StringBuilder::StringBuilder()
   let mut i = start
   let mut escaped = false
   while i < s.length() {
@@ -355,7 +355,7 @@ fn parse_raw_double_quoted_segment(
   s : String,
   start : Int32,
 ) -> (String, Int32) {
-  let quoted = StringBuilder::new()
+  let quoted = StringBuilder::StringBuilder()
   let mut i = start
   while i < s.length() {
     let ch = wchar_at(s, i)
@@ -411,7 +411,7 @@ fn is_special_var(ch : Char) -> Bool {
 
 ///|
 fn decode_ansi_c_escapes(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let ch = wchar_at(s, i)
@@ -551,7 +551,7 @@ fn strip_single_quote_empty_markers(s : String) -> String {
   if s.length() == 0 {
     return s
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = wchar_at(s, i)
     if ch != '\u0000' {
@@ -606,7 +606,7 @@ fn parse_param_name_end(content : String) -> Int32 {
 ///|
 /// Parse a simple variable name starting at pos. Returns (WordPart, next_pos).
 fn parse_simple_variable(s : String, start : Int32) -> (@ast.WordPart, Int32) {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = start
   while i < s.length() {
     let ch = wchar_at(s, i)
@@ -956,7 +956,7 @@ fn parse_word_content_with_raw_quotes(s : String) -> @ast.Word {
 /// characters (LexState::DQ behavior). We preserve that by escaping them before
 /// feeding the generic word parser.
 fn preprocess_param_word_in_double_quote(word_str : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < word_str.length() {
     let ch = wchar_at(word_str, i)
@@ -1344,7 +1344,7 @@ fn parse_backtick_substitution(
   start : Int32,
 ) -> (@ast.WordPart, Int32) {
   let mut i = start
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   while i < s.length() {
     let ch = wchar_at(s, i)
     if ch == '`' {
@@ -1372,7 +1372,7 @@ fn parse_backtick_substitution(
 ///|
 fn parse_tilde(s : String, start : Int32) -> (@ast.WordPart, Int32) {
   let mut i = start + 1 // skip ~
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   while i < s.length() {
     let ch = wchar_at(s, i)
     if ch == '/' || ch == ':' || ch == '{' {
@@ -1391,7 +1391,7 @@ fn parse_tilde(s : String, start : Int32) -> (@ast.WordPart, Int32) {
 ///|
 /// Extract substring by character indices.
 fn wsubstr(s : String, start : Int32, end : Int32) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = start
   while i < end && i < s.length() {
     buf.write_char(wchar_at(s, i))

@@ -14,7 +14,7 @@ fn ExecContext::arith_parse_value_text(
     trimmed[0] == '(' &&
     trimmed[trimmed.length() - 1] == ')' {
     let inner = trimmed
-      .view(start_offset=1, end_offset=trimmed.length() - 1)
+      .clamped_view(start=1, end=trimmed.length() - 1)
       .to_owned()
     let parts = split_by_whitespace(inner)
     if parts.length() == 0 {
@@ -147,7 +147,7 @@ fn ExecContext::arith_get_array_elem(
     trimmed[0] == '(' &&
     trimmed[trimmed.length() - 1] == ')' {
     let inner = trimmed
-      .view(start_offset=1, end_offset=trimmed.length() - 1)
+      .clamped_view(start=1, end=trimmed.length() - 1)
       .to_owned()
     let parts = split_by_whitespace(inner)
     if resolved_index < parts.length().to_int64() {
@@ -685,7 +685,7 @@ fn arith_is_special_var_char(ch : Char) -> Bool {
 
 ///|
 fn arith_strip_line_continuations(raw : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < raw.length() {
     let ch = raw[i].to_int().unsafe_to_char()
@@ -724,7 +724,7 @@ fn arith_prepare_word_for_expansion(raw : String) -> @ast.Word {
 
 ///|
 fn arith_strip_double_quotes(text : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < text.length(); i = i + 1 {
     let ch = text[i].to_int().unsafe_to_char()
     if ch != '"' {
@@ -739,7 +739,7 @@ fn ExecContext::arith_expand_dollar_refs(
   self : ExecContext,
   raw : String,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < raw.length() {
     let ch = raw[i].to_int().unsafe_to_char()
@@ -751,7 +751,7 @@ fn ExecContext::arith_expand_dollar_refs(
               arith_is_ident_char(raw[j].to_int().unsafe_to_char()) {
           j += 1
         }
-        let name = raw.view(start_offset=i + 1, end_offset=j).to_owned()
+        let name = raw.clamped_view(start=i + 1, end=j).to_owned()
         out.write_string(self.expand_variable(name))
         i = j
         continue
@@ -762,13 +762,13 @@ fn ExecContext::arith_expand_dollar_refs(
               arith_is_digit(raw[j].to_int().unsafe_to_char()) {
           j += 1
         }
-        let name = raw.view(start_offset=i + 1, end_offset=j).to_owned()
+        let name = raw.clamped_view(start=i + 1, end=j).to_owned()
         out.write_string(self.expand_variable(name))
         i = j
         continue
       }
       if arith_is_special_var_char(next) {
-        let name = raw.view(start_offset=i + 1, end_offset=i + 2).to_owned()
+        let name = raw.clamped_view(start=i + 1, end=i + 2).to_owned()
         out.write_string(self.expand_variable(name))
         i += 2
         continue
@@ -887,7 +887,7 @@ fn ExecContext::word_split(self : ExecContext, s : String) -> Array[String] {
   }
 
   let result : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()
@@ -969,7 +969,7 @@ fn decode_word_split_protected_text(s : String, ifs : String) -> String {
   if s.length() == 0 {
     return s
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()

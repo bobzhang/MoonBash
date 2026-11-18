@@ -22,7 +22,7 @@ fn vm_hex_digit(n : Int32) -> Char {
 
 ///|
 fn vm_json_escape_string(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('"')
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
@@ -50,7 +50,7 @@ fn vm_json_escape_string(s : String) -> String {
 
 ///|
 fn vm_args_to_json(args : Array[String]) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('[')
   for i = 0; i < args.length(); i = i + 1 {
     if i > 0 {
@@ -69,7 +69,7 @@ fn vm_env_to_json(env : Map[String, String]) -> String {
     keys.push(key)
   }
   keys.sort_by(fn(a, b) { if a < b { -1 } else if a > b { 1 } else { 0 } })
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('{')
   for i = 0; i < keys.length(); i = i + 1 {
     if i > 0 {
@@ -95,7 +95,7 @@ fn vm_files_to_json(fs : @fs.InMemoryFs) -> String {
     }
   }
   keys.sort_by(fn(a, b) { if a < b { -1 } else if a > b { 1 } else { 0 } })
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('{')
   for i = 0; i < keys.length(); i = i + 1 {
     if i > 0 {
@@ -116,7 +116,7 @@ fn vm_files_to_json(fs : @fs.InMemoryFs) -> String {
 
 ///|
 fn vm_build_request_json(runtime_name : String, ctx : CommandContext) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('{')
   out.write_string("\"runtime\":")
   out.write_string(vm_json_escape_string(runtime_name))
@@ -258,7 +258,7 @@ fn vm_run(runtime_name : String, ctx : CommandContext) -> @ast.ExecResult {
       return { stdout: "", stderr: "\{runtime_name}: \{msg}\n", exit_code: 1, }
   }
   if response.error.length() > 0 {
-    let err = StringBuilder::new()
+    let err = StringBuilder::StringBuilder()
     if response.stderr.length() > 0 {
       err.write_string(vm_stderr_with_newline(response.stderr))
     }

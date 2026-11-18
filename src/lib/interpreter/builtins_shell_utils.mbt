@@ -134,7 +134,7 @@ fn ExecContext::builtin_od(self : ExecContext, args : Array[String]) -> Unit {
       }
       i += 2
     } else if arg.has_prefix("-A") && arg.length() > 2 {
-      let fmt = arg.view(start_offset=2).to_owned()
+      let fmt = arg.clamped_view(start=2).to_owned()
       if fmt == "x" {
         hex_address = true
         no_address = false
@@ -143,7 +143,7 @@ fn ExecContext::builtin_od(self : ExecContext, args : Array[String]) -> Unit {
       }
       i += 1
     } else if arg.has_prefix("-t") && arg.length() > 2 {
-      let fmt = arg.view(start_offset=2).to_owned()
+      let fmt = arg.clamped_view(start=2).to_owned()
       if fmt == "c" {
         char_mode = true
       } else if fmt == "x1" {
@@ -276,7 +276,7 @@ fn ExecContext::builtin_od(self : ExecContext, args : Array[String]) -> Unit {
 
 ///|
 fn od_format_octal_addr(n : Int32) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut val = n
   let digits : Array[Char] = []
   if val == 0 {
@@ -306,7 +306,7 @@ fn od_format_octal_addr(n : Int32) -> String {
 
 ///|
 fn od_format_hex_addr(n : Int32) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut val = n
   let digits : Array[Char] = []
   let hex_chars = "0123456789abcdef"
@@ -347,7 +347,7 @@ fn od_format_char(b : Int32) -> String {
     13 => "  \\r"
     _ =>
       if b >= 32 && b <= 126 {
-        let buf = StringBuilder::new()
+        let buf = StringBuilder::StringBuilder()
         buf.write_string("   ")
         buf.write_char(b.unsafe_to_char())
         buf.to_string()
@@ -356,7 +356,7 @@ fn od_format_char(b : Int32) -> String {
         let d2 = b / 64
         let d1 = b % 64 / 8
         let d0 = b % 8
-        let buf = StringBuilder::new()
+        let buf = StringBuilder::StringBuilder()
         buf.write_char(' ')
         buf.write_char((d2 + 48).unsafe_to_char())
         buf.write_char((d1 + 48).unsafe_to_char())
@@ -371,7 +371,7 @@ fn od_format_char(b : Int32) -> String {
 ///|
 fn od_format_hex4(n : Int32) -> String {
   let hex_chars = "0123456789abcdef"
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   buf.write_char(hex_chars[(n >> 12) & 0xF].to_int().unsafe_to_char())
   buf.write_char(hex_chars[(n >> 8) & 0xF].to_int().unsafe_to_char())
   buf.write_char(hex_chars[(n >> 4) & 0xF].to_int().unsafe_to_char())
@@ -384,7 +384,7 @@ fn od_format_hex2(n : Int32) -> String {
   let hex = "0123456789abcdef"
   let hi = n / 16 % 16
   let lo = n % 16
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char(hex[hi].to_int().unsafe_to_char())
   out.write_char(hex[lo].to_int().unsafe_to_char())
   out.to_string()
@@ -394,7 +394,7 @@ fn od_format_hex2(n : Int32) -> String {
 
 ///|
 fn od_format_octal6(n : Int32) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut val = n
   let digits : Array[Char] = []
   if val == 0 {

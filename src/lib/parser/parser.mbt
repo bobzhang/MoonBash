@@ -252,7 +252,7 @@ fn arith_token_to_string(tok : @ast.Token) -> String {
 
 ///|
 fn Parser::parse_arithmetic_raw(self : Parser) -> String raise @ast.BashError {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut depth = 0
 
   while !self.at_end() {
@@ -791,7 +791,7 @@ fn Parser::read_heredoc_until(
   self : Parser,
   delimiter : String,
 ) -> String raise @ast.BashError {
-  let body = StringBuilder::new()
+  let body = StringBuilder::StringBuilder()
   while !self.at_end() {
     let line = self.read_line_tokens()
     if line == delimiter {
@@ -886,7 +886,7 @@ fn token_line_text(tok : @ast.Token) -> String {
 
 ///|
 fn join_tokens_with_space(parts : Array[String]) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < parts.length(); i = i + 1 {
     if i > 0 {
       out.write_char(' ')
@@ -898,7 +898,7 @@ fn join_tokens_with_space(parts : Array[String]) -> String {
 
 ///|
 fn heredoc_delimiter(word : @ast.Word) -> (String, Bool) {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut quoted = false
   for part in word.parts {
     match part {
@@ -935,7 +935,7 @@ fn has_single_quote_markers(s : String) -> Bool {
 
 ///|
 fn strip_single_quote_markers(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()

@@ -256,7 +256,7 @@ fn awk_render_print_output_ast(
     return line + "\n"
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < expr_asts.length(); i = i + 1 {
     if i > 0 {
       out.write_char(' ')
@@ -349,7 +349,7 @@ fn awk_pattern_match_program(
 fn awk_split_statements(action : String) -> Array[String] {
   let action = awk_strip_comments(action)
   let parts : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut quote : Char? = None
   let mut paren_depth = 0
   let mut brace_depth = 0
@@ -720,7 +720,7 @@ fn awk_parse_while_statement(stmt : String) -> (String, String)? {
 ///|
 fn awk_split_for_header(header : String) -> Array[String] {
   let parts : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut quote : Char? = None
   let mut paren_depth = 0
   for i = 0; i < header.length(); i = i + 1 {

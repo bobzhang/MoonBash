@@ -436,7 +436,7 @@ fn awk_split_range_pattern(pattern : String) -> (String?, String?) {
 
 ///|
 fn awk_strip_comments(src : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut quote : Char? = None
   let mut in_regex = false
   let mut escaped = false

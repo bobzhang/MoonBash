@@ -13,7 +13,7 @@ fn validate_path(path : String) -> Unit raise FsError {
 ///|
 /// Extract substring from start (inclusive) to end (exclusive) using StringBuilder.
 fn substr(s : String, start : Int32, end : Int32) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(s[i].to_int().unsafe_to_char())
   }
@@ -54,7 +54,7 @@ pub fn normalize_path(path : String) -> String raise FsError {
   if stack.length() == 0 {
     return "/"
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for part in stack {
     buf.write_string("/")
     buf.write_string(part)

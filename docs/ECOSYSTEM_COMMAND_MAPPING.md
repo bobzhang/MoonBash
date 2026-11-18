@@ -24,7 +24,7 @@ just-bash (87 commands) -> MoonBash (pure MoonBit) 的完整实现分层。
 | **`xan`**, **`csvlook`** (CSV) | `xunyoyo/NyaCSV` | 纯内存高性能 CSV 强类型解析器，自动处理带引号的复杂字段分隔 |
 | **`base64`** | `gmlewis/base64` | 高性能字节流转字符串。边缘计算（Edge）就算缺失 `atob` 也能完美运行 |
 | **`md5sum`** | `gmlewis/md5` | 纯手写位运算 Hash，结果在任何异构硬件和 JS 引擎下绝对一致 |
-| **`sha1sum`**, **`sha256sum`** | `shu-kitamura/sha256` 或 `gmlewis/sha256` | 摆脱 `crypto` 模块依赖，Edge 环境稳定运行 |
+| **`sha1sum`**, **`sha256sum`** | `gmlewis/sha1`、`moonbitlang/x/crypto` + `core/encoding/hex` | 摆脱 `crypto` 模块依赖，Edge 环境稳定运行 |
 | **`jq`** (JSON 查询) | `bobzhang/moonjq` | MoonBit 创始人亲写的完整 jq 解释器。lexer → parser → 流式求值器，支持管道、filter、内建函数、变量绑定，415+ 测试覆盖。可完全替代手写 jq 引擎 |
 | **`find`**, **`ls *.txt`** 通配符 | `justjavac/glob` | 完美支持文件路径通配符（`*`, `**`, `?`）的跨目录模式匹配 |
 
@@ -100,7 +100,7 @@ Unix 文本处理的灵魂。过去用 JS/TS 写极其容易引发 ReDoS（正�
 | `gmlewis/gzip` + `gmlewis/flate` | ✅ DEFLATE 压缩解压（已集成真实 DEFLATE） | `zlib` |
 | `gmlewis/base64` | Base64 编解码 | `Buffer.from` / `atob` |
 | `gmlewis/md5` | MD5 哈希 | `crypto.createHash('md5')` |
-| `shu-kitamura/sha256` 或 `gmlewis/sha256` | SHA-256 哈希 | `crypto.createHash('sha256')` |
+| `moonbitlang/x/crypto` + `core/encoding/hex` | SHA-256 哈希（保留原有低字节输入编码） | `crypto.createHash('sha256')` |
 | `moonbit-community/yaml` | YAML 解析（从 Rust yaml-rust2 移植） | `js-yaml` |
 | `xunyoyo/NyaCSV` | CSV 解析 | `csv-parse` |
 | `bobzhang/moonjq` | 完整 jq 解释器（MoonBit 创始人亲写，415+ 测试） | 手写 jq 引擎 |

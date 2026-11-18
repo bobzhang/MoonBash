@@ -6,7 +6,7 @@
 
 ///|
 test "tokenize simple command" {
-  let tokens = tokenize("echo hello world")
+  let tokens = @lexer.tokenize("echo hello world")
   assert_eq(tokens.length(), 4)
   assert_eq(tokens[0], @ast.Token::Word("echo"))
   assert_eq(tokens[1], @ast.Token::Word("hello"))
@@ -16,14 +16,14 @@ test "tokenize simple command" {
 
 ///|
 test "tokenize empty input" {
-  let tokens = tokenize("")
+  let tokens = @lexer.tokenize("")
   assert_eq(tokens.length(), 1)
   assert_eq(tokens[0], @ast.Token::EOF)
 }
 
 ///|
 test "tokenize whitespace only" {
-  let tokens = tokenize("   \t  ")
+  let tokens = @lexer.tokenize("   \t  ")
   assert_eq(tokens.length(), 1)
   assert_eq(tokens[0], @ast.Token::EOF)
 }
@@ -34,34 +34,42 @@ test "tokenize whitespace only" {
 
 ///|
 test "tokenize single quoted string" {
-  let tokens = tokenize("echo 'hello world'")
+  let tokens = @lexer.tokenize("echo 'hello world'")
   assert_eq(tokens.length(), 3)
   assert_eq(tokens[0], @ast.Token::Word("echo"))
-  assert_eq(tokens[1], @ast.Token::Word("hello world"))
+  // Lexer markers preserve quote context for the word parser.
+  assert_eq(
+    tokens[1],
+    @ast.Token::Word(
+      "\u0001h\u0001e\u0001l\u0001l\u0001o\u0001 \u0001w\u0001o\u0001r\u0001l\u0001d",
+    ),
+  )
   assert_eq(tokens[2], @ast.Token::EOF)
 }
 
 ///|
 test "tokenize double quoted string" {
-  let tokens = tokenize("echo \"hello world\"")
+  let tokens = @lexer.tokenize("echo \"hello world\"")
   assert_eq(tokens.length(), 3)
   assert_eq(tokens[0], @ast.Token::Word("echo"))
-  assert_eq(tokens[1], @ast.Token::Word("hello world"))
+  // Lexer markers preserve quote context for the word parser.
+  assert_eq(tokens[1], @ast.Token::Word("\u0002hello world\u0003"))
   assert_eq(tokens[2], @ast.Token::EOF)
 }
 
 ///|
 test "tokenize double quoted with dollar" {
-  let tokens = tokenize("echo \"hello $USER\"")
+  let tokens = @lexer.tokenize("echo \"hello $USER\"")
   assert_eq(tokens.length(), 3)
   assert_eq(tokens[0], @ast.Token::Word("echo"))
-  assert_eq(tokens[1], @ast.Token::Word("hello $USER"))
+  // Lexer markers preserve quote context for the word parser.
+  assert_eq(tokens[1], @ast.Token::Word("\u0002hello $USER\u0003"))
   assert_eq(tokens[2], @ast.Token::EOF)
 }
 
 ///|
 test "tokenize legacy arithmetic expansion word" {
-  let tokens = tokenize("echo $[3 * 4]")
+  let tokens = @lexer.tokenize("echo $[3 * 4]")
   assert_eq(tokens.length(), 3)
   assert_eq(tokens[0], @ast.Token::Word("echo"))
   assert_eq(tokens[1], @ast.Token::Word("$[3 * 4]"))
@@ -74,7 +82,7 @@ test "tokenize legacy arithmetic expansion word" {
 
 ///|
 test "tokenize pipe" {
-  let tokens = tokenize("cmd1 | cmd2")
+  let tokens = @lexer.tokenize("cmd1 | cmd2")
   assert_eq(tokens.length(), 4)
   assert_eq(tokens[0], @ast.Token::Word("cmd1"))
   assert_eq(tokens[1], @ast.Token::Pipe)
@@ -84,7 +92,7 @@ test "tokenize pipe" {
 
 ///|
 test "tokenize pipe-and" {
-  let tokens = tokenize("cmd1 |& cmd2")
+  let tokens = @lexer.tokenize("cmd1 |& cmd2")
   assert_eq(tokens.length(), 4)
   assert_eq(tokens[0], @ast.Token::Word("cmd1"))
   assert_eq(tokens[1], @ast.Token::PipeAnd)
@@ -98,7 +106,7 @@ test "tokenize pipe-and" {
 
 ///|
 test "tokenize redirect out" {
-  let tokens = tokenize("echo hi > file")
+  let tokens = @lexer.tokenize("echo hi > file")
   assert_eq(tokens.length(), 5)
   assert_eq(tokens[0], @ast.Token::Word("echo"))
   assert_eq(tokens[1], @ast.Token::Word("hi"))
@@ -109,56 +117,56 @@ test "tokenize redirect out" {
 
 ///|
 test "tokenize redirect append" {
-  let tokens = tokenize("echo hi >> file")
+  let tokens = @lexer.tokenize("echo hi >> file")
   assert_eq(tokens[2], @ast.Token::RedirectAppend)
 }
 
 ///|
 test "tokenize redirect in" {
-  let tokens = tokenize("cmd < input")
+  let tokens = @lexer.tokenize("cmd < input")
   assert_eq(tokens[1], @ast.Token::RedirectIn)
 }
 
 ///|
 test "tokenize heredoc" {
-  let tokens = tokenize("cmd << EOF")
+  let tokens = @lexer.tokenize("cmd << EOF")
   assert_eq(tokens[1], @ast.Token::HereDoc)
 }
 
 ///|
 test "tokenize herestring" {
-  let tokens = tokenize("cmd <<< word")
+  let tokens = @lexer.tokenize("cmd <<< word")
   assert_eq(tokens[1], @ast.Token::HereString)
 }
 
 ///|
 test "tokenize fd redirect" {
-  let tokens = tokenize("cmd 2> file")
+  let tokens = @lexer.tokenize("cmd 2> file")
   assert_eq(tokens[1], @ast.Token::FdNumber(2))
   assert_eq(tokens[2], @ast.Token::RedirectOut)
 }
 
 ///|
 test "tokenize redirect clobber" {
-  let tokens = tokenize("cmd >| file")
+  let tokens = @lexer.tokenize("cmd >| file")
   assert_eq(tokens[1], @ast.Token::RedirectClobber)
 }
 
 ///|
 test "tokenize dup output" {
-  let tokens = tokenize("cmd >& 2")
+  let tokens = @lexer.tokenize("cmd >& 2")
   assert_eq(tokens[1], @ast.Token::DupOut)
 }
 
 ///|
 test "tokenize and-redirect" {
-  let tokens = tokenize("cmd &> file")
+  let tokens = @lexer.tokenize("cmd &> file")
   assert_eq(tokens[1], @ast.Token::RedirectAndOut)
 }
 
 ///|
 test "tokenize and-redirect-append" {
-  let tokens = tokenize("cmd &>> file")
+  let tokens = @lexer.tokenize("cmd &>> file")
   assert_eq(tokens[1], @ast.Token::RedirectAndAppend)
 }
 
@@ -168,25 +176,25 @@ test "tokenize and-redirect-append" {
 
 ///|
 test "tokenize and-list" {
-  let tokens = tokenize("cmd1 && cmd2")
+  let tokens = @lexer.tokenize("cmd1 && cmd2")
   assert_eq(tokens[1], @ast.Token::And)
 }
 
 ///|
 test "tokenize or-list" {
-  let tokens = tokenize("cmd1 || cmd2")
+  let tokens = @lexer.tokenize("cmd1 || cmd2")
   assert_eq(tokens[1], @ast.Token::Or)
 }
 
 ///|
 test "tokenize semicolon" {
-  let tokens = tokenize("cmd1 ; cmd2")
+  let tokens = @lexer.tokenize("cmd1 ; cmd2")
   assert_eq(tokens[1], @ast.Token::Semi)
 }
 
 ///|
 test "tokenize background" {
-  let tokens = tokenize("cmd &")
+  let tokens = @lexer.tokenize("cmd &")
   assert_eq(tokens[1], @ast.Token::Ampersand)
 }
 
@@ -196,7 +204,7 @@ test "tokenize background" {
 
 ///|
 test "tokenize parens" {
-  let tokens = tokenize("(cmd)")
+  let tokens = @lexer.tokenize("(cmd)")
   assert_eq(tokens[0], @ast.Token::LeftParen)
   assert_eq(tokens[1], @ast.Token::Word("cmd"))
   assert_eq(tokens[2], @ast.Token::RightParen)
@@ -204,7 +212,7 @@ test "tokenize parens" {
 
 ///|
 test "tokenize braces" {
-  let tokens = tokenize("{ cmd; }")
+  let tokens = @lexer.tokenize("{ cmd; }")
   assert_eq(tokens[0], @ast.Token::LeftBrace)
   assert_eq(tokens[1], @ast.Token::Word("cmd"))
   assert_eq(tokens[2], @ast.Token::Semi)
@@ -217,55 +225,55 @@ test "tokenize braces" {
 
 ///|
 test "tokenize assignment" {
-  let tokens = tokenize("VAR=value")
+  let tokens = @lexer.tokenize("VAR=value")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("VAR", "value", false))
 }
 
 ///|
 test "tokenize assignment empty value" {
-  let tokens = tokenize("VAR=")
+  let tokens = @lexer.tokenize("VAR=")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("VAR", "", false))
 }
 
 ///|
 test "tokenize assignment append" {
-  let tokens = tokenize("VAR+=value")
+  let tokens = @lexer.tokenize("VAR+=value")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("VAR", "value", true))
 }
 
 ///|
 test "tokenize array assignment with nested index expression" {
-  let tokens = tokenize("a[i[0]]=x")
+  let tokens = @lexer.tokenize("a[i[0]]=x")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[i[0]]", "x", false))
 }
 
 ///|
 test "tokenize array assignment with spaces in index expression" {
-  let tokens = tokenize("a[ 1 + 2 ]=z")
+  let tokens = @lexer.tokenize("a[ 1 + 2 ]=z")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[ 1 + 2 ]", "z", false))
 }
 
 ///|
 test "tokenize array assignment append with nested index expression" {
-  let tokens = tokenize("a[i[0]]+=x")
+  let tokens = @lexer.tokenize("a[i[0]]+=x")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[i[0]]", "x", true))
 }
 
 ///|
 test "tokenize array assignment with equals in index expression" {
-  let tokens = tokenize("a[a[0]=1]=X")
+  let tokens = @lexer.tokenize("a[a[0]=1]=X")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[a[0]=1]", "X", false))
 }
 
 ///|
 test "tokenize array assignment append with equals in index expression" {
-  let tokens = tokenize("a[a[0]+=1]+=X")
+  let tokens = @lexer.tokenize("a[a[0]+=1]+=X")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[a[0]+=1]", "X", true))
 }
 
 ///|
 test "tokenize array assignment with empty subscript" {
-  let tokens = tokenize("a[]=42")
+  let tokens = @lexer.tokenize("a[]=42")
   assert_eq(tokens[0], @ast.Token::AssignmentWord("a[]", "42", false))
 }
 
@@ -275,7 +283,7 @@ test "tokenize array assignment with empty subscript" {
 
 ///|
 test "tokenize with comment" {
-  let tokens = tokenize("echo hi # comment")
+  let tokens = @lexer.tokenize("echo hi # comment")
   assert_eq(tokens.length(), 3)
   assert_eq(tokens[0], @ast.Token::Word("echo"))
   assert_eq(tokens[1], @ast.Token::Word("hi"))
@@ -284,7 +292,7 @@ test "tokenize with comment" {
 
 ///|
 test "tokenize only comment" {
-  let tokens = tokenize("# just a comment")
+  let tokens = @lexer.tokenize("# just a comment")
   assert_eq(tokens.length(), 1)
   assert_eq(tokens[0], @ast.Token::EOF)
 }
@@ -295,7 +303,7 @@ test "tokenize only comment" {
 
 ///|
 test "tokenize if-then-fi" {
-  let tokens = tokenize("if true; then echo yes; fi")
+  let tokens = @lexer.tokenize("if true; then echo yes; fi")
   assert_eq(tokens[0], @ast.Token::If)
   assert_eq(tokens[1], @ast.Token::Word("true"))
   assert_eq(tokens[2], @ast.Token::Semi)
@@ -309,7 +317,7 @@ test "tokenize if-then-fi" {
 
 ///|
 test "tokenize for-in-do-done" {
-  let tokens = tokenize("for x in a b; do echo; done")
+  let tokens = @lexer.tokenize("for x in a b; do echo; done")
   assert_eq(tokens[0], @ast.Token::For)
   assert_eq(tokens[1], @ast.Token::Word("x"))
   assert_eq(tokens[2], @ast.Token::In)
@@ -325,13 +333,13 @@ test "tokenize for-in-do-done" {
 
 ///|
 test "tokenize while-do-done" {
-  let tokens = tokenize("while true; do echo; done")
+  let tokens = @lexer.tokenize("while true; do echo; done")
   assert_eq(tokens[0], @ast.Token::While)
 }
 
 ///|
 test "tokenize case-in-esac" {
-  let tokens = tokenize("case x in esac")
+  let tokens = @lexer.tokenize("case x in esac")
   assert_eq(tokens[0], @ast.Token::Case)
   assert_eq(tokens[2], @ast.Token::In)
   assert_eq(tokens[3], @ast.Token::Esac)
@@ -339,7 +347,7 @@ test "tokenize case-in-esac" {
 
 ///|
 test "tokenize function" {
-  let tokens = tokenize("function foo")
+  let tokens = @lexer.tokenize("function foo")
   assert_eq(tokens[0], @ast.Token::Function)
 }
 
@@ -349,7 +357,7 @@ test "tokenize function" {
 
 ///|
 test "tokenize newlines" {
-  let tokens = tokenize("cmd1\ncmd2")
+  let tokens = @lexer.tokenize("cmd1\ncmd2")
   assert_eq(tokens[0], @ast.Token::Word("cmd1"))
   assert_eq(tokens[1], @ast.Token::Newline)
   assert_eq(tokens[2], @ast.Token::Word("cmd2"))
@@ -362,7 +370,7 @@ test "tokenize newlines" {
 
 ///|
 test "tokenize backslash escape" {
-  let tokens = tokenize("echo hello\\ world")
+  let tokens = @lexer.tokenize("echo hello\\ world")
   assert_eq(tokens.length(), 3)
   assert_eq(tokens[0], @ast.Token::Word("echo"))
   assert_eq(tokens[1], @ast.Token::Word("hello world"))
@@ -376,7 +384,7 @@ test "tokenize backslash escape" {
 ///|
 test "unterminated single quote" {
   let mut got_error = false
-  try tokenize("echo 'hello") |> ignore catch {
+  try @lexer.tokenize("echo 'hello") |> ignore catch {
     @ast.BashError(_) => got_error = true
   }
   assert_true(got_error)
@@ -385,7 +393,7 @@ test "unterminated single quote" {
 ///|
 test "unterminated double quote" {
   let mut got_error = false
-  try tokenize("echo \"hello") |> ignore catch {
+  try @lexer.tokenize("echo \"hello") |> ignore catch {
     @ast.BashError(_) => got_error = true
   }
   assert_true(got_error)

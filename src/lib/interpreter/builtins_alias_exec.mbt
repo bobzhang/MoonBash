@@ -138,7 +138,7 @@ fn ExecContext::builtin_alias(self : ExecContext, args : Array[String]) -> Unit 
     // List all aliases
     for k, v in self.env {
       if k.has_prefix(alias_prefix) {
-        let name = k.view(start_offset=alias_prefix.length()).to_owned()
+        let name = k.clamped_view(start=alias_prefix.length()).to_owned()
         self.stdout_buf.write_string("alias \{name}='\{v}'\n")
       }
     }
@@ -157,8 +157,8 @@ fn ExecContext::builtin_alias(self : ExecContext, args : Array[String]) -> Unit 
     }
     if eq_pos > 0 {
       // name=value → set alias
-      let name = arg.view(start_offset=0, end_offset=eq_pos).to_owned()
-      let value = arg.view(start_offset=eq_pos + 1).to_owned()
+      let name = arg.clamped_view(start=0, end=eq_pos).to_owned()
+      let value = arg.clamped_view(start=eq_pos + 1).to_owned()
       self.env[alias_prefix + name] = value
     } else {
       // name only → show alias

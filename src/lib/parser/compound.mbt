@@ -130,7 +130,7 @@ fn Parser::parse_for(
 ///|
 fn split_cstyle_for_expressions(raw : String) -> Array[String] {
   let parts : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut paren_depth = 0
 
   for i = 0; i < raw.length(); i = i + 1 {
@@ -178,7 +178,7 @@ fn trim_cstyle_expr(s : String) -> String {
       break
     }
   }
-  s.view(start_offset=start, end_offset=end_).to_owned()
+  s.clamped_view(start~, end=end_).to_owned()
 }
 
 // ============================================================================

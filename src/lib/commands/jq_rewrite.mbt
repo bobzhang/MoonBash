@@ -107,7 +107,7 @@ fn jq_parse_quoted_ident_at(
   if filter[quote_pos].to_int().unsafe_to_char() != '"' {
     return None
   }
-  let ident = StringBuilder::new()
+  let ident = StringBuilder::StringBuilder()
   let mut i = quote_pos + 1
   while i < filter.length() {
     let ch = filter[i].to_int().unsafe_to_char()
@@ -130,7 +130,7 @@ fn jq_parse_quoted_ident_at(
 
 ///|
 fn jq_rewrite_quoted_member_access(filter : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   let mut quote : Char? = None
 
@@ -253,7 +253,7 @@ fn jq_is_binary_plus_minus(filter : String, pos : Int32) -> Bool {
 
 ///|
 fn jq_rewrite_binary_plus_minus(filter : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   let mut quote : Char? = None
   let mut last_out : Char? = None
@@ -412,7 +412,7 @@ fn jq_split_top_level_semicolon(text : String) -> (String, String)? {
 
 ///|
 fn jq_rewrite_compat_function_calls(filter : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   let mut quote : Char? = None
 
@@ -519,7 +519,7 @@ fn jq_rewrite_compat_function_calls(filter : String) -> String {
 
 ///|
 fn jq_rewrite_keys_builtin(filter : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   let mut quote : Char? = None
 

@@ -175,7 +175,7 @@ fn ExecContext::builtin_set(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.length() >= 2 && arg[0] == '-' {
-      let ch = arg.view(start_offset=1, end_offset=2).to_owned()
+      let ch = arg.clamped_view(start=1, end=2).to_owned()
       match ch {
         "e" => self.options.errexit = true
         "u" => self.options.nounset = true
@@ -187,7 +187,7 @@ fn ExecContext::builtin_set(self : ExecContext, args : Array[String]) -> Unit {
       }
       i += 1
     } else if arg.length() >= 2 && arg[0] == '+' {
-      let ch = arg.view(start_offset=1, end_offset=2).to_owned()
+      let ch = arg.clamped_view(start=1, end=2).to_owned()
       match ch {
         "e" => self.options.errexit = false
         "u" => self.options.nounset = false
@@ -771,7 +771,7 @@ fn split_local_scope_names(spec : String) -> Array[String] {
   for i = 0; i <= spec.length(); i = i + 1 {
     if i == spec.length() || spec[i].to_int().unsafe_to_char() == '\u001f' {
       if i > start {
-        parts.push(spec.view(start_offset=start, end_offset=i).to_owned())
+        parts.push(spec.clamped_view(start~, end=i).to_owned())
       }
       start = i + 1
     }
@@ -976,7 +976,7 @@ fn ExecContext::builtin_declare(
       let kind_prefix = test_array_kind_storage_key("")
       for key, kind in self.env {
         if string_has_prefix(key, kind_prefix) {
-          let name = key.view(start_offset=kind_prefix.length()).to_owned()
+          let name = key.clamped_view(start=kind_prefix.length()).to_owned()
           if (indexed_array_mode && kind == "indexed") ||
             (assoc_array_mode && kind == "assoc") {
             names.push(name)
@@ -1188,7 +1188,7 @@ fn ExecContext::format_declare_print_entry(
         key.length() > key_prefix.length() &&
         key[key.length() - 1] == ']' {
         let inner = key
-          .view(start_offset=key_prefix.length(), end_offset=key.length() - 1)
+          .clamped_view(start=key_prefix.length(), end=key.length() - 1)
           .to_owned()
         if inner != "@" && inner != "*" {
           element_keys.push(inner)
@@ -1197,7 +1197,7 @@ fn ExecContext::format_declare_print_entry(
     }
     sort_array_keys(element_keys)
 
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     out.write_string("declare ")
     if attr_flags.length() > 0 {
       out.write_char('-')
@@ -1250,7 +1250,7 @@ fn ExecContext::declare_attribute_flags(
   self : ExecContext,
   name : String,
 ) -> String {
-  let flags = StringBuilder::new()
+  let flags = StringBuilder::StringBuilder()
   if self.env.get(integer_attr_storage_key(name)).unwrap_or("") == "1" {
     flags.write_char('i')
   }
@@ -1354,7 +1354,7 @@ fn is_visible_declare_function_name(name : String) -> Bool {
 
 ///|
 fn escape_declare_value(value : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < value.length(); i = i + 1 {
     let ch = value[i].to_int().unsafe_to_char()
     if ch == '\\' || ch == '"' {
@@ -1367,7 +1367,7 @@ fn escape_declare_value(value : String) -> String {
 
 ///|
 fn quote_assoc_declare_key(key : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('\'')
   for i = 0; i < key.length(); i = i + 1 {
     let ch = key[i].to_int().unsafe_to_char()
@@ -1493,7 +1493,7 @@ fn ExecContext::builtin_getopts(
   let expects_arg = getopts_option_takes_argument(opt_spec, opt_idx)
   if expects_arg {
     let inline = if current.length() > 2 {
-      current.view(start_offset=2).to_owned()
+      current.clamped_view(start=2).to_owned()
     } else {
       ""
     }
@@ -1546,10 +1546,10 @@ fn parse_name_value_spec(spec : String) -> (String, String?, Bool)? {
       return None
     }
     let name = strip_array_assignment_index_markers(
-      spec.view(start_offset=0, end_offset=name_end).to_owned(),
+      spec.clamped_view(start=0, end=name_end).to_owned(),
     )
     let value = strip_array_assignment_index_markers(
-      spec.view(start_offset=eq_pos + 1).to_owned(),
+      spec.clamped_view(start=eq_pos + 1).to_owned(),
     )
     if name.length() == 0 {
       return None
@@ -1583,7 +1583,7 @@ fn find_name_value_separator_pos(spec : String) -> Int32 {
 
 ///|
 fn getopts_char_string(ch : Char) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   buf.write_char(ch)
   buf.to_string()
 }

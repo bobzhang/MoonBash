@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+  schedule:
+    - cron: "45 2 * * 5"
+
+permissions:
+  contents: read
+
+jobs:
+  moonbit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [latest, pre-release]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install MoonBit
+        run: |
+          set -euo pipefail
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "${{ matrix.version }}"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - run: moon version --all
+      - run: moon -C src update
+      - name: Check formatting and interfaces
+        run: |
+          moon -C src info --target js
+          moon -C src fmt
+          git diff --exit-code
+      - run: moon -C src check --target js --deny-warn
+      - run: moon -C src test --target js
+      - run: moon -C src test --target js --release
+
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+      - name: Install MoonBit
+        run: |
+          set -euo pipefail
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- pre-release
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - run: moon -C src update
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vp run build
+      - name: Run bounded compatibility suite
+        timeout-minutes: 15
+        env:
+          MOONBASH_TEST_HEAP_MB: 1536
+          MOONBASH_TEST_SKIP_FUZZ: 1
+        run: |
+          set -euo pipefail
+          pnpm exec vp run test:safe 2>&1 | tee compatibility.log
+      - name: Upload compatibility log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatibility-log
+          path: compatibility.log

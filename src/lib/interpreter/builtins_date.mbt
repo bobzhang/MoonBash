@@ -133,7 +133,7 @@ fn date_parse_args(args : Array[String]) -> Result[DateConfig, String] {
       if !(format is None) {
         return Err("date: extra operand '\{arg}'\n")
       }
-      format = Some(arg.view(start_offset=1).to_owned())
+      format = Some(arg.clamped_view(start=1).to_owned())
       parsing_options = false
       continue
     }
@@ -168,7 +168,7 @@ fn date_default_output(dt : @time.ZonedDateTime) -> String {
 
 ///|
 fn date_format_output(dt : @time.ZonedDateTime, format : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < format.length() {
     let ch = format[i].to_int().unsafe_to_char()

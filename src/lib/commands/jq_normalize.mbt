@@ -2,7 +2,7 @@
 
 ///|
 fn jq_normalize_def_param_dollars(filter : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   let mut quote : Char? = None
 
@@ -119,7 +119,7 @@ fn jq_normalize_def_param_dollars(filter : String) -> String {
 
 ///|
 fn jq_strip_all_ws(text : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < text.length(); i = i + 1 {
     let ch = text[i].to_int().unsafe_to_char()
     if !jq_is_ws(ch) {
@@ -193,7 +193,7 @@ fn jq_emit_bool_stream(values : Array[Bool]) -> String {
   if values.length() == 0 {
     return "empty"
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < values.length(); i = i + 1 {
     if values[i] {
       out.write_string("true")

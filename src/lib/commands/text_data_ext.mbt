@@ -89,7 +89,7 @@ fn cmd_diff(ctx : CommandContext) -> @ast.ExecResult {
     )
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   cmd_diff_unified_piediff(out, content1, content2, file1, file2)
   @ast.ExecResult::new(stdout=out.to_string(), exit_code=1)
 }
@@ -250,7 +250,7 @@ fn cmd_comm(ctx : CommandContext) -> @ast.ExecResult {
   let lines1 = cmd_split_lines(content1)
   let lines2 = cmd_split_lines(content2)
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   let mut j = 0
 
@@ -324,7 +324,7 @@ fn base64_encode(input : String, wrap_col : Int32) -> String {
   let encoded = @base64.std_encode2str(fixed)
   if wrap_col > 0 {
     // Wrap at specified column width
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     let mut col = 0
     for i = 0; i < encoded.length(); i = i + 1 {
       out.write_char(encoded[i].to_int().unsafe_to_char())
@@ -348,7 +348,7 @@ fn base64_encode(input : String, wrap_col : Int32) -> String {
 /// Returns (result, error_msg).
 fn base64_decode(input : String) -> (String, String) {
   // Strip whitespace before decoding
-  let cleaned = StringBuilder::new()
+  let cleaned = StringBuilder::StringBuilder()
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
     if ch != '\n' && ch != '\r' && ch != ' ' && ch != '\t' {

@@ -71,7 +71,7 @@ pub fn GrepMatcher::find_first(
       }
       let mut cursor = start
       while cursor <= line.length() {
-        let segment = line.view(start_offset=cursor).to_owned()
+        let segment = line.clamped_view(start=cursor).to_owned()
         let result = re.execute(segment[:])
         if !result.matched() {
           return None
@@ -126,7 +126,7 @@ pub fn GrepMatcher::find_first_with_groups(
       }
       let mut cursor = start
       while cursor <= line.length() {
-        let segment = line.view(start_offset=cursor).to_owned()
+        let segment = line.clamped_view(start=cursor).to_owned()
         let result = re.execute(segment[:])
         if !result.matched() {
           return None
@@ -191,7 +191,7 @@ pub fn GrepMatcher::find_all(
 pub fn normalize_basic_regex(pattern : String) -> String {
   // Translate BRE to the ERE-like parser form:
   // unescaped + ? | ( ) { } are literals in BRE, escaped forms are operators.
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = 0
   let mut in_char_class = false
   let mut class_has_member = false
@@ -326,7 +326,7 @@ fn normalize_invalid_quantifiers(
   pattern : String,
   literalize_interval_errors~ : Bool = true,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   let mut in_char_class = false
   let mut last_repeatable = false
@@ -502,7 +502,7 @@ fn is_digit_char(ch : Char) -> Bool {
 
 ///|
 fn normalize_ere_malformed_intervals(pattern : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   let mut in_char_class = false
   while i < pattern.length() {
@@ -604,7 +604,7 @@ fn has_invalid_posix_char_class_syntax(pattern : String) -> Bool {
           if pattern[j].to_int().unsafe_to_char() == ':' &&
             pattern[j + 1].to_int().unsafe_to_char() == ']' {
             found_close = true
-            let name = pattern.view(start_offset=i + 2, end_offset=j).to_owned()
+            let name = pattern.clamped_view(start=i + 2, end=j).to_owned()
             if !is_valid_posix_char_class_name(name) {
               return true
             }
@@ -775,7 +775,7 @@ fn ere_caret_is_anchor(pattern : String, idx : Int32) -> Bool {
 
 ///|
 fn normalize_char_class_initial_close(pattern : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   let mut in_char_class = false
   let mut class_has_member = false
@@ -841,7 +841,7 @@ fn normalize_char_class_initial_close(pattern : String) -> String {
 
 ///|
 fn decode_regex_escapes(pattern : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < pattern.length() {
     let ch = pattern[i].to_int().unsafe_to_char()
@@ -887,7 +887,7 @@ fn replace_all_literal(
   if needle.length() == 0 {
     return input
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < input.length() {
     if starts_with_at(input, needle, i) {
@@ -954,7 +954,7 @@ fn bre_dollar_is_anchor(pattern : String, idx : Int32) -> Bool {
 
 ///|
 fn to_lower_ascii(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch >= 'A' && ch <= 'Z' {

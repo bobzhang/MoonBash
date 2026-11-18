@@ -8,7 +8,7 @@ fn alias_expansion_candidate_name(word : @ast.Word) -> String? {
   if word.parts.length() == 0 {
     return None
   }
-  let value = StringBuilder::new()
+  let value = StringBuilder::StringBuilder()
   for part in word.parts {
     match part {
       @ast.WordPart::Literal(text) => value.write_string(text)
@@ -88,7 +88,7 @@ fn append_alias_call_args(source : String, args : Array[String]) -> String {
     return source
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_string(source)
   if source.length() > 0 {
     let last = source[source.length() - 1].to_int().unsafe_to_char()

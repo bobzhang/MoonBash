@@ -52,7 +52,7 @@ fn ExecContext::expand_compgen_words(
       trimmed[1].to_int().unsafe_to_char() == '(' &&
       trimmed[trimmed.length() - 1].to_int().unsafe_to_char() == ')' {
       let inner = trimmed
-        .view(start_offset=2, end_offset=trimmed.length() - 1)
+        .clamped_view(start=2, end=trimmed.length() - 1)
         .to_owned()
       let saved_exit = self.exit_code
       let expanded = self.expand_command_sub(inner)

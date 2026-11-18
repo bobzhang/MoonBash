@@ -6,7 +6,7 @@
 
 ///|
 test "parse simple command" {
-  let script = parse("echo hello world")
+  let script = @parser.parse("echo hello world")
   assert_eq(script.statements.length(), 1)
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) => {
@@ -22,7 +22,7 @@ test "parse simple command" {
 
 ///|
 test "parse empty input" {
-  let script = parse("")
+  let script = @parser.parse("")
   assert_eq(script.statements.length(), 0)
 }
 
@@ -32,7 +32,7 @@ test "parse empty input" {
 
 ///|
 test "parse pipeline" {
-  let script = parse("cmd1 | cmd2 | cmd3")
+  let script = @parser.parse("cmd1 | cmd2 | cmd3")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) => {
       assert_eq(pipeline.commands.length(), 3)
@@ -44,7 +44,7 @@ test "parse pipeline" {
 
 ///|
 test "parse negated pipeline" {
-  let script = parse("! cmd1 | cmd2")
+  let script = @parser.parse("! cmd1 | cmd2")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) => {
       assert_true(pipeline.negated)
@@ -60,7 +60,7 @@ test "parse negated pipeline" {
 
 ///|
 test "parse and-list" {
-  let script = parse("cmd1 && cmd2")
+  let script = @parser.parse("cmd1 && cmd2")
   match script.statements[0] {
     @ast.Statement::AndList(_, _) => ()
     _ => fail("expected and-list")
@@ -69,7 +69,7 @@ test "parse and-list" {
 
 ///|
 test "parse or-list" {
-  let script = parse("cmd1 || cmd2")
+  let script = @parser.parse("cmd1 || cmd2")
   match script.statements[0] {
     @ast.Statement::OrList(_, _) => ()
     _ => fail("expected or-list")
@@ -78,7 +78,7 @@ test "parse or-list" {
 
 ///|
 test "parse background" {
-  let script = parse("cmd &")
+  let script = @parser.parse("cmd &")
   match script.statements[0] {
     @ast.Statement::Background(_) => ()
     _ => fail("expected background")
@@ -87,7 +87,7 @@ test "parse background" {
 
 ///|
 test "parse sequence" {
-  let script = parse("cmd1; cmd2")
+  let script = @parser.parse("cmd1; cmd2")
   match script.statements[0] {
     @ast.Statement::Sequence(_, _) => ()
     _ => fail("expected sequence")
@@ -100,7 +100,7 @@ test "parse sequence" {
 
 ///|
 test "parse redirect out" {
-  let script = parse("echo hi > file")
+  let script = @parser.parse("echo hi > file")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -116,7 +116,7 @@ test "parse redirect out" {
 
 ///|
 test "parse fd redirect" {
-  let script = parse("cmd 2> file")
+  let script = @parser.parse("cmd 2> file")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -137,7 +137,7 @@ test "parse fd redirect" {
 
 ///|
 test "parse if statement" {
-  let script = parse("if true; then echo yes; fi")
+  let script = @parser.parse("if true; then echo yes; fi")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -154,7 +154,7 @@ test "parse if statement" {
 
 ///|
 test "parse if-else statement" {
-  let script = parse("if true; then echo yes; else echo no; fi")
+  let script = @parser.parse("if true; then echo yes; else echo no; fi")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -172,7 +172,7 @@ test "parse if-else statement" {
 
 ///|
 test "parse for statement" {
-  let script = parse("for x in a b c; do echo; done")
+  let script = @parser.parse("for x in a b c; do echo; done")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -195,7 +195,7 @@ test "parse for statement" {
 
 ///|
 test "parse while statement" {
-  let script = parse("while true; do echo; done")
+  let script = @parser.parse("while true; do echo; done")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -212,7 +212,7 @@ test "parse while statement" {
 
 ///|
 test "parse case statement" {
-  let script = parse("case x in a) echo a;; b) echo b;; esac")
+  let script = @parser.parse("case x in a) echo a;; b) echo b;; esac")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -230,7 +230,7 @@ test "parse case statement" {
 
 ///|
 test "parse subshell" {
-  let script = parse("(echo hello)")
+  let script = @parser.parse("(echo hello)")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -243,7 +243,7 @@ test "parse subshell" {
 
 ///|
 test "parse group" {
-  let script = parse("{ echo hello; }")
+  let script = @parser.parse("{ echo hello; }")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -260,7 +260,7 @@ test "parse group" {
 
 ///|
 test "parse function definition" {
-  let script = parse("function foo { echo hi; }")
+  let script = @parser.parse("function foo { echo hi; }")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -277,7 +277,7 @@ test "parse function definition" {
 
 ///|
 test "parse word with variable" {
-  let word = parse_word_content("hello$USER")
+  let word = @parser.parse_word_content("hello$USER")
   assert_eq(word.parts.length(), 2)
   match word.parts[0] {
     @ast.WordPart::Literal(s) => assert_eq(s, "hello")
@@ -291,7 +291,7 @@ test "parse word with variable" {
 
 ///|
 test "parse word with brace expansion" {
-  let word = parse_word_content("${VAR:-default}")
+  let word = @parser.parse_word_content("${VAR:-default}")
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::ParameterExpansion(
@@ -306,7 +306,7 @@ test "parse word with brace expansion" {
 
 ///|
 test "parse word with command substitution" {
-  let word = parse_word_content("$(echo hi)")
+  let word = @parser.parse_word_content("$(echo hi)")
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::CommandSubstitution(s) => assert_eq(s, "echo hi")
@@ -316,7 +316,7 @@ test "parse word with command substitution" {
 
 ///|
 test "parse word with length expansion" {
-  let word = parse_word_content("${#VAR}")
+  let word = @parser.parse_word_content("${#VAR}")
   match word.parts[0] {
     @ast.WordPart::ParameterExpansion(@ast.ParamExpansion::Length(name)) =>
       assert_eq(name, "VAR")
@@ -326,7 +326,7 @@ test "parse word with length expansion" {
 
 ///|
 test "parse quoted assoc subscript expansion in command word" {
-  let script = parse("echo \"${foo[\"key\"]}\"")
+  let script = @parser.parse("echo \"${foo[\"key\"]}\"")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -353,7 +353,7 @@ test "parse quoted assoc subscript expansion in command word" {
 
 ///|
 test "parse quoted assoc subscript expansion in compound assignment value" {
-  let script = parse("foo=([\"key\"]=\"${foo[\"key\"]} value2\")")
+  let script = @parser.parse("foo=([\"key\"]=\"${foo[\"key\"]} value2\")")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {
@@ -404,7 +404,7 @@ test "parse quoted assoc subscript expansion in compound assignment value" {
 
 ///|
 test "parse reassignment with quoted assoc subscript expansion in value" {
-  let script = parse(
+  let script = @parser.parse(
     "declare -A foo\nfoo=([\"key\"]=\"value1\")\nfoo=([\"key\"]=\"${foo[\"key\"]} value2\")",
   )
   match script.statements[2] {
@@ -457,7 +457,7 @@ test "parse reassignment with quoted assoc subscript expansion in value" {
 
 ///|
 test "parse word with tilde" {
-  let word = parse_word_content("~/path")
+  let word = @parser.parse_word_content("~/path")
   match word.parts[0] {
     @ast.WordPart::TildePrefix(s) => assert_eq(s, "")
     _ => fail("expected tilde prefix")
@@ -466,7 +466,7 @@ test "parse word with tilde" {
 
 ///|
 test "parse word plain literal" {
-  let word = parse_word_content("hello")
+  let word = @parser.parse_word_content("hello")
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::Literal(s) => assert_eq(s, "hello")
@@ -476,7 +476,7 @@ test "parse word plain literal" {
 
 ///|
 test "parse legacy arithmetic expansion in word" {
-  let word = parse_word_content("$[1+2]")
+  let word = @parser.parse_word_content("$[1+2]")
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::ArithmeticExpansion(@ast.ArithExpr::Raw(expr)) =>
@@ -487,7 +487,7 @@ test "parse legacy arithmetic expansion in word" {
 
 ///|
 test "parse substring with ternary offset and length" {
-  let word = parse_word_content("${s: 0 < 1 ? 2 : 0 : 1}")
+  let word = @parser.parse_word_content("${s: 0 < 1 ? 2 : 0 : 1}")
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::ParameterExpansion(
@@ -509,7 +509,7 @@ test "parse substring with ternary offset and length" {
 
 ///|
 test "parse substring empty length expression" {
-  let word = parse_word_content("${a[@]: : }")
+  let word = @parser.parse_word_content("${a[@]: : }")
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::ParameterExpansion(
@@ -531,7 +531,7 @@ test "parse substring empty length expression" {
 
 ///|
 test "parse empty array subscript parameter name" {
-  let word = parse_word_content("${a[]}")
+  let word = @parser.parse_word_content("${a[]}")
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::ParameterExpansion(@ast.ParamExpansion::Simple(name)) =>
@@ -546,7 +546,7 @@ test "parse empty array subscript parameter name" {
 
 ///|
 test "parse assignment" {
-  let script = parse("VAR=value echo")
+  let script = @parser.parse("VAR=value echo")
   match script.statements[0] {
     @ast.Statement::Pipeline(pipeline) =>
       match pipeline.commands[0] {

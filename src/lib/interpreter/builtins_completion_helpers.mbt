@@ -126,7 +126,7 @@ fn compgen_split_words_by_ifs(
   }
 
   let out : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = 0
   let mut escaping = false
 
@@ -202,7 +202,7 @@ fn trim_ascii_whitespace(raw : String) -> String {
       break
     }
   }
-  raw.view(start_offset=start, end_offset=end_).to_owned()
+  raw.clamped_view(start~, end=end_).to_owned()
 }
 
 ///|
@@ -272,12 +272,12 @@ fn compgen_match_filter_pattern(value : String, pattern : String) -> Bool {
     return compgen_glob_match(value, pattern)
   }
 
-  let prefix = pattern.view(start_offset=0, end_offset=extglob_idx).to_owned()
+  let prefix = pattern.clamped_view(start=0, end=extglob_idx).to_owned()
   let body = pattern
-    .view(start_offset=extglob_idx + 2, end_offset=close_idx)
+    .clamped_view(start=extglob_idx + 2, end=close_idx)
     .to_owned()
   let suffix = if close_idx + 1 < pattern.length() {
-    pattern.view(start_offset=close_idx + 1).to_owned()
+    pattern.clamped_view(start=close_idx + 1).to_owned()
   } else {
     ""
   }
@@ -296,7 +296,7 @@ fn compgen_should_keep_after_filter(value : String, pattern : String) -> Bool {
     return true
   }
   if pattern[0].to_int().unsafe_to_char() == '!' {
-    let inner = pattern.view(start_offset=1).to_owned()
+    let inner = pattern.clamped_view(start=1).to_owned()
     // Inverted form: remove non-matches, keep matches.
     return compgen_match_filter_pattern(value, inner)
   }
@@ -314,7 +314,7 @@ fn completion_variable_base_name(name : String) -> String {
     }
   }
   if bracket > 0 {
-    name.view(start_offset=0, end_offset=bracket).to_owned()
+    name.clamped_view(start=0, end=bracket).to_owned()
   } else {
     name
   }
@@ -322,7 +322,7 @@ fn completion_variable_base_name(name : String) -> String {
 
 ///|
 fn completion_join_words(words : Array[String]) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < words.length(); i = i + 1 {
     if i > 0 {
       buf.write_char(' ')
@@ -349,7 +349,7 @@ fn complete_storage_key(name : String) -> String {
 
 ///|
 fn complete_storage_name_from_key(key : String) -> String {
-  key.view(start_offset=complete_storage_prefix.length()).to_owned()
+  key.clamped_view(start=complete_storage_prefix.length()).to_owned()
 }
 
 ///|
@@ -368,7 +368,7 @@ fn completion_tilde_path(path : String, home : String) -> String {
   }
   let home_prefix = home + "/"
   if path.has_prefix(home_prefix) {
-    return "~/" + path.view(start_offset=home_prefix.length()).to_owned()
+    return "~/" + path.clamped_view(start=home_prefix.length()).to_owned()
   }
   path
 }

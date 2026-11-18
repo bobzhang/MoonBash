@@ -31,7 +31,7 @@ fn ExecContext::set_directory_stack(
     stack.push(self.cwd)
   }
 
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < stack.length(); i = i + 1 {
     if i > 0 {
       buf.write_char('\n')
@@ -85,7 +85,7 @@ fn ExecContext::render_directory_stack(
     return
   }
 
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < stack.length(); i = i + 1 {
     if i > 0 {
       buf.write_char(' ')

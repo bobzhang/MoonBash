@@ -47,9 +47,7 @@ fn brace_expand_collect(input : String, out : Array[String]) -> Bool {
       false
     }
     Some((start, end_)) => {
-      let content = input
-        .view(start_offset=start + 1, end_offset=end_)
-        .to_owned()
+      let content = input.clamped_view(start=start + 1, end=end_).to_owned()
       let options = match parse_brace_options(content) {
         BraceOptionParseResult::BraceOptions(v) => v
         BraceOptionParseResult::BraceOptionSyntaxError => return true
@@ -58,8 +56,8 @@ fn brace_expand_collect(input : String, out : Array[String]) -> Bool {
           return false
         }
       }
-      let prefix = input.view(start_offset=0, end_offset=start).to_owned()
-      let suffix = input.view(start_offset=end_ + 1).to_owned()
+      let prefix = input.clamped_view(start=0, end=start).to_owned()
+      let suffix = input.clamped_view(start=end_ + 1).to_owned()
       for option in options {
         if out.length() >= brace_expansion_result_limit {
           return false
@@ -105,7 +103,7 @@ fn find_first_expandable_brace_pair(s : String) -> (Int32, Int32)? {
         i += 1
         continue
       }
-      let content = s.view(start_offset=i + 1, end_offset=j).to_owned()
+      let content = s.clamped_view(start=i + 1, end=j).to_owned()
       match parse_brace_options(content) {
         BraceOptionParseResult::BraceOptions(options) =>
           if options.length() > 0 {
@@ -156,7 +154,7 @@ fn split_brace_top_level_commas(content : String) -> (Array[String], Bool) {
         depth -= 1
       }
     } else if content[i] == ',' && depth == 0 {
-      parts.push(content.view(start_offset=start, end_offset=i).to_owned())
+      parts.push(content.clamped_view(start~, end=i).to_owned())
       start = i + 1
       has_comma = true
     }
@@ -164,16 +162,14 @@ fn split_brace_top_level_commas(content : String) -> (Array[String], Bool) {
   }
 
   if has_comma {
-    parts.push(
-      content.view(start_offset=start, end_offset=content.length()).to_owned(),
-    )
+    parts.push(content.clamped_view(start~, end=content.length()).to_owned())
   }
   (parts, has_comma)
 }
 
 ///|
 fn brace_unescape(text : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < text.length() {
     let ch = text[i].to_int().unsafe_to_char()
@@ -327,16 +323,14 @@ fn split_by_double_dot(content : String) -> Array[String] {
   let mut i = 0
   while i + 1 < content.length() {
     if content[i] == '.' && content[i + 1] == '.' {
-      parts.push(content.view(start_offset=start, end_offset=i).to_owned())
+      parts.push(content.clamped_view(start~, end=i).to_owned())
       start = i + 2
       i += 2
       continue
     }
     i += 1
   }
-  parts.push(
-    content.view(start_offset=start, end_offset=content.length()).to_owned(),
-  )
+  parts.push(content.clamped_view(start~, end=content.length()).to_owned())
   parts
 }
 
@@ -414,7 +408,7 @@ fn format_padded_numeric(value : Int64, width : Int32) -> String {
     }
   } else {
     let pad_len = width - digits.length()
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     if negative {
       out.write_char('-')
     }
@@ -445,7 +439,7 @@ fn generate_char_range(
     } else if current < end_ch {
       break
     }
-    let buf = StringBuilder::new()
+    let buf = StringBuilder::StringBuilder()
     buf.write_char(current.unsafe_to_char())
     out.push(buf.to_string())
     current += step
@@ -641,12 +635,10 @@ fn expansion_array_count_storage_key(name : String) -> String {
 fn array_count_var_name(name : String) -> String? {
   if name.length() >= 3 {
     let suffix = name
-      .view(start_offset=name.length() - 3, end_offset=name.length())
+      .clamped_view(start=name.length() - 3, end=name.length())
       .to_owned()
     if suffix == "[@]" || suffix == "[*]" {
-      let base = name
-        .view(start_offset=0, end_offset=name.length() - 3)
-        .to_owned()
+      let base = name.clamped_view(start=0, end=name.length() - 3).to_owned()
       return Some(expansion_array_count_storage_key(base))
     }
   }
@@ -657,12 +649,10 @@ fn array_count_var_name(name : String) -> String? {
 fn indirection_array_keys_name(name : String) -> String? {
   if name.length() >= 3 {
     let suffix = name
-      .view(start_offset=name.length() - 3, end_offset=name.length())
+      .clamped_view(start=name.length() - 3, end=name.length())
       .to_owned()
     if suffix == "[@]" || suffix == "[*]" {
-      let base = name
-        .view(start_offset=0, end_offset=name.length() - 3)
-        .to_owned()
+      let base = name.clamped_view(start=0, end=name.length() - 3).to_owned()
       if base.length() > 0 {
         return Some(base)
       }
@@ -678,9 +668,7 @@ fn indirection_prefix_name(name : String) -> String? {
   }
   let last = name[name.length() - 1].to_int().unsafe_to_char()
   if last == '*' || last == '@' {
-    let prefix = name
-      .view(start_offset=0, end_offset=name.length() - 1)
-      .to_owned()
+    let prefix = name.clamped_view(start=0, end=name.length() - 1).to_owned()
     if prefix.length() > 0 {
       return Some(prefix)
     }
@@ -728,7 +716,7 @@ fn parse_array_reference_name(name : String) -> (String, String)? {
     return None
   }
 
-  let base = name.view(start_offset=0, end_offset=bracket).to_owned()
+  let base = name.clamped_view(start=0, end=bracket).to_owned()
   if !is_expand_var_base_name(base) {
     return None
   }
@@ -758,7 +746,7 @@ fn parse_array_reference_name(name : String) -> (String, String)? {
   }
 
   let index = name
-    .view(start_offset=bracket + 1, end_offset=name.length() - 1)
+    .clamped_view(start=bracket + 1, end=name.length() - 1)
     .to_owned()
   Some((base, index))
 }
@@ -810,7 +798,7 @@ fn trim_ascii_space_simple(s : String) -> String {
     }
   }
 
-  s.view(start_offset=start, end_offset=end_).to_owned()
+  s.clamped_view(start~, end=end_).to_owned()
 }
 
 ///|
@@ -819,7 +807,7 @@ fn strip_wrapping_quotes(text : String) -> String {
     let first = text[0].to_int().unsafe_to_char()
     let last = text[text.length() - 1].to_int().unsafe_to_char()
     if (first == '"' && last == '"') || (first == '\'' && last == '\'') {
-      return text.view(start_offset=1, end_offset=text.length() - 1).to_owned()
+      return text.clamped_view(start=1, end=text.length() - 1).to_owned()
     }
   }
   text
@@ -851,7 +839,7 @@ fn ExecContext::collect_array_keys(
       env_key.length() > prefix.length() &&
       env_key[env_key.length() - 1] == ']' {
       let key = env_key
-        .view(start_offset=prefix.length(), end_offset=env_key.length() - 1)
+        .clamped_view(start=prefix.length(), end=env_key.length() - 1)
         .to_owned()
       if key != "@" && key != "*" {
         keys.push(key)
@@ -917,7 +905,7 @@ fn split_path_segments(path : String) -> Array[String] {
   for i = 0; i <= path.length(); i = i + 1 {
     if i == path.length() || path[i] == '/' {
       if i > start {
-        segments.push(path.view(start_offset=start, end_offset=i).to_owned())
+        segments.push(path.clamped_view(start~, end=i).to_owned())
       }
       start = i + 1
     }
@@ -973,13 +961,13 @@ fn ExecContext::abs_to_shell_path(
   }
   if self.cwd == "/" {
     if abs_path.length() > 0 && abs_path[0] == '/' {
-      return abs_path.view(start_offset=1).to_owned()
+      return abs_path.clamped_view(start=1).to_owned()
     }
     return abs_path
   }
   let prefix = self.cwd + "/"
   if starts_with(abs_path, prefix) {
-    return abs_path.view(start_offset=prefix.length()).to_owned()
+    return abs_path.clamped_view(start=prefix.length()).to_owned()
   }
   abs_path
 }
@@ -1036,18 +1024,18 @@ fn strip_prefix_pattern(
   if greedy {
     // Try longest match from start
     for i = value.length(); i >= 0; i = i - 1 {
-      let prefix = value.view(start_offset=0, end_offset=i).to_owned()
+      let prefix = value.clamped_view(start=0, end=i).to_owned()
       if simple_pattern_match(prefix, pattern) {
-        return value.view(start_offset=i).to_owned()
+        return value.clamped_view(start=i).to_owned()
       }
     }
     value
   } else {
     // Try shortest match from start
     for i = 0; i <= value.length(); i = i + 1 {
-      let prefix = value.view(start_offset=0, end_offset=i).to_owned()
+      let prefix = value.clamped_view(start=0, end=i).to_owned()
       if simple_pattern_match(prefix, pattern) {
-        return value.view(start_offset=i).to_owned()
+        return value.clamped_view(start=i).to_owned()
       }
     }
     value
@@ -1066,18 +1054,18 @@ fn strip_suffix_pattern(
   if greedy {
     // Try longest match from end
     for i = 0; i <= value.length(); i = i + 1 {
-      let suffix = value.view(start_offset=i).to_owned()
+      let suffix = value.clamped_view(start=i).to_owned()
       if simple_pattern_match(suffix, pattern) {
-        return value.view(start_offset=0, end_offset=i).to_owned()
+        return value.clamped_view(start=0, end=i).to_owned()
       }
     }
     value
   } else {
     // Try shortest match from end
     for i = value.length(); i >= 0; i = i - 1 {
-      let suffix = value.view(start_offset=i).to_owned()
+      let suffix = value.clamped_view(start=i).to_owned()
       if simple_pattern_match(suffix, pattern) {
-        return value.view(start_offset=0, end_offset=i).to_owned()
+        return value.clamped_view(start=0, end=i).to_owned()
       }
     }
     value
@@ -1235,9 +1223,9 @@ fn replace_pattern(
     @ast.ReplaceMode::Prefix => {
       // Replace only if pattern matches at beginning
       for i = 0; i <= value.length(); i = i + 1 {
-        let prefix = value.view(start_offset=0, end_offset=i).to_owned()
+        let prefix = value.clamped_view(start=0, end=i).to_owned()
         if simple_pattern_match(prefix, pattern) {
-          return replacement + value.view(start_offset=i).to_owned()
+          return replacement + value.clamped_view(start=i).to_owned()
         }
       }
       value
@@ -1245,10 +1233,9 @@ fn replace_pattern(
     @ast.ReplaceMode::Suffix => {
       // Replace only if pattern matches at end
       for i = value.length(); i >= 0; i = i - 1 {
-        let suffix = value.view(start_offset=i).to_owned()
+        let suffix = value.clamped_view(start=i).to_owned()
         if simple_pattern_match(suffix, pattern) {
-          return value.view(start_offset=0, end_offset=i).to_owned() +
-            replacement
+          return value.clamped_view(start=0, end=i).to_owned() + replacement
         }
       }
       value
@@ -1265,11 +1252,11 @@ fn replace_first(
   // Try each position
   for i = 0; i < value.length(); i = i + 1 {
     for j = i + 1; j <= value.length(); j = j + 1 {
-      let substr = value.view(start_offset=i, end_offset=j).to_owned()
+      let substr = value.clamped_view(start=i, end=j).to_owned()
       if simple_pattern_match(substr, pattern) {
-        return value.view(start_offset=0, end_offset=i).to_owned() +
+        return value.clamped_view(start=0, end=i).to_owned() +
           replacement +
-          value.view(start_offset=j).to_owned()
+          value.clamped_view(start=j).to_owned()
       }
     }
   }
@@ -1282,12 +1269,12 @@ fn replace_all(
   pattern : String,
   replacement : String,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = 0
   while i < value.length() {
     let mut matched = false
     for j = i + 1; j <= value.length(); j = j + 1 {
-      let substr = value.view(start_offset=i, end_offset=j).to_owned()
+      let substr = value.clamped_view(start=i, end=j).to_owned()
       if simple_pattern_match(substr, pattern) {
         buf.write_string(replacement)
         i = j
@@ -1309,7 +1296,7 @@ fn replace_all(
 
 ///|
 fn to_upper(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch >= 'a' && ch <= 'z' {
@@ -1323,7 +1310,7 @@ fn to_upper(s : String) -> String {
 
 ///|
 fn to_lower(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch >= 'A' && ch <= 'Z' {
@@ -1346,7 +1333,7 @@ fn upper_first(s : String) -> String {
   } else {
     first
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   buf.write_char(upper)
   for i = 1; i < s.length(); i = i + 1 {
     buf.write_char(s[i].to_int().unsafe_to_char())
@@ -1365,7 +1352,7 @@ fn lower_first(s : String) -> String {
   } else {
     first
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   buf.write_char(lower)
   for i = 1; i < s.length(); i = i + 1 {
     buf.write_char(s[i].to_int().unsafe_to_char())
@@ -1383,7 +1370,7 @@ fn strip_trailing_newlines(s : String) -> String {
   while end > 0 && s[end - 1] == '\n' {
     end -= 1
   }
-  s.view(start_offset=0, end_offset=end).to_owned()
+  s.clamped_view(start=0, end~).to_owned()
 }
 
 ///|

@@ -21,8 +21,8 @@ fn format_nl_number(
 
 ///|
 fn fold_text(input : String, width : Int32, break_spaces : Bool) -> String {
-  let out = StringBuilder::new()
-  let line = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
+  let line = StringBuilder::StringBuilder()
 
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
@@ -53,7 +53,7 @@ fn fold_single_line(
     return line
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut cursor = 0
   while cursor < line.length() {
     let remaining = line.length() - cursor
@@ -91,7 +91,7 @@ fn fold_single_line(
 ///|
 fn expand_tabs(input : String, tab_width : Int32) -> String {
   let width = if tab_width <= 0 { 8 } else { tab_width }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut col = 0
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
@@ -146,7 +146,7 @@ fn unexpand_tabs(
   convert_all : Bool,
 ) -> String {
   let width = if tab_width <= 0 { 8 } else { tab_width }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut col = 0
   let mut leading = true
   let mut pending_spaces = 0
@@ -251,7 +251,7 @@ fn format_column_table(input : String, separator : String?) -> String {
     }
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for row in rows {
     for col = 0; col < row.length(); col = col + 1 {
       let field = row[col]
@@ -289,7 +289,7 @@ fn join_parts_with_delimiter(
   parts : Array[String],
   delimiter : String,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < parts.length(); i = i + 1 {
     if i > 0 {
       out.write_string(delimiter)
@@ -326,7 +326,7 @@ fn format_join_line(
 
 ///|
 fn reverse_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = s.length() - 1; i >= 0; i = i - 1 {
     buf.write_char(s[i].to_int().unsafe_to_char())
   }
@@ -440,7 +440,7 @@ fn ltrim_blanks(s : String) -> String {
       break
     }
   }
-  s.view(start_offset=i).to_owned()
+  s.clamped_view(start=i).to_owned()
 }
 
 ///|
@@ -454,12 +454,12 @@ fn split_version_tokens(s : String) -> Array[String] {
   for i = 1; i < s.length(); i = i + 1 {
     let is_digit = is_ascii_digit(s[i].to_int().unsafe_to_char())
     if is_digit != in_digit {
-      tokens.push(s.view(start_offset=start, end_offset=i).to_owned())
+      tokens.push(s.clamped_view(start~, end=i).to_owned())
       start = i
       in_digit = is_digit
     }
   }
-  tokens.push(s.view(start_offset=start).to_owned())
+  tokens.push(s.clamped_view(start~).to_owned())
   tokens
 }
 
@@ -531,9 +531,7 @@ fn parse_human_size(s : String) -> Int32 {
     return 0
   }
 
-  let number = parse_int32_str(
-    trimmed.view(start_offset=0, end_offset=i).to_owned(),
-  )
+  let number = parse_int32_str(trimmed.clamped_view(start=0, end=i).to_owned())
   if i >= trimmed.length() {
     return number
   }

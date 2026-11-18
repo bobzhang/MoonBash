@@ -240,7 +240,7 @@ fn collapse_home(path : String, home : String) -> String {
   if path == home {
     "~"
   } else if path.has_prefix((home + "/")[:]) {
-    "~" + path.view(start_offset=home.length()).to_owned()
+    "~" + path.clamped_view(start=home.length()).to_owned()
   } else {
     path
   }
@@ -309,11 +309,11 @@ fn apply_completion(app : Ref[AppState]) -> Unit {
   let value = app.val.dom.input.value()
   let cursor = html_input_selection_start(app.val.dom.input)
   let start = find_word_boundary(value, cursor)
-  let prefix = value.view(start_offset=start, end_offset=cursor).to_owned()
+  let prefix = value.clamped_view(start~, end=cursor).to_owned()
   if prefix == "" {
     return
   }
-  let candidates = if value.view(end_offset=start).to_owned().trim().to_owned() ==
+  let candidates = if value.clamped_view(end=start).to_owned().trim().to_owned() ==
     "" {
     let names : Array[String] = []
     for name in app.val.config.command_names {
@@ -341,9 +341,9 @@ fn apply_completion(app : Ref[AppState]) -> Unit {
   }
   if matches.length() == 1 {
     let completion = matches[0]
-    let next_value = value.view(end_offset=start).to_owned() +
+    let next_value = value.clamped_view(end=start).to_owned() +
       completion +
-      value.view(start_offset=cursor).to_owned()
+      value.clamped_view(start=cursor).to_owned()
     app.val.dom.input.set_value(next_value)
     let next_cursor = start + completion.length()
     html_input_set_selection_range(app.val.dom.input, next_cursor, next_cursor)
