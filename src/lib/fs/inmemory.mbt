@@ -10,13 +10,13 @@ pub(all) struct InMemoryFs {
 pub fn InMemoryFs::new() -> InMemoryFs {
   let entries : Map[String, FsEntry] = Map([])
   let now : Int64 = 0L
-  entries["/"] = Directory({ mode: 0o755, mtime: now })
-  entries["/home"] = Directory({ mode: 0o755, mtime: now })
-  entries["/home/user"] = Directory({ mode: 0o755, mtime: now })
-  entries["/bin"] = Directory({ mode: 0o755, mtime: now })
-  entries["/usr"] = Directory({ mode: 0o755, mtime: now })
-  entries["/usr/bin"] = Directory({ mode: 0o755, mtime: now })
-  entries["/tmp"] = Directory({ mode: 0o1777, mtime: now })
+  entries["/"] = Directory({ mode: 0o755, mtime: now, })
+  entries["/home"] = Directory({ mode: 0o755, mtime: now, })
+  entries["/home/user"] = Directory({ mode: 0o755, mtime: now, })
+  entries["/bin"] = Directory({ mode: 0o755, mtime: now, })
+  entries["/usr"] = Directory({ mode: 0o755, mtime: now, })
+  entries["/usr/bin"] = Directory({ mode: 0o755, mtime: now, })
+  entries["/tmp"] = Directory({ mode: 0o1777, mtime: now, })
   { entries, }
 }
 
@@ -25,7 +25,7 @@ pub fn InMemoryFs::new() -> InMemoryFs {
 fn InMemoryFs::resolve_symlinks(
   self : InMemoryFs,
   path : String,
-  max_depth? : Int = 40,
+  max_depth~ : Int32 = 40,
 ) -> String raise FsError {
   let norm = normalize_path(path)
   let mut current = norm
@@ -68,7 +68,7 @@ fn InMemoryFs::ensure_parent_dirs(
     None => {
       self.ensure_parent_dirs(parent)
       let now : Int64 = 0L
-      self.entries[parent] = Directory({ mode: 0o755, mtime: now })
+      self.entries[parent] = Directory({ mode: 0o755, mtime: now, })
     }
   }
 }
@@ -109,7 +109,7 @@ pub fn InMemoryFs::write_file(
       data.content = content
       data.mtime = now
     }
-    _ => self.entries[target] = File({ content, mode: 0o644, mtime: now })
+    _ => self.entries[target] = File({ content, mode: 0o644, mtime: now, })
   }
 }
 
@@ -132,7 +132,7 @@ pub fn InMemoryFs::append_file(
     _ => {
       self.ensure_parent_dirs(target)
       let now : Int64 = 0L
-      self.entries[target] = File({ content, mode: 0o644, mtime: now })
+      self.entries[target] = File({ content, mode: 0o644, mtime: now, })
     }
   }
 }
@@ -208,7 +208,7 @@ pub fn InMemoryFs::readdir(
           Directory(_) => DirectoryType
           Symlink(_) => SymlinkType
         }
-        result.push({ name: rest, entry_type })
+        result.push({ name: rest, entry_type, })
       }
     }
   })
@@ -220,7 +220,7 @@ pub fn InMemoryFs::readdir(
 pub fn InMemoryFs::mkdir(
   self : InMemoryFs,
   path : String,
-  recursive? : Bool = false,
+  recursive~ : Bool = false,
 ) -> Unit raise FsError {
   let norm = normalize_path(path)
   if norm == "/" {
@@ -242,7 +242,7 @@ pub fn InMemoryFs::mkdir(
       Some(_) => raise FsError("Already exists: " + path)
       None => {
         let now : Int64 = 0L
-        self.entries[norm] = Directory({ mode: 0o755, mtime: now })
+        self.entries[norm] = Directory({ mode: 0o755, mtime: now, })
       }
     }
   }
@@ -263,7 +263,7 @@ fn InMemoryFs::mkdir_recursive(
         self.mkdir_recursive(parent)
       }
       let now : Int64 = 0L
-      self.entries[path] = Directory({ mode: 0o755, mtime: now })
+      self.entries[path] = Directory({ mode: 0o755, mtime: now, })
     }
   }
 }
@@ -273,8 +273,8 @@ fn InMemoryFs::mkdir_recursive(
 pub fn InMemoryFs::rm(
   self : InMemoryFs,
   path : String,
-  recursive? : Bool = false,
-  force? : Bool = false,
+  recursive~ : Bool = false,
+  force~ : Bool = false,
 ) -> Unit raise FsError {
   let norm = normalize_path(path)
   if norm == "/" {
@@ -334,7 +334,7 @@ pub fn InMemoryFs::cp(
   self : InMemoryFs,
   src : String,
   dst : String,
-  recursive? : Bool = false,
+  recursive~ : Bool = false,
 ) -> Unit raise FsError {
   let src_norm = normalize_path(src)
   let dst_norm = normalize_path(dst)
@@ -365,7 +365,7 @@ pub fn InMemoryFs::cp(
       let prefix = src_resolved + "/"
       let entries_to_copy : Array[(String, FsEntry)] = []
       entries_to_copy.push(
-        (src_resolved, Directory({ mode: 0o755, mtime: 0L })),
+        (src_resolved, Directory({ mode: 0o755, mtime: 0L, })),
       )
       self.entries.each(fn(key, value) {
         if starts_with(key, prefix) {
@@ -390,7 +390,7 @@ pub fn InMemoryFs::cp(
               mtime: now,
             })
           Directory(ddata) =>
-            self.entries[new_path] = Directory({ mode: ddata.mode, mtime: now })
+            self.entries[new_path] = Directory({ mode: ddata.mode, mtime: now, })
           Symlink(sdata) =>
             self.entries[new_path] = Symlink({
               target: sdata.target,
@@ -459,7 +459,7 @@ pub fn InMemoryFs::symlink(
     None => {
       self.ensure_parent_dirs(norm)
       let now : Int64 = 0L
-      self.entries[norm] = Symlink({ target, mode: 0o777, mtime: now })
+      self.entries[norm] = Symlink({ target, mode: 0o777, mtime: now, })
     }
   }
 }
@@ -483,7 +483,7 @@ pub fn InMemoryFs::readlink(
 pub fn InMemoryFs::chmod(
   self : InMemoryFs,
   path : String,
-  mode : Int,
+  mode : Int32,
 ) -> Unit raise FsError {
   let norm = normalize_path(path)
   let resolved = self.resolve_symlinks(norm)

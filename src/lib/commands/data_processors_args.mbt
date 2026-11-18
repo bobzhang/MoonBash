@@ -2,8 +2,8 @@
 
 ///|
 priv struct XanSliceConfig {
-  start : Int
-  length : Int?
+  start : Int32
+  length : Int32?
   file_path : String?
 }
 
@@ -50,7 +50,7 @@ fn xan_slice_parse_args(args : Array[String]) -> XanSliceConfig {
     aliases~,
     double_dash=false,
   ) catch {
-    _ => return { start: 0, length: None, file_path: None }
+    _ => return { start: 0, length: None, file_path: None, }
   }
 
   {
@@ -82,7 +82,7 @@ fn yq_parse_args(args : Array[String]) -> YqConfig {
     aliases~,
     double_dash=false,
   ) catch {
-    _ => return { raw: false, filter: ".", file_path: None }
+    _ => return { raw: false, filter: ".", file_path: None, }
   }
 
   let mut filter = "."
@@ -95,13 +95,13 @@ fn yq_parse_args(args : Array[String]) -> YqConfig {
     }
   }
 
-  { raw: parsed.flags.get("raw").unwrap_or(false), filter, file_path }
+  { raw: parsed.flags.get("raw").unwrap_or(false), filter, file_path, }
 }
 
 ///|
 fn csvlook_parse_args(args : Array[String]) -> CsvlookConfig {
   let parsed = @parse_args.parse(args, double_dash=false) catch {
-    _ => return { file_path: None }
+    _ => return { file_path: None, }
   }
   {
     file_path: if parsed.positional.length() > 0 {

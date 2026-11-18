@@ -1,6 +1,7 @@
 // moon_bash Commands - awk expression AST parser/evaluator
 
 ///|
+#derive(Debug)
 priv enum AwkExprAst {
   Raw(String)
   Call(String, Array[AwkExprAst], Array[String])
@@ -11,7 +12,7 @@ priv enum AwkExprAst {
   Assign(String, AwkExprAst)
   In(AwkExprAst, String)
   Binary(String, AwkExprAst, AwkExprAst)
-} derive(Debug)
+}
 
 ///|
 priv struct AwkExprEvalState {
@@ -19,7 +20,7 @@ priv struct AwkExprEvalState {
 }
 
 ///|
-let awk_expr_eval_state : AwkExprEvalState = { out: None }
+let awk_expr_eval_state : AwkExprEvalState = { out: None, }
 
 ///|
 fn awk_set_active_expr_output(out : StringBuilder?) -> Unit {
@@ -277,19 +278,19 @@ fn awk_eval_call_expr_ast(
   args_raw : Array[String],
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> String {
-  let eval_arg = fn(idx : Int) {
+  let eval_arg = fn(idx : Int32) {
     if idx >= 0 && idx < args_ast.length() {
       awk_eval_expr_ast(args_ast[idx], line, fields, nr, nf, vars, array_vars)
     } else {
       ""
     }
   }
-  let eval_arg_number = fn(idx : Int) { awk_parse_number(eval_arg(idx)) }
+  let eval_arg_number = fn(idx : Int32) { awk_parse_number(eval_arg(idx)) }
 
   if call_name == "index" {
     if args_ast.length() < 2 {
@@ -474,8 +475,8 @@ fn awk_eval_raw_expr_ast(
   text : String,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> String {
@@ -501,8 +502,8 @@ fn awk_eval_condition_ast(
   cond_ast : AwkExprAst,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> Bool {
@@ -516,8 +517,8 @@ fn awk_eval_expr_ast(
   ast : AwkExprAst,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> String {

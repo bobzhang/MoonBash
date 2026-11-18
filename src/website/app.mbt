@@ -10,23 +10,23 @@ priv struct AppState {
   config : WebsiteConfig
   dom : DomRefs
   demo_modes : Array[DemoMode]
-  mut current_mode_idx : Int
+  mut current_mode_idx : Int32
   mut shell : ShellState
   mut history : Array[String]
-  mut history_index : Int
+  mut history_index : Int32
   mut draft_command : String
   mut command_running : Bool
   mut verification_running : Bool
-  mut verification_run_id : Int
-  mut verification_completed : Int
-  mut verification_passed : Int
-  mut verification_failed : Int
+  mut verification_run_id : Int32
+  mut verification_completed : Int32
+  mut verification_passed : Int32
+  mut verification_failed : Int32
   mut verification_status : String
   mut verification_last_message : String
 }
 
 ///|
-fn availability_total(plan : Array[DemoStep]) -> Int {
+fn availability_total(plan : Array[DemoStep]) -> Int32 {
   let mut count = 0
   for step in plan {
     if step.kind == "availability" {
@@ -37,7 +37,7 @@ fn availability_total(plan : Array[DemoStep]) -> Int {
 }
 
 ///|
-fn smoke_total(plan : Array[DemoStep]) -> Int {
+fn smoke_total(plan : Array[DemoStep]) -> Int32 {
   let mut count = 0
   for step in plan {
     if step.kind == "smoke" {
@@ -83,7 +83,7 @@ fn create_shell_state(config : WebsiteConfig) -> ShellState {
 }
 
 ///|
-fn find_mode_index(modes : Array[DemoMode], key : String) -> Int {
+fn find_mode_index(modes : Array[DemoMode], key : String) -> Int32 {
   for i in 0..<modes.length() {
     if modes[i].key == key {
       return i
@@ -134,7 +134,7 @@ fn current_mode(app : Ref[AppState]) -> DemoMode {
 }
 
 ///|
-fn command_step_total(steps : Array[DemoStep]) -> Int {
+fn command_step_total(steps : Array[DemoStep]) -> Int32 {
   let mut total = 0
   for step in steps {
     if step.kind != "banner" {
@@ -296,7 +296,7 @@ fn list_current_directory(app : Ref[AppState]) -> Array[String] {
 }
 
 ///|
-fn find_word_boundary(value : String, cursor : Int) -> Int {
+fn find_word_boundary(value : String, cursor : Int32) -> Int32 {
   let mut start = cursor
   while start > 0 && value[start - 1].to_int() != ' '.to_int() {
     start -= 1
@@ -394,8 +394,8 @@ fn spawn_background(task : async () -> Unit) -> Unit {
 async fn run_shell_command_async(
   app : Ref[AppState],
   command : String,
-  record_history? : Bool = false,
-  after_done? : ((ExecResult) -> Unit)? = None,
+  record_history~ : Bool = false,
+  after_done~ : ((ExecResult) -> Unit)? = None,
 ) -> Unit {
   let trimmed = command.trim().to_owned()
   if trimmed == "" || app.val.command_running {
@@ -440,8 +440,8 @@ async fn run_shell_command_async(
 fn run_shell_command(
   app : Ref[AppState],
   command : String,
-  record_history? : Bool = false,
-  after_done? : ((ExecResult) -> Unit)? = None,
+  record_history~ : Bool = false,
+  after_done~ : ((ExecResult) -> Unit)? = None,
 ) -> Unit {
   spawn_background(() => {
     run_shell_command_async(app, command, record_history~, after_done~)
@@ -510,7 +510,7 @@ fn switch_mode(app : Ref[AppState], key : String) -> Unit {
 }
 
 ///|
-async fn run_verification_async(app : Ref[AppState], run_id : Int) -> Unit {
+async fn run_verification_async(app : Ref[AppState], run_id : Int32) -> Unit {
   let mode = current_mode(app)
   let steps = mode.steps
   let mut completed_commands = 0

@@ -7,7 +7,7 @@ priv struct DateConfig {
 }
 
 ///|
-fn date_pad2(value : Int) -> String {
+fn date_pad2(value : Int32) -> String {
   if value < 10 {
     "0" + value.to_string()
   } else {
@@ -16,7 +16,7 @@ fn date_pad2(value : Int) -> String {
 }
 
 ///|
-fn date_pad2_space(value : Int) -> String {
+fn date_pad2_space(value : Int32) -> String {
   if value < 10 {
     " " + value.to_string()
   } else {
@@ -51,7 +51,7 @@ fn date_weekday_long(weekday : @time.Weekday) -> String {
 }
 
 ///|
-fn date_month_short(month : Int) -> String {
+fn date_month_short(month : Int32) -> String {
   match month {
     1 => "Jan"
     2 => "Feb"
@@ -70,7 +70,7 @@ fn date_month_short(month : Int) -> String {
 }
 
 ///|
-fn date_month_long(month : Int) -> String {
+fn date_month_long(month : Int32) -> String {
   match month {
     1 => "January"
     2 => "February"
@@ -89,7 +89,7 @@ fn date_month_long(month : Int) -> String {
 }
 
 ///|
-fn date_weekday_sunday_index(weekday : @time.Weekday) -> Int {
+fn date_weekday_sunday_index(weekday : @time.Weekday) -> Int32 {
   match weekday {
     Sunday => 0
     Monday => 1
@@ -102,7 +102,7 @@ fn date_weekday_sunday_index(weekday : @time.Weekday) -> Int {
 }
 
 ///|
-fn date_weekday_monday_index(weekday : @time.Weekday) -> Int {
+fn date_weekday_monday_index(weekday : @time.Weekday) -> Int32 {
   match weekday {
     Monday => 1
     Tuesday => 2
@@ -144,7 +144,7 @@ fn date_parse_args(args : Array[String]) -> Result[DateConfig, String] {
     }
     return Err("date: extra operand '\{arg}'\n")
   }
-  Ok({ use_utc, format })
+  Ok({ use_utc, format, })
 }
 
 ///|

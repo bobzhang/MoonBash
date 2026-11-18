@@ -30,8 +30,8 @@ fn dom_document() -> @dom_ffi.Document {
 ///|
 fn create_element(
   tag : String,
-  class_name? : String = "",
-  text? : String = "",
+  class_name~ : String = "",
+  text~ : String = "",
 ) -> @dom_ffi.Element {
   let element = dom_document().create_element(tag)
   if class_name != "" {
@@ -76,7 +76,7 @@ fn set_input_disabled(
 fn append_block(
   dom : DomRefs,
   text : String,
-  tone? : String = "stdout",
+  tone~ : String = "stdout",
 ) -> Unit {
   if text == "" {
     return

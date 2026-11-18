@@ -4,12 +4,12 @@
 let command_stub_marker_prefix : String = "# moon_bash command stub:"
 
 ///|
-fn fd_output_key(fd : Int) -> String {
+fn fd_output_key(fd : Int32) -> String {
   "__MOON_BASH_FD_OUT__" + fd.to_string()
 }
 
 ///|
-fn parse_fd_target_number(text : String) -> Int? {
+fn parse_fd_target_number(text : String) -> Int32? {
   if text.length() == 0 {
     return None
   }
@@ -55,7 +55,7 @@ fn decode_fd_output_mapping(spec : String) -> (String, Bool)? {
 ///|
 fn ExecContext::store_fd_output_mapping(
   self : ExecContext,
-  fd : Int,
+  fd : Int32,
   target : String,
   append : Bool,
 ) -> Unit {
@@ -277,7 +277,7 @@ fn parse_array_assignment_explicit_entry(
 }
 
 ///|
-fn find_array_assignment_close_bracket(token : String) -> Int? {
+fn find_array_assignment_close_bracket(token : String) -> Int32? {
   let mut depth = 1
   let mut in_single = false
   let mut in_double = false
@@ -402,7 +402,7 @@ fn ExecContext::next_indexed_assignment_seed(
   self : ExecContext,
   name : String,
   append : Bool,
-) -> Int {
+) -> Int32 {
   if !append {
     return 0
   }
@@ -422,7 +422,7 @@ fn ExecContext::next_indexed_assignment_seed(
 fn ExecContext::parse_indexed_assignment_index(
   self : ExecContext,
   raw_index : String,
-) -> Int {
+) -> Int32 {
   match parse_array_reference_name(raw_index) {
     Some((base, index_expr)) => {
       let resolved = self.expand_array_element_reference(base, index_expr)
@@ -640,7 +640,7 @@ fn split_array_assignment_items(
           if ch == ')' {
             split_array_assignment_flush_literal(current_parts, literal_buf)
             if current_parts.length() > 0 {
-              items.push({ parts: current_parts })
+              items.push({ parts: current_parts, })
               current_parts = []
             }
             ended = true
@@ -650,7 +650,7 @@ fn split_array_assignment_items(
           if array_assignment_is_space(ch) {
             split_array_assignment_flush_literal(current_parts, literal_buf)
             if current_parts.length() > 0 {
-              items.push({ parts: current_parts })
+              items.push({ parts: current_parts, })
               current_parts = []
             }
             continue
@@ -940,7 +940,7 @@ fn is_valid_shell_name(name : String) -> Bool {
 }
 
 ///|
-fn parse_non_negative_int_for_sort(text : String) -> Int? {
+fn parse_non_negative_int_for_sort(text : String) -> Int32? {
   if text.length() == 0 {
     return None
   }
@@ -976,7 +976,7 @@ fn ExecContext::indexed_array_origin(
 }
 
 ///|
-fn compare_text(a : String, b : String) -> Int {
+fn compare_text(a : String, b : String) -> Int32 {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
   for i = 0; i < min_len; i = i + 1 {
     if a[i] < b[i] {
@@ -1464,7 +1464,7 @@ fn contains_slash(name : String) -> Bool {
 fn ExecContext::apply_errexit_after_pipeline(
   self : ExecContext,
   pipeline : @ast.Pipeline,
-  next_op : Int?,
+  next_op : Int32?,
 ) -> Unit {
   if self.should_exit || !self.options.errexit || self.exit_code == 0 {
     return

@@ -5,14 +5,14 @@
 priv struct VmExecResponse {
   stdout : String
   stderr : String
-  exit_code : Int
+  exit_code : Int32
   error : String
   has_files : Bool
   files : Array[(String, String)]
 }
 
 ///|
-fn vm_hex_digit(n : Int) -> Char {
+fn vm_hex_digit(n : Int32) -> Char {
   if n < 10 {
     (n + 48).unsafe_to_char()
   } else {
@@ -154,8 +154,8 @@ fn vm_json_get_string(
 fn vm_json_get_int(
   obj : Map[String, Json],
   key : String,
-  default_value : Int,
-) -> Int {
+  default_value : Int32,
+) -> Int32 {
   match obj.get(key) {
     Some(Json::Number(n, ..)) => n.to_int()
     Some(Json::String(s)) => cmd_parse_int(s).to_int()
@@ -255,7 +255,7 @@ fn vm_run(runtime_name : String, ctx : CommandContext) -> @ast.ExecResult {
   let response = match vm_parse_response(raw) {
     Ok(resp) => resp
     Err(msg) =>
-      return { stdout: "", stderr: "\{runtime_name}: \{msg}\n", exit_code: 1 }
+      return { stdout: "", stderr: "\{runtime_name}: \{msg}\n", exit_code: 1, }
   }
   if response.error.length() > 0 {
     let err = StringBuilder::new()

@@ -104,7 +104,7 @@ fn cmd_diff(ctx : CommandContext) -> @ast.ExecResult {
 fn cmd_cmp_first_difference(
   content1 : String,
   content2 : String,
-) -> (Int, Int, Bool) {
+) -> (Int32, Int32, Bool) {
   let max_common = if content1.length() < content2.length() {
     content1.length()
   } else {
@@ -315,7 +315,7 @@ fn cmd_comm(ctx : CommandContext) -> @ast.ExecResult {
 
 ///|
 /// Encode string to base64 using gmlewis/base64 community package.
-fn base64_encode(input : String, wrap_col : Int) -> String {
+fn base64_encode(input : String, wrap_col : Int32) -> String {
   let bytes = @base64.str2array(input)
   let fixed : FixedArray[Byte] = FixedArray::make(bytes.length(), b'\x00')
   for i = 0; i < bytes.length(); i = i + 1 {
@@ -421,13 +421,13 @@ fn cmd_base64(ctx : CommandContext) -> @ast.ExecResult {
 /// Expr parser state. Uses mutable error field instead of exceptions.
 priv struct ExprParser {
   tokens : Array[String]
-  mut pos : Int
+  mut pos : Int32
   mut error : String
 }
 
 ///|
 fn ExprParser::new(tokens : Array[String]) -> ExprParser {
-  { tokens, pos: 0, error: "" }
+  { tokens, pos: 0, error: "", }
 }
 
 ///|

@@ -5,7 +5,7 @@ fn ExecContext::run_compgen_function(
   self : ExecContext,
   func_name : String,
   query : String,
-) -> Int {
+) -> Int32 {
   self.clear_named_array_storage("COMPREPLY")
   self.store_array_assignment("COMP_WORDS", [])
   self.env["COMP_CWORD"] = "-1"
@@ -29,7 +29,7 @@ fn ExecContext::run_compgen_function(
 fn ExecContext::expand_compgen_words(
   self : ExecContext,
   raw : String,
-) -> (Array[String], Int) {
+) -> (Array[String], Int32) {
   if raw.length() == 0 {
     return ([], 0)
   }

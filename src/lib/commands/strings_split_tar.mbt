@@ -12,7 +12,7 @@ priv struct TarEntry {
 // ============================================================================
 
 ///|
-fn cst_parse_int(s : String) -> Int {
+fn cst_parse_int(s : String) -> Int32 {
   let mut result = 0
   let mut neg = false
   let mut start = 0
@@ -38,7 +38,7 @@ fn cst_parse_int(s : String) -> Int {
 }
 
 ///|
-fn cst_substr(s : String, start : Int, end_ : Int) -> String {
+fn cst_substr(s : String, start : Int32, end_ : Int32) -> String {
   let mut start = start
   let mut end_ = end_
   if start < 0 {
@@ -73,7 +73,7 @@ fn cst_split_path(path : String) -> Array[String] {
 }
 
 ///|
-fn cst_join_path(parts : Array[String], start_idx : Int) -> String {
+fn cst_join_path(parts : Array[String], start_idx : Int32) -> String {
   let out = StringBuilder::new()
   for i = start_idx; i < parts.length(); i = i + 1 {
     if i > start_idx {
@@ -126,7 +126,7 @@ fn cst_read_input(
 ///|
 fn cmd_strings_collect(
   content : String,
-  min_len : Int,
+  min_len : Int32,
   out : StringBuilder,
 ) -> Unit {
   let normalized = decode_strings_escapes(content)
@@ -206,7 +206,7 @@ fn is_hex_char(ch : Char) -> Bool {
 }
 
 ///|
-fn hex_value(ch : Char) -> Int {
+fn hex_value(ch : Char) -> Int32 {
   if ch >= '0' && ch <= '9' {
     ch.to_int() - '0'.to_int()
   } else if ch >= 'a' && ch <= 'f' {
@@ -267,7 +267,7 @@ fn cmd_strings(ctx : CommandContext) -> @ast.ExecResult {
 // ============================================================================
 
 ///|
-fn cmd_split_suffix(index : Int) -> String {
+fn cmd_split_suffix(index : Int32) -> String {
   let alphabet = "abcdefghijklmnopqrstuvwxyz"
   let n = if index < 0 { 0 } else { index }
   let first = n / 26 % 26
@@ -318,7 +318,7 @@ fn cmd_split_write_chunks(
 ///|
 fn cmd_split(ctx : CommandContext) -> @ast.ExecResult {
   let mut lines_per_chunk = 1000
-  let mut bytes_per_chunk : Int? = None
+  let mut bytes_per_chunk : Int32? = None
   let positionals : Array[String] = []
 
   let mut i = 0
@@ -441,7 +441,7 @@ fn tar_collect_tree(
   let stat = fs.stat(abs_path) catch { @fs.FsError(_msg) => return }
 
   if stat.is_directory {
-    out.push({ path: rel_path + "/", is_dir: true, content: "" })
+    out.push({ path: rel_path + "/", is_dir: true, content: "", })
     let entries = fs.readdir(abs_path) catch { @fs.FsError(_msg) => return }
     let names : Array[String] = []
     for entry in entries {
@@ -462,7 +462,7 @@ fn tar_collect_tree(
 
   if stat.is_file {
     let content = fs.read_file(abs_path) catch { @fs.FsError(_msg) => "" }
-    out.push({ path: rel_path, is_dir: false, content })
+    out.push({ path: rel_path, is_dir: false, content, })
   }
 }
 
@@ -489,7 +489,7 @@ fn tar_serialize(entries : Array[TarEntry]) -> String {
 }
 
 ///|
-fn tar_index_of_char(s : String, start : Int, ch : Char) -> Int {
+fn tar_index_of_char(s : String, start : Int32, ch : Char) -> Int32 {
   for i = start; i < s.length(); i = i + 1 {
     if s[i].to_int().unsafe_to_char() == ch {
       return i
@@ -518,7 +518,7 @@ fn tar_deserialize(content : String) -> Array[TarEntry] {
 
     if cst_starts_with(header, "D\t") {
       let path = header.view(start_offset=2).to_owned()
-      entries.push({ path, is_dir: true, content: "" })
+      entries.push({ path, is_dir: true, content: "", })
       continue
     }
 
@@ -544,14 +544,14 @@ fn tar_deserialize(content : String) -> Array[TarEntry] {
         content[pos].to_int().unsafe_to_char() == '\n' {
         pos += 1
       }
-      entries.push({ path, is_dir: false, content: file_content })
+      entries.push({ path, is_dir: false, content: file_content, })
     }
   }
   entries
 }
 
 ///|
-fn tar_strip_components(path : String, strip : Int) -> String? {
+fn tar_strip_components(path : String, strip : Int32) -> String? {
   let mut p = path
   let is_dir = p.length() > 0 && p[p.length() - 1] == '/'
   if is_dir && p.length() > 1 {
@@ -647,7 +647,7 @@ fn cmd_tar(ctx : CommandContext) -> @ast.ExecResult {
         let content = ctx.fs.read_file(abs) catch {
           @fs.FsError(msg) => return @ast.ExecResult::err("tar: \{msg}\n")
         }
-        entries.push({ path: rel, is_dir: false, content })
+        entries.push({ path: rel, is_dir: false, content, })
       }
     }
     let packed = tar_serialize(entries)

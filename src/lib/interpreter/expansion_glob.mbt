@@ -3,7 +3,7 @@
 // ============================================================================
 
 ///|
-let brace_expansion_result_limit : Int = 10_000
+let brace_expansion_result_limit : Int32 = 10_000
 
 ///|
 priv enum BraceOptionParseResult {
@@ -74,7 +74,7 @@ fn brace_expand_collect(input : String, out : Array[String]) -> Bool {
 }
 
 ///|
-fn find_first_expandable_brace_pair(s : String) -> (Int, Int)? {
+fn find_first_expandable_brace_pair(s : String) -> (Int32, Int32)? {
   let mut i = 0
   while i < s.length() {
     if s[i] == '\\' && i + 1 < s.length() {
@@ -269,7 +269,7 @@ fn parse_brace_range(content : String) -> BraceRangeParseResult {
 }
 
 ///|
-fn brace_char_kind(ch : Char) -> Int {
+fn brace_char_kind(ch : Char) -> Int32 {
   if ch >= 'a' && ch <= 'z' {
     1
   } else if ch >= 'A' && ch <= 'Z' {
@@ -282,7 +282,7 @@ fn brace_char_kind(ch : Char) -> Int {
 }
 
 ///|
-fn brace_numeric_pad_width(start_text : String, end_text : String) -> Int {
+fn brace_numeric_pad_width(start_text : String, end_text : String) -> Int32 {
   match
     (brace_numeric_digit_info(start_text), brace_numeric_digit_info(end_text)) {
     (Some((start_width, start_zero)), Some((end_width, end_zero))) =>
@@ -298,7 +298,7 @@ fn brace_numeric_pad_width(start_text : String, end_text : String) -> Int {
 }
 
 ///|
-fn brace_numeric_digit_info(text : String) -> (Int, Bool)? {
+fn brace_numeric_digit_info(text : String) -> (Int32, Bool)? {
   if text.length() == 0 {
     return None
   }
@@ -373,7 +373,7 @@ fn generate_numeric_range(
   start_num : Int64,
   end_num : Int64,
   step : Int64,
-  pad_width : Int,
+  pad_width : Int32,
 ) -> Array[String] {
   let out : Array[String] = []
   let mut current = start_num
@@ -399,7 +399,7 @@ fn generate_numeric_range(
 }
 
 ///|
-fn format_padded_numeric(value : Int64, width : Int) -> String {
+fn format_padded_numeric(value : Int64, width : Int32) -> String {
   if width <= 0 {
     return value.to_string()
   }
@@ -428,9 +428,9 @@ fn format_padded_numeric(value : Int64, width : Int) -> String {
 
 ///|
 fn generate_char_range(
-  start_ch : Int,
-  end_ch : Int,
-  step : Int,
+  start_ch : Int32,
+  end_ch : Int32,
+  step : Int32,
 ) -> Array[String] {
   let out : Array[String] = []
   let mut current = start_ch
@@ -517,7 +517,7 @@ fn ExecContext::expand_glob_word(
 fn ExecContext::glob_expand_segments(
   self : ExecContext,
   segments : Array[String],
-  idx : Int,
+  idx : Int32,
   current_abs : String,
   out : Array[String],
 ) -> Unit {
@@ -875,7 +875,7 @@ fn sort_array_key_names(keys : Array[String]) -> Unit {
 }
 
 ///|
-fn parse_non_negative_array_key(text : String) -> Int? {
+fn parse_non_negative_array_key(text : String) -> Int32? {
   if text.length() == 0 {
     return None
   }
@@ -891,7 +891,7 @@ fn parse_non_negative_array_key(text : String) -> Int? {
 }
 
 ///|
-fn compare_array_key_text(a : String, b : String) -> Int {
+fn compare_array_key_text(a : String, b : String) -> Int32 {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
   for i = 0; i < min_len; i = i + 1 {
     if a[i] < b[i] {
@@ -1091,7 +1091,7 @@ fn simple_pattern_match(s : String, pattern : String) -> Bool {
 }
 
 ///|
-fn match_pattern(s : String, si : Int, p : String, pi : Int) -> Bool {
+fn match_pattern(s : String, si : Int32, p : String, pi : Int32) -> Bool {
   if pi >= p.length() {
     return si >= s.length()
   }
@@ -1150,8 +1150,8 @@ fn match_pattern(s : String, si : Int, p : String, pi : Int) -> Bool {
 fn match_char_class_pattern(
   ch : Char,
   pattern : String,
-  start : Int,
-) -> (Bool, Int)? {
+  start : Int32,
+) -> (Bool, Int32)? {
   if start + 1 >= pattern.length() {
     return None
   }

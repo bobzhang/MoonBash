@@ -93,7 +93,7 @@ fn ExecContext::builtin_sort(self : ExecContext, args : Array[String]) -> Unit {
   let mut version = false
   let mut check_only = false
   let mut ignore_leading_blanks = false
-  let mut key_field : Int? = None
+  let mut key_field : Int32? = None
   let mut delimiter : String? = None
   let mut input_file : String? = None
 
@@ -251,7 +251,7 @@ fn ExecContext::builtin_uniq(self : ExecContext, args : Array[String]) -> Unit {
   let lines = split_lines_no_trailing(input)
   let mut prev = ""
   let mut count = 0
-  let format_count = (value : Int) => {
+  let format_count = (value : Int32) => {
     let text = value.to_string()
     let mut pad = 4 - text.length()
     if pad < 0 {
@@ -264,7 +264,7 @@ fn ExecContext::builtin_uniq(self : ExecContext, args : Array[String]) -> Unit {
     out.write_string(text)
     out.to_string()
   }
-  let should_emit = (group_count : Int) => {
+  let should_emit = (group_count : Int32) => {
     if duplicates_only && unique_only {
       false
     } else if duplicates_only {
@@ -310,9 +310,9 @@ fn ExecContext::builtin_uniq(self : ExecContext, args : Array[String]) -> Unit {
 ///|
 fn ExecContext::builtin_cut(self : ExecContext, args : Array[String]) -> Unit {
   let mut delimiter = "\t"
-  let mut fields : Array[Int] = []
+  let mut fields : Array[Int32] = []
   let mut char_mode = false
-  let mut char_ranges : Array[(Int, Int)] = []
+  let mut char_ranges : Array[(Int32, Int32)] = []
   let mut input_file : String? = None
   let mut i = 0
   while i < args.length() {
@@ -380,8 +380,8 @@ fn ExecContext::builtin_cut(self : ExecContext, args : Array[String]) -> Unit {
 }
 
 ///|
-fn parse_cut_char_spec(spec : String) -> Array[(Int, Int)] {
-  let ranges : Array[(Int, Int)] = []
+fn parse_cut_char_spec(spec : String) -> Array[(Int32, Int32)] {
+  let ranges : Array[(Int32, Int32)] = []
   for raw in split_string_by_delimiter(spec, ",") {
     if raw.length() == 0 {
       continue
@@ -408,7 +408,7 @@ fn parse_cut_char_spec(spec : String) -> Array[(Int, Int)] {
 }
 
 ///|
-fn cut_by_char_ranges(line : String, ranges : Array[(Int, Int)]) -> String {
+fn cut_by_char_ranges(line : String, ranges : Array[(Int32, Int32)]) -> String {
   if line.length() == 0 || ranges.length() == 0 {
     return ""
   }

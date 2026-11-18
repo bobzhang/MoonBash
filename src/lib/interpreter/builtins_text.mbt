@@ -589,7 +589,7 @@ fn ExecContext::builtin_join(self : ExecContext, args : Array[String]) -> Unit {
   let mut delimiter = " "
   let mut include_unpair_1 = false
   let mut include_unpair_2 = false
-  let mut only_unpair_file : Int? = None
+  let mut only_unpair_file : Int32? = None
   let files : Array[String] = []
 
   let mut i = 0
@@ -707,7 +707,7 @@ fn ExecContext::builtin_join(self : ExecContext, args : Array[String]) -> Unit {
   let mut idx1 = 0
   let mut idx2 = 0
 
-  let should_emit_unpair = (source : Int) => {
+  let should_emit_unpair = (source : Int32) => {
     match only_unpair_file {
       Some(side) => side == source
       None => if source == 1 { include_unpair_1 } else { include_unpair_2 }

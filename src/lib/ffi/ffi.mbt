@@ -73,7 +73,7 @@ pub fn fetch_sync(request_json : String) -> String {
 /// JS bridge: delegate sleep requests to `globalThis.__moon_bash_sleep`.
 /// The bridge returns an empty string on success or an error message.
 #cfg(target="js")
-extern "js" fn host_sleep_sync_js(duration_ms : Int) -> String =
+extern "js" fn host_sleep_sync_js(duration_ms : Int32) -> String =
   #| function(durationMs) {
   #|   try {
   #|     const bridge = globalThis.__moon_bash_sleep;
@@ -98,20 +98,20 @@ extern "js" fn host_sleep_sync_js(duration_ms : Int) -> String =
 
 ///|
 #cfg(not(target="js"))
-fn host_sleep_sync_js(_duration_ms : Int) -> String {
+fn host_sleep_sync_js(_duration_ms : Int32) -> String {
   "sleep is only supported on js target"
 }
 
 ///|
 /// Sleep through host timer bridge.
-pub fn sleep_sync(duration_ms : Int) -> String {
+pub fn sleep_sync(duration_ms : Int32) -> String {
   host_sleep_sync_js(duration_ms)
 }
 
 ///|
 /// JS bridge: read monotonic milliseconds from `globalThis.__moon_bash_now`.
 #cfg(target="js")
-extern "js" fn host_now_ms_sync_js() -> Int =
+extern "js" fn host_now_ms_sync_js() -> Int32 =
   #| function() {
   #|   try {
   #|     const bridge = globalThis.__moon_bash_now;
@@ -139,13 +139,13 @@ extern "js" fn host_now_ms_sync_js() -> Int =
 
 ///|
 #cfg(not(target="js"))
-fn host_now_ms_sync_js() -> Int {
+fn host_now_ms_sync_js() -> Int32 {
   0
 }
 
 ///|
 /// Return monotonic milliseconds from the host.
-pub fn now_ms_sync() -> Int {
+pub fn now_ms_sync() -> Int32 {
   host_now_ms_sync_js()
 }
 

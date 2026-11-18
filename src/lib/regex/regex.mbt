@@ -9,9 +9,9 @@ pub(all) enum GrepMatcher {
 ///|
 pub fn compile_grep_matcher(
   pattern : String,
-  extended? : Bool = false,
-  fixed? : Bool = false,
-  ignore_case? : Bool = false,
+  extended~ : Bool = false,
+  fixed~ : Bool = false,
+  ignore_case~ : Bool = false,
 ) -> GrepMatcher raise @regexp.RegexpError {
   if fixed {
     let fixed_pattern = if ignore_case {
@@ -46,8 +46,8 @@ pub fn compile_grep_matcher(
 pub fn GrepMatcher::find_first(
   self : GrepMatcher,
   line : String,
-  start? : Int = 0,
-) -> (Int, Int)? {
+  start~ : Int32 = 0,
+) -> (Int32, Int32)? {
   match self {
     Fixed(pattern, ignore_case) => {
       if start < 0 || start > line.length() {
@@ -101,8 +101,8 @@ pub fn GrepMatcher::find_first(
 pub fn GrepMatcher::find_first_with_groups(
   self : GrepMatcher,
   line : String,
-  start? : Int = 0,
-) -> (Int, Int, Array[String])? {
+  start~ : Int32 = 0,
+) -> (Int32, Int32, Array[String])? {
   match self {
     Fixed(pattern, ignore_case) => {
       if start < 0 || start > line.length() {
@@ -168,8 +168,8 @@ pub fn GrepMatcher::find_first_with_groups(
 pub fn GrepMatcher::find_all(
   self : GrepMatcher,
   line : String,
-) -> Array[(Int, Int)] {
-  let ranges : Array[(Int, Int)] = []
+) -> Array[(Int32, Int32)] {
+  let ranges : Array[(Int32, Int32)] = []
   let mut start = 0
   while start <= line.length() {
     match self.find_first(line, start~) {
@@ -301,7 +301,7 @@ fn normalize_posix_char_classes(pattern : String) -> String {
 }
 
 ///|
-fn normalize_regex_compat(pattern : String, extended? : Bool = false) -> String {
+fn normalize_regex_compat(pattern : String, extended~ : Bool = false) -> String {
   // Map GNU-style {,n} quantifier to engines that require {0,n}.
   let with_lower_bound = replace_all_literal(pattern, "{,", "{0,")
   // Help JS-like engines parse classes where ] is the first class member.
@@ -324,7 +324,7 @@ fn normalize_regex_compat(pattern : String, extended? : Bool = false) -> String 
 ///|
 fn normalize_invalid_quantifiers(
   pattern : String,
-  literalize_interval_errors? : Bool = true,
+  literalize_interval_errors~ : Bool = true,
 ) -> String {
   let out = StringBuilder::new()
   let mut i = 0
@@ -452,9 +452,9 @@ fn normalize_invalid_quantifiers(
 ///|
 fn parse_interval_quantifier(
   pattern : String,
-  start : Int,
+  start : Int32,
   has_target : Bool,
-) -> Int? {
+) -> Int32? {
   if !has_target {
     return None
   }
@@ -675,7 +675,7 @@ fn is_valid_posix_char_class_name(name : String) -> Bool {
 }
 
 ///|
-fn parse_interval_syntax(pattern : String, start : Int) -> Int? {
+fn parse_interval_syntax(pattern : String, start : Int32) -> Int32? {
   if start < 0 ||
     start >= pattern.length() ||
     pattern[start].to_int().unsafe_to_char() != '{' {
@@ -765,7 +765,7 @@ fn regex_has_bol_anchor(pattern : String) -> Bool {
 }
 
 ///|
-fn ere_caret_is_anchor(pattern : String, idx : Int) -> Bool {
+fn ere_caret_is_anchor(pattern : String, idx : Int32) -> Bool {
   if idx == 0 {
     return true
   }
@@ -866,7 +866,7 @@ fn decode_regex_escapes(pattern : String) -> String {
 }
 
 ///|
-fn starts_with_at(text : String, token : String, idx : Int) -> Bool {
+fn starts_with_at(text : String, token : String, idx : Int32) -> Bool {
   if idx < 0 || idx + token.length() > text.length() {
     return false
   }
@@ -924,7 +924,7 @@ fn is_bre_literal_regex_char(ch : Char) -> Bool {
 }
 
 ///|
-fn bre_caret_is_anchor(pattern : String, idx : Int) -> Bool {
+fn bre_caret_is_anchor(pattern : String, idx : Int32) -> Bool {
   if idx == 0 {
     return true
   }
@@ -938,7 +938,7 @@ fn bre_caret_is_anchor(pattern : String, idx : Int) -> Bool {
 }
 
 ///|
-fn bre_dollar_is_anchor(pattern : String, idx : Int) -> Bool {
+fn bre_dollar_is_anchor(pattern : String, idx : Int32) -> Bool {
   if idx == pattern.length() - 1 {
     return true
   }
@@ -967,7 +967,11 @@ fn to_lower_ascii(s : String) -> String {
 }
 
 ///|
-fn find_substring_from(haystack : String, needle : String, start : Int) -> Int {
+fn find_substring_from(
+  haystack : String,
+  needle : String,
+  start : Int32,
+) -> Int32 {
   if needle.length() == 0 {
     return start
   }

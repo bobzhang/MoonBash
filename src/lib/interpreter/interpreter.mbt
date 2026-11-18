@@ -24,19 +24,19 @@ pub(all) struct ExecContext {
   mut stderr_buf : StringBuilder
 
   // Control flow
-  mut exit_code : Int
+  mut exit_code : Int32
   mut should_exit : Bool
-  mut loop_depth : Int
-  mut break_count : Int
-  mut continue_count : Int
+  mut loop_depth : Int32
+  mut break_count : Int32
+  mut continue_count : Int32
   mut return_requested : Bool
 
   // Limits
   mut limits : @ast.ExecutionLimits
-  mut command_count : Int
-  mut call_depth : Int
-  mut substitution_depth : Int
-  mut glob_operations : Int
+  mut command_count : Int32
+  mut call_depth : Int32
+  mut substitution_depth : Int32
+  mut glob_operations : Int32
 
   // Filesystem
   fs : @fs.InMemoryFs
@@ -47,9 +47,9 @@ pub(all) struct ExecContext {
 /// Create a new execution context.
 pub fn ExecContext::new(
   fs : @fs.InMemoryFs,
-  env? : Map[String, String] = Map([]),
-  cwd? : String = "/home/user",
-  limits? : @ast.ExecutionLimits = @ast.ExecutionLimits::default(),
+  env~ : Map[String, String] = Map([]),
+  cwd~ : String = "/home/user",
+  limits~ : @ast.ExecutionLimits = @ast.ExecutionLimits::default(),
 ) -> ExecContext {
   let default_env : Map[String, String] = Map([])
   let default_exported : Map[String, Bool] = Map([])

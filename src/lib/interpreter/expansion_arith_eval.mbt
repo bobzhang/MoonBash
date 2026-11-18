@@ -719,7 +719,7 @@ fn arith_prepare_word_for_expansion(raw : String) -> @ast.Word {
       _ => normalized_parts.push(part)
     }
   }
-  { parts: normalized_parts }
+  { parts: normalized_parts, }
 }
 
 ///|
@@ -806,7 +806,7 @@ fn ExecContext::eval_arith_raw(self : ExecContext, raw : String) -> Int64 {
   if tokens.length() == 0 {
     return 0L
   }
-  let parser : ArithParser = { tokens, pos: 0 }
+  let parser : ArithParser = { tokens, pos: 0, }
   let result = self.arith_parse_comma(parser, true)
   if parser.pos < tokens.length() {
     self.arith_fail()

@@ -5,8 +5,8 @@ fn awk_eval_atom(
   atom : String,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> String {
@@ -148,7 +148,7 @@ fn awk_execute_function_body(
   body : String,
   line : String,
   fields : Array[String],
-  nr : Int,
+  nr : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
   out : StringBuilder,
@@ -186,7 +186,7 @@ fn awk_apply_getline_target_for_function(
   line_value : String,
   line : String,
   fields : Array[String],
-  nr : Int,
+  nr : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> Unit {
@@ -238,7 +238,7 @@ fn awk_execute_function_statements(
   statements : Array[AwkStmt],
   line : String,
   fields : Array[String],
-  nr : Int,
+  nr : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
   out : StringBuilder,
@@ -689,8 +689,8 @@ fn awk_eval_user_function(
   arg_exprs : Array[String],
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
   out : StringBuilder,
@@ -772,7 +772,7 @@ fn awk_bool_to_string(value : Bool) -> String {
 }
 
 ///|
-fn awk_compare_strings(left : String, right : String) -> Int {
+fn awk_compare_strings(left : String, right : String) -> Int32 {
   let shared = if left.length() < right.length() {
     left.length()
   } else {
@@ -840,8 +840,8 @@ fn awk_assign_reference(
   value : String,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> Bool {
@@ -866,8 +866,8 @@ fn awk_mutate_numeric_reference(
   return_new : Bool,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> String? {

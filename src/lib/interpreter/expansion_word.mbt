@@ -681,12 +681,12 @@ fn ExecContext::expand_word_parts_with_brace(
 }
 
 ///|
-fn brace_placeholder_token(idx : Int) -> String {
+fn brace_placeholder_token(idx : Int32) -> String {
   "\u001d" + idx.to_string() + "\u001e"
 }
 
 ///|
-fn parse_brace_placeholder_index(text : String) -> Int? {
+fn parse_brace_placeholder_index(text : String) -> Int32? {
   if text.length() == 0 {
     return None
   }

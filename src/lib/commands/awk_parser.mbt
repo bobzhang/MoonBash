@@ -228,7 +228,7 @@ fn awk_take_function_definition(
   let body = aj_substr(src, open_brace + 1, close_brace)
   let remaining = aj_substr(src, 0, start) +
     aj_substr(src, close_brace + 1, src.length())
-  (Some(name), Some({ params, body }), remaining)
+  (Some(name), Some({ params, body, }), remaining)
 }
 
 ///|
@@ -282,7 +282,7 @@ fn awk_get_function(vars : Map[String, String], name : String) -> AwkFunction? {
           }
         }
       }
-      Some({ params, body })
+      Some({ params, body, })
     }
     _ => None
   }

@@ -6,10 +6,10 @@
 // ============================================================================
 
 ///|
-let max_input_size : Int = 10 * 1024 * 1024 // 10 MB
+let max_input_size : Int32 = 10 * 1024 * 1024 // 10 MB
 
 ///|
-let max_tokens : Int = 100_000
+let max_tokens : Int32 = 100_000
 
 // ============================================================================
 // String Character Access Helper
@@ -17,7 +17,7 @@ let max_tokens : Int = 100_000
 
 ///|
 /// Get character at index from a string, converting UInt16 to Char.
-fn char_at(s : String, i : Int) -> Char {
+fn char_at(s : String, i : Int32) -> Char {
   s[i].to_int().unsafe_to_char()
 }
 
@@ -28,7 +28,7 @@ fn char_at(s : String, i : Int) -> Char {
 ///|
 pub(all) struct Lexer {
   source : String
-  mut pos : Int
+  mut pos : Int32
   mut tokens : Array[@ast.Token]
 }
 
@@ -42,7 +42,7 @@ pub fn tokenize(input : String) -> Array[@ast.Token] raise @ast.BashError {
   if input.length() > max_input_size {
     raise @ast.BashError("input exceeds maximum size of 10MB")
   }
-  let lexer : Lexer = { source: input, pos: 0, tokens: [] }
+  let lexer : Lexer = { source: input, pos: 0, tokens: [], }
   lexer.scan_tokens()
   lexer.tokens
 }
@@ -61,7 +61,7 @@ fn Lexer::peek(self : Lexer) -> Char {
 }
 
 ///|
-fn Lexer::peek_at(self : Lexer, offset : Int) -> Char {
+fn Lexer::peek_at(self : Lexer, offset : Int32) -> Char {
   let idx = self.pos + offset
   if idx >= self.source.length() {
     '\u0000'
@@ -444,7 +444,7 @@ fn Lexer::scan_dollar_brace_into_word(
 fn Lexer::scan_dollar_paren_into_word(
   self : Lexer,
   buf : StringBuilder,
-  arithmetic? : Bool = false,
+  arithmetic~ : Bool = false,
 ) -> Unit raise @ast.BashError {
   // Consume "$("
   buf.write_char(self.advance())
@@ -778,7 +778,7 @@ fn word_looks_like_assignment_prefix(word : String) -> Bool {
 }
 
 ///|
-fn find_assignment_operator_pos(word : String) -> Int {
+fn find_assignment_operator_pos(word : String) -> Int32 {
   let mut bracket_depth = 0
   for i = 0; i < word.length(); i = i + 1 {
     let ch = char_at(word, i)
@@ -800,7 +800,7 @@ fn find_assignment_operator_pos(word : String) -> Int {
 }
 
 ///|
-fn assignment_name_prefix_bracket_depth(word : String) -> Int? {
+fn assignment_name_prefix_bracket_depth(word : String) -> Int32? {
   if word.length() == 0 {
     return None
   }
@@ -1150,7 +1150,7 @@ fn Lexer::scan_double_quote(
 
 ///|
 /// Extract a substring by charcode (UTF-16) indices.
-fn substr(s : String, start : Int, end : Int) -> String {
+fn substr(s : String, start : Int32, end : Int32) -> String {
   let buf = StringBuilder::new()
   for i = start; i < end && i < s.length(); i = i + 1 {
     buf.write_char(char_at(s, i))
@@ -1172,7 +1172,7 @@ fn is_all_digits(s : String) -> Bool {
 }
 
 ///|
-fn parse_int(s : String) -> Int {
+fn parse_int(s : String) -> Int32 {
   let mut result = 0
   for i = 0; i < s.length(); i = i + 1 {
     result = result * 10 + (char_at(s, i).to_int() - '0'.to_int())
@@ -1210,7 +1210,7 @@ fn try_split_assignment(word : String) -> (String, String, Bool)? {
 ///|
 /// Parse assignment variable name end position before '='.
 /// Supports NAME, NAME+=, NAME[INDEX], and NAME[INDEX]+= forms.
-fn parse_assignment_name_end(word : String, eq_pos : Int) -> Int? {
+fn parse_assignment_name_end(word : String, eq_pos : Int32) -> Int32? {
   if eq_pos <= 0 {
     return None
   }

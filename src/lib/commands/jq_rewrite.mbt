@@ -11,7 +11,7 @@ fn jq_is_ident_char(ch : Char) -> Bool {
 }
 
 ///|
-fn jq_starts_with_at(s : String, pos : Int, needle : String) -> Bool {
+fn jq_starts_with_at(s : String, pos : Int32, needle : String) -> Bool {
   if pos < 0 || pos + needle.length() > s.length() {
     return false
   }
@@ -29,7 +29,7 @@ fn jq_is_ws(ch : Char) -> Bool {
 }
 
 ///|
-fn jq_prev_non_ws_char(s : String, pos : Int) -> Char? {
+fn jq_prev_non_ws_char(s : String, pos : Int32) -> Char? {
   let mut i = pos - 1
   while i >= 0 {
     let ch = s[i].to_int().unsafe_to_char()
@@ -42,7 +42,7 @@ fn jq_prev_non_ws_char(s : String, pos : Int) -> Char? {
 }
 
 ///|
-fn jq_next_non_ws_char(s : String, pos : Int) -> Char? {
+fn jq_next_non_ws_char(s : String, pos : Int32) -> Char? {
   let mut i = pos
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()
@@ -55,7 +55,7 @@ fn jq_next_non_ws_char(s : String, pos : Int) -> Char? {
 }
 
 ///|
-fn jq_prev_non_ws_index(s : String, pos : Int) -> Int {
+fn jq_prev_non_ws_index(s : String, pos : Int32) -> Int32 {
   let mut i = pos - 1
   while i >= 0 {
     let ch = s[i].to_int().unsafe_to_char()
@@ -68,7 +68,7 @@ fn jq_prev_non_ws_index(s : String, pos : Int) -> Int {
 }
 
 ///|
-fn jq_next_non_ws_index(s : String, pos : Int) -> Int {
+fn jq_next_non_ws_index(s : String, pos : Int32) -> Int32 {
   let mut i = pos
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()
@@ -97,7 +97,10 @@ fn jq_is_plain_ident(text : String) -> Bool {
 }
 
 ///|
-fn jq_parse_quoted_ident_at(filter : String, quote_pos : Int) -> (String, Int)? {
+fn jq_parse_quoted_ident_at(
+  filter : String,
+  quote_pos : Int32,
+) -> (String, Int32)? {
   if quote_pos < 0 || quote_pos >= filter.length() {
     return None
   }
@@ -190,7 +193,7 @@ fn jq_rewrite_quoted_member_access(filter : String) -> String {
 }
 
 ///|
-fn jq_is_binary_plus_minus(filter : String, pos : Int) -> Bool {
+fn jq_is_binary_plus_minus(filter : String, pos : Int32) -> Bool {
   if pos < 0 || pos >= filter.length() {
     return false
   }
@@ -316,7 +319,7 @@ fn jq_rewrite_binary_plus_minus(filter : String) -> String {
 }
 
 ///|
-fn jq_find_matching_paren(filter : String, open_pos : Int) -> Int {
+fn jq_find_matching_paren(filter : String, open_pos : Int32) -> Int32 {
   if open_pos < 0 ||
     open_pos >= filter.length() ||
     filter[open_pos].to_int().unsafe_to_char() != '(' {

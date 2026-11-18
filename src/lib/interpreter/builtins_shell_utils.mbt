@@ -172,7 +172,7 @@ fn ExecContext::builtin_od(self : ExecContext, args : Array[String]) -> Unit {
     None => self.stdin_buf
   }
 
-  let bytes : Array[Int] = []
+  let bytes : Array[Int32] = []
   for j = 0; j < input.length(); j = j + 1 {
     bytes.push(input[j].to_int() & 0xFF)
   }
@@ -275,7 +275,7 @@ fn ExecContext::builtin_od(self : ExecContext, args : Array[String]) -> Unit {
 // Format a 7-digit octal address
 
 ///|
-fn od_format_octal_addr(n : Int) -> String {
+fn od_format_octal_addr(n : Int32) -> String {
   let buf = StringBuilder::new()
   let mut val = n
   let digits : Array[Char] = []
@@ -305,7 +305,7 @@ fn od_format_octal_addr(n : Int) -> String {
 // Format a hex address (6 digits)
 
 ///|
-fn od_format_hex_addr(n : Int) -> String {
+fn od_format_hex_addr(n : Int32) -> String {
   let buf = StringBuilder::new()
   let mut val = n
   let digits : Array[Char] = []
@@ -335,7 +335,7 @@ fn od_format_hex_addr(n : Int) -> String {
 // Format a single byte as a named character for -c mode
 
 ///|
-fn od_format_char(b : Int) -> String {
+fn od_format_char(b : Int32) -> String {
   match b {
     0 => "  \\0"
     7 => "  \\a"
@@ -369,7 +369,7 @@ fn od_format_char(b : Int) -> String {
 // Format a 4-digit hex value
 
 ///|
-fn od_format_hex4(n : Int) -> String {
+fn od_format_hex4(n : Int32) -> String {
   let hex_chars = "0123456789abcdef"
   let buf = StringBuilder::new()
   buf.write_char(hex_chars[(n >> 12) & 0xF].to_int().unsafe_to_char())
@@ -380,7 +380,7 @@ fn od_format_hex4(n : Int) -> String {
 }
 
 ///|
-fn od_format_hex2(n : Int) -> String {
+fn od_format_hex2(n : Int32) -> String {
   let hex = "0123456789abcdef"
   let hi = n / 16 % 16
   let lo = n % 16
@@ -393,7 +393,7 @@ fn od_format_hex2(n : Int) -> String {
 // Format a 6-digit octal value
 
 ///|
-fn od_format_octal6(n : Int) -> String {
+fn od_format_octal6(n : Int32) -> String {
   let buf = StringBuilder::new()
   let mut val = n
   let digits : Array[Char] = []

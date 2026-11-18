@@ -4,7 +4,7 @@
 ///|
 priv struct NetFetchResponse {
   ok : Bool
-  status : Int
+  status : Int32
   status_text : String
   body : String
   error : String
@@ -12,7 +12,7 @@ priv struct NetFetchResponse {
 }
 
 ///|
-fn net_hex_digit(n : Int) -> Char {
+fn net_hex_digit(n : Int32) -> Char {
   if n < 10 {
     (n + 48).unsafe_to_char()
   } else {
@@ -111,8 +111,8 @@ fn net_json_get_string(
 fn net_json_get_int(
   obj : Map[String, Json],
   key : String,
-  default_value : Int,
-) -> Int {
+  default_value : Int32,
+) -> Int32 {
   match obj.get(key) {
     Some(Json::Number(n, ..)) => n.to_int()
     Some(Json::String(s)) => cmd_parse_int(s).to_int()
@@ -290,7 +290,7 @@ fn net_trim(s : String) -> String {
 }
 
 ///|
-fn net_index_of_from(s : String, needle : String, start : Int) -> Int {
+fn net_index_of_from(s : String, needle : String, start : Int32) -> Int32 {
   if needle.length() == 0 {
     return start
   }
@@ -319,7 +319,7 @@ fn net_index_of_from(s : String, needle : String, start : Int) -> Int {
 }
 
 ///|
-fn net_index_of_char(s : String, target : Char, start : Int) -> Int {
+fn net_index_of_char(s : String, target : Char, start : Int32) -> Int32 {
   let mut i = start
   while i < s.length() {
     if s[i].to_int().unsafe_to_char() == target {
@@ -622,7 +622,7 @@ fn net_parse_header(raw : String) -> (String, String)? {
 
 ///|
 fn net_curl_error(
-  code : Int,
+  code : Int32,
   message : String,
   silent : Bool,
 ) -> @ast.ExecResult {

@@ -277,7 +277,7 @@ fn xan_select(ctx : CommandContext) -> @ast.ExecResult {
       let csv = @nyacsv.CSV::parse_string(data)
       let headers = csv.header()
       // Find column indices
-      let indices : Array[Int] = []
+      let indices : Array[Int32] = []
       for name in col_names {
         let mut found = -1
         for j = 0; j < headers.length(); j = j + 1 {
@@ -400,7 +400,7 @@ fn xan_count(ctx : CommandContext) -> @ast.ExecResult {
 /// Helper: get input for xan subcommands (file arg at position arg_start, or stdin)
 fn xan_get_input(
   ctx : CommandContext,
-  arg_start : Int,
+  arg_start : Int32,
 ) -> Result[String, String] {
   if arg_start < ctx.args.length() {
     let path = ctx.args[arg_start]
@@ -446,7 +446,7 @@ fn xan_view(csv : @nyacsv.CSV) -> String {
     return ""
   }
   // Calculate column widths
-  let widths : Array[Int] = Array::make(headers.length(), 0)
+  let widths : Array[Int32] = Array::make(headers.length(), 0)
   for i = 0; i < headers.length(); i = i + 1 {
     widths[i] = headers[i].length()
   }
@@ -494,7 +494,7 @@ fn xan_view(csv : @nyacsv.CSV) -> String {
 
 ///|
 /// Draw a table border line
-fn xan_draw_border(out : StringBuilder, widths : Array[Int]) -> Unit {
+fn xan_draw_border(out : StringBuilder, widths : Array[Int32]) -> Unit {
   out.write_char('+')
   for w in widths {
     for _j = 0; _j < w + 2; _j = _j + 1 {
@@ -507,7 +507,7 @@ fn xan_draw_border(out : StringBuilder, widths : Array[Int]) -> Unit {
 
 ///|
 /// Write padding spaces
-fn xan_pad(out : StringBuilder, count : Int) -> Unit {
+fn xan_pad(out : StringBuilder, count : Int32) -> Unit {
   for _i = 0; _i < count; _i = _i + 1 {
     out.write_char(' ')
   }

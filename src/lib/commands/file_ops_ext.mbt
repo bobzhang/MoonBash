@@ -55,7 +55,7 @@ fn cmd_rmdir(ctx : CommandContext) -> @ast.ExecResult {
 
 ///|
 /// Format octal mode as permission string like -rw-r--r--
-fn format_mode_string(mode : Int, is_dir : Bool, is_link : Bool) -> String {
+fn format_mode_string(mode : Int32, is_dir : Bool, is_link : Bool) -> String {
   let buf = StringBuilder::new()
   if is_dir {
     buf.write_char('d')
@@ -81,7 +81,7 @@ fn format_mode_string(mode : Int, is_dir : Bool, is_link : Bool) -> String {
 
 ///|
 /// Format an octal mode as a 4-digit zero-padded string
-fn format_octal(mode : Int) -> String {
+fn format_octal(mode : Int32) -> String {
   let d3 = mode / 512 // 0o1000
   let rem3 = mode % 512
   let d2 = rem3 / 64 // 0o100
@@ -271,7 +271,7 @@ fn cmd_tree_walk(
 
 ///|
 /// Format size in human-readable format (K, M, G)
-fn format_human_size(size : Int) -> String {
+fn format_human_size(size : Int32) -> String {
   if size >= 1073741824 {
     let g = size / 1073741824
     g.to_string() + "G"
@@ -292,7 +292,7 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
   let mut summary_only = false
   let mut human_readable = false
   let mut all_entries = false
-  let mut max_depth : Int? = None
+  let mut max_depth : Int32? = None
   let paths : Array[String] = []
 
   let mut stop_options = false
@@ -367,7 +367,7 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
     }
     // Collect all paths and their sizes under resolved
     let prefix = if resolved == "/" { "/" } else { resolved + "/" }
-    let sub_entries : Array[(String, Int)] = []
+    let sub_entries : Array[(String, Int32)] = []
     let mut total = 0
     ctx.fs.entries.each(fn(key, value) {
       if key == resolved || key.has_prefix(prefix) {
@@ -432,7 +432,7 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
 }
 
 ///|
-fn cmd_du_relative_depth(rel : String) -> Int {
+fn cmd_du_relative_depth(rel : String) -> Int32 {
   let mut depth = 0
   let mut in_segment = false
   for i = 0; i < rel.length(); i = i + 1 {
@@ -454,7 +454,7 @@ fn cmd_du_relative_depth(rel : String) -> Int {
 
 ///|
 /// Parse an octal string to integer.
-fn parse_octal_strict(s : String) -> Int? {
+fn parse_octal_strict(s : String) -> Int32? {
   if s.length() == 0 {
     return None
   }
@@ -470,7 +470,7 @@ fn parse_octal_strict(s : String) -> Int? {
 }
 
 ///|
-fn chmod_entry_mode(entry : @fs.FsEntry) -> Int {
+fn chmod_entry_mode(entry : @fs.FsEntry) -> Int32 {
   match entry {
     @fs.FsEntry::File(data) => data.mode
     @fs.FsEntry::Directory(data) => data.mode
@@ -479,7 +479,7 @@ fn chmod_entry_mode(entry : @fs.FsEntry) -> Int {
 }
 
 ///|
-fn chmod_apply_mode_string(current : Int, mode_str : String) -> Int? {
+fn chmod_apply_mode_string(current : Int32, mode_str : String) -> Int32? {
   match mode_str {
     "+x" | "a+x" | "u+x" | "go+x" | "ug+x" | "ugo+x" => Some(current | 0o111)
     "-x" | "a-x" | "u-x" | "go-x" | "ug-x" | "ugo-x" => Some(current & 0o666)

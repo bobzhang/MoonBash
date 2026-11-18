@@ -116,7 +116,7 @@ fn parse_int_str(s : String) -> Int64 {
 }
 
 ///|
-fn parse_int32_str(s : String) -> Int {
+fn parse_int32_str(s : String) -> Int32 {
   parse_int_str(s).to_int()
 }
 
@@ -182,7 +182,7 @@ fn split_lines_no_trailing(s : String) -> Array[String] {
 }
 
 ///|
-fn repeat_char(ch : Char, count : Int) -> String {
+fn repeat_char(ch : Char, count : Int32) -> String {
   let out = StringBuilder::new()
   let total = if count < 0 { 0 } else { count }
   for i = 0; i < total; i = i + 1 {
@@ -215,7 +215,7 @@ fn contains_substring(haystack : String, needle : String) -> Bool {
 }
 
 ///|
-fn substring_slice(s : String, start : Int, end : Int) -> String {
+fn substring_slice(s : String, start : Int32, end : Int32) -> String {
   if start >= end || start < 0 || end > s.length() {
     return ""
   }
@@ -223,8 +223,8 @@ fn substring_slice(s : String, start : Int, end : Int) -> String {
 }
 
 ///|
-fn parse_field_spec(spec : String) -> Array[Int] {
-  let fields : Array[Int] = []
+fn parse_field_spec(spec : String) -> Array[Int32] {
+  let fields : Array[Int32] = []
   let parts = split_string_by_delimiter(spec, ",")
   for part in parts {
     // Handle ranges like 1-3
@@ -280,7 +280,7 @@ fn split_string_by_delimiter(s : String, delim : String) -> Array[String] {
 }
 
 ///|
-fn find_substring_offset(text : String, fragment : String) -> Int {
+fn find_substring_offset(text : String, fragment : String) -> Int32 {
   if fragment.length() == 0 {
     return 0
   }
@@ -306,7 +306,7 @@ fn find_substring_offset(text : String, fragment : String) -> Int {
 fn ExecContext::line_number_for_fragment(
   self : ExecContext,
   fragment : String,
-) -> Int {
+) -> Int32 {
   let script = self.current_script
   if script.length() == 0 {
     return 1
@@ -351,23 +351,23 @@ priv enum TestEvalMode {
 ///|
 priv struct TestEvalResult {
   value : Bool
-  status : Int
+  status : Int32
 }
 
 ///|
 priv struct TestExprParser {
   tokens : Array[String]
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|
 fn test_eval_ok(value : Bool) -> TestEvalResult {
-  { value, status: 0 }
+  { value, status: 0, }
 }
 
 ///|
 fn test_eval_syntax_error() -> TestEvalResult {
-  { value: false, status: 2 }
+  { value: false, status: 2, }
 }
 
 ///|
@@ -423,8 +423,8 @@ fn TestExprParser::peek(self : TestExprParser) -> String? {
 ///|
 fn test_slice_args(
   args : Array[String],
-  start : Int,
-  end_ : Int,
+  start : Int32,
+  end_ : Int32,
 ) -> Array[String] {
   let out : Array[String] = []
   for i = start; i < end_; i = i + 1 {
@@ -552,7 +552,7 @@ fn test_parse_fd_operand(text : String) -> Int64? {
 }
 
 ///|
-fn test_entry_mode(entry : @fs.FsEntry) -> Int {
+fn test_entry_mode(entry : @fs.FsEntry) -> Int32 {
   match entry {
     @fs.FsEntry::File(data) => data.mode
     @fs.FsEntry::Directory(data) => data.mode
@@ -1145,7 +1145,7 @@ fn ExecContext::evaluate_test_with_status(
   if args.length() <= 4 {
     return self.test_eval_small_arity(args, mode)
   }
-  let parser : TestExprParser = { tokens: args, pos: 0 }
+  let parser : TestExprParser = { tokens: args, pos: 0, }
   let result = self.test_parse_or_expr(parser, mode)
   if result.status != 0 {
     return result
@@ -1448,7 +1448,7 @@ fn format_printf(format : String, args : Array[String]) -> String {
           j += 1
         }
 
-        let mut precision : Int? = None
+        let mut precision : Int32? = None
         if j < format.length() && format[j].to_int().unsafe_to_char() == '.' {
           j += 1
           let mut p = 0
@@ -1557,7 +1557,7 @@ fn printf_is_octal_digit(ch : Char) -> Bool {
 }
 
 ///|
-fn printf_hex_digit_value(ch : Char) -> Int? {
+fn printf_hex_digit_value(ch : Char) -> Int32? {
   if ch >= '0' && ch <= '9' {
     return Some(ch.to_int() - '0'.to_int())
   }
@@ -1571,7 +1571,7 @@ fn printf_hex_digit_value(ch : Char) -> Int? {
 }
 
 ///|
-fn printf_repeat_char(ch : Char, count : Int) -> String {
+fn printf_repeat_char(ch : Char, count : Int32) -> String {
   if count <= 0 {
     return ""
   }
@@ -1585,7 +1585,7 @@ fn printf_repeat_char(ch : Char, count : Int) -> String {
 ///|
 fn printf_apply_width(
   value : String,
-  width : Int,
+  width : Int32,
   left_justify : Bool,
   zero_pad : Bool,
 ) -> String {
@@ -1631,7 +1631,7 @@ fn printf_to_hex(value : Int64) -> String {
 }
 
 ///|
-fn printf_format_decimal(value : Int64, precision : Int?) -> String {
+fn printf_format_decimal(value : Int64, precision : Int32?) -> String {
   let text = value.to_string()
   match precision {
     None => text
@@ -1706,7 +1706,7 @@ fn printf_is_shell_safe_char(ch : Char) -> Bool {
 }
 
 ///|
-fn printf_format_float(raw : String, precision : Int) -> String {
+fn printf_format_float(raw : String, precision : Int32) -> String {
   let mut i = 0
   let mut negative = false
   if raw.length() > 0 {

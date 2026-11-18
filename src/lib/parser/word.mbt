@@ -4,7 +4,7 @@
 
 ///|
 /// Helper to get character at index.
-fn wchar_at(s : String, i : Int) -> Char {
+fn wchar_at(s : String, i : Int32) -> Char {
   s[i].to_int().unsafe_to_char()
 }
 
@@ -21,8 +21,8 @@ pub fn parse_word_parts(s : String) -> Array[@ast.WordPart] {
 ///|
 fn parse_word_parts_with_context(
   s : String,
-  in_double_quote? : Bool = false,
-  parse_raw_quotes? : Bool = false,
+  in_double_quote~ : Bool = false,
+  parse_raw_quotes~ : Bool = false,
 ) -> Array[@ast.WordPart] {
   let parts : Array[@ast.WordPart] = []
   let buf = StringBuilder::new()
@@ -273,7 +273,7 @@ fn parse_word_parts_with_context(
 }
 
 ///|
-fn has_closing_backtick(s : String, start : Int) -> Bool {
+fn has_closing_backtick(s : String, start : Int32) -> Bool {
   let mut i = start
   while i < s.length() {
     let ch = wchar_at(s, i)
@@ -290,7 +290,7 @@ fn has_closing_backtick(s : String, start : Int) -> Bool {
 }
 
 ///|
-fn has_closing_raw_single_quote(s : String, start : Int) -> Bool {
+fn has_closing_raw_single_quote(s : String, start : Int32) -> Bool {
   let mut i = start
   while i < s.length() {
     let ch = wchar_at(s, i)
@@ -307,7 +307,7 @@ fn has_closing_raw_single_quote(s : String, start : Int) -> Bool {
 }
 
 ///|
-fn has_closing_raw_double_quote(s : String, start : Int) -> Bool {
+fn has_closing_raw_double_quote(s : String, start : Int32) -> Bool {
   let mut i = start
   while i < s.length() {
     let ch = wchar_at(s, i)
@@ -326,9 +326,9 @@ fn has_closing_raw_double_quote(s : String, start : Int) -> Bool {
 ///|
 fn parse_raw_single_quoted_segment(
   s : String,
-  start : Int,
+  start : Int32,
   ansi_c_quote : Bool,
-) -> (String, Int) {
+) -> (String, Int32) {
   let quoted = StringBuilder::new()
   let mut i = start
   let mut escaped = false
@@ -351,7 +351,10 @@ fn parse_raw_single_quoted_segment(
 }
 
 ///|
-fn parse_raw_double_quoted_segment(s : String, start : Int) -> (String, Int) {
+fn parse_raw_double_quoted_segment(
+  s : String,
+  start : Int32,
+) -> (String, Int32) {
   let quoted = StringBuilder::new()
   let mut i = start
   while i < s.length() {
@@ -489,9 +492,9 @@ fn decode_ansi_c_escapes(s : String) -> String {
 ///|
 fn parse_hex_escape_digits(
   s : String,
-  start : Int,
-  max_digits : Int,
-) -> (Int, Int) {
+  start : Int32,
+  max_digits : Int32,
+) -> (Int32, Int32) {
   let mut i = start
   let mut value = 0
   let mut consumed = 0
@@ -511,9 +514,9 @@ fn parse_hex_escape_digits(
 ///|
 fn parse_octal_escape_digits(
   s : String,
-  start : Int,
-  max_digits : Int,
-) -> (Int, Int) {
+  start : Int32,
+  max_digits : Int32,
+) -> (Int32, Int32) {
   let mut i = start
   let mut value = 0
   let mut consumed = 0
@@ -530,7 +533,7 @@ fn parse_octal_escape_digits(
 }
 
 ///|
-fn hex_digit_value(ch : Char) -> Int? {
+fn hex_digit_value(ch : Char) -> Int32? {
   if ch >= '0' && ch <= '9' {
     return Some(ch.to_int() - '0'.to_int())
   }
@@ -560,7 +563,7 @@ fn strip_single_quote_empty_markers(s : String) -> String {
 
 ///|
 /// Parse parameter name end, allowing optional array subscripts: name[...].
-fn parse_param_name_end(content : String) -> Int {
+fn parse_param_name_end(content : String) -> Int32 {
   let len = content.length()
   if len == 0 {
     return 0
@@ -602,7 +605,7 @@ fn parse_param_name_end(content : String) -> Int {
 
 ///|
 /// Parse a simple variable name starting at pos. Returns (WordPart, next_pos).
-fn parse_simple_variable(s : String, start : Int) -> (@ast.WordPart, Int) {
+fn parse_simple_variable(s : String, start : Int32) -> (@ast.WordPart, Int32) {
   let buf = StringBuilder::new()
   let mut i = start
   while i < s.length() {
@@ -626,9 +629,9 @@ fn parse_simple_variable(s : String, start : Int) -> (@ast.WordPart, Int) {
 /// Returns (WordPart, next_pos after closing brace).
 fn parse_brace_expansion(
   s : String,
-  start : Int,
-  in_double_quote? : Bool = false,
-) -> (@ast.WordPart, Int) {
+  start : Int32,
+  in_double_quote~ : Bool = false,
+) -> (@ast.WordPart, Int32) {
   // Find matching closing brace (simplified: no nested braces)
   let mut depth = 1
   let mut i = start
@@ -715,7 +718,7 @@ fn parse_brace_expansion(
 /// Parse the content inside ${...} to determine expansion type.
 fn parse_param_expansion_content(
   content : String,
-  in_double_quote? : Bool = false,
+  in_double_quote~ : Bool = false,
 ) -> @ast.WordPart {
   let len = content.length()
   if len == 0 {
@@ -928,7 +931,7 @@ fn parse_param_expansion_content(
 ///|
 fn parse_param_operator_word(
   word_str : String,
-  in_double_quote? : Bool = false,
+  in_double_quote~ : Bool = false,
 ) -> @ast.Word {
   if !in_double_quote {
     return parse_word_content_with_raw_quotes(word_str)
@@ -1008,7 +1011,7 @@ fn parse_substring_spec(spec : String) -> (@ast.ArithExpr, @ast.ArithExpr?) {
 }
 
 ///|
-fn find_substring_length_separator(spec : String) -> Int {
+fn find_substring_length_separator(spec : String) -> Int32 {
   let mut paren_depth = 0
   let mut bracket_depth = 0
   let mut brace_depth = 0
@@ -1147,7 +1150,7 @@ fn trim_ascii_space_word(s : String) -> String {
 
 ///|
 /// Parse $(...) starting after the opening paren.
-fn parse_cmd_substitution(s : String, start : Int) -> (@ast.WordPart, Int) {
+fn parse_cmd_substitution(s : String, start : Int32) -> (@ast.WordPart, Int32) {
   let mut depth = 1
   let mut i = start
   while i < s.length() && depth > 0 {
@@ -1172,7 +1175,7 @@ fn parse_cmd_substitution(s : String, start : Int) -> (@ast.WordPart, Int) {
 
 ///|
 /// Parse $((...)) starting after the opening ((.
-fn parse_arith_expansion(s : String, start : Int) -> (@ast.WordPart, Int) {
+fn parse_arith_expansion(s : String, start : Int32) -> (@ast.WordPart, Int32) {
   let mut paren_depth = 0
   let mut i = start
   let mut in_single = false
@@ -1257,8 +1260,8 @@ fn parse_arith_expansion(s : String, start : Int) -> (@ast.WordPart, Int) {
 /// Parse $[...] legacy arithmetic expansion starting after the opening `[`.
 fn parse_legacy_arith_expansion(
   s : String,
-  start : Int,
-) -> (@ast.WordPart, Int) {
+  start : Int32,
+) -> (@ast.WordPart, Int32) {
   let mut depth = 1
   let mut i = start
   let mut in_single = false
@@ -1336,7 +1339,10 @@ fn parse_legacy_arith_expansion(
 // ============================================================================
 
 ///|
-fn parse_backtick_substitution(s : String, start : Int) -> (@ast.WordPart, Int) {
+fn parse_backtick_substitution(
+  s : String,
+  start : Int32,
+) -> (@ast.WordPart, Int32) {
   let mut i = start
   let buf = StringBuilder::new()
   while i < s.length() {
@@ -1364,7 +1370,7 @@ fn parse_backtick_substitution(s : String, start : Int) -> (@ast.WordPart, Int) 
 // ============================================================================
 
 ///|
-fn parse_tilde(s : String, start : Int) -> (@ast.WordPart, Int) {
+fn parse_tilde(s : String, start : Int32) -> (@ast.WordPart, Int32) {
   let mut i = start + 1 // skip ~
   let buf = StringBuilder::new()
   while i < s.length() {
@@ -1384,7 +1390,7 @@ fn parse_tilde(s : String, start : Int) -> (@ast.WordPart, Int) {
 
 ///|
 /// Extract substring by character indices.
-fn wsubstr(s : String, start : Int, end : Int) -> String {
+fn wsubstr(s : String, start : Int32, end : Int32) -> String {
   let buf = StringBuilder::new()
   let mut i = start
   while i < end && i < s.length() {

@@ -5,7 +5,7 @@
 // ============================================================================
 
 ///|
-fn aj_parse_int(s : String) -> Int {
+fn aj_parse_int(s : String) -> Int32 {
   let mut result = 0
   let mut neg = false
   let mut start = 0
@@ -87,7 +87,7 @@ fn aj_ends_with(s : String, suffix : String) -> Bool {
 }
 
 ///|
-fn aj_substr(s : String, start : Int, end_ : Int) -> String {
+fn aj_substr(s : String, start : Int32, end_ : Int32) -> String {
   let mut start = start
   let mut end_ = end_
   if start < 0 {
@@ -107,7 +107,7 @@ fn aj_substr(s : String, start : Int, end_ : Int) -> String {
 }
 
 ///|
-fn aj_index_of(s : String, ch : Char, start? : Int = 0) -> Int {
+fn aj_index_of(s : String, ch : Char, start~ : Int32 = 0) -> Int32 {
   for i = start; i < s.length(); i = i + 1 {
     if s[i].to_int().unsafe_to_char() == ch {
       return i
@@ -117,7 +117,7 @@ fn aj_index_of(s : String, ch : Char, start? : Int = 0) -> Int {
 }
 
 ///|
-fn aj_find_substring(s : String, needle : String, start? : Int = 0) -> Int {
+fn aj_find_substring(s : String, needle : String, start~ : Int32 = 0) -> Int32 {
   if needle.length() == 0 {
     return start
   }
@@ -209,7 +209,7 @@ fn aj_split_by_delim(s : String, delim : String) -> Array[String] {
 }
 
 ///|
-fn aj_hex_digit_value(ch : Char) -> Int? {
+fn aj_hex_digit_value(ch : Char) -> Int32? {
   if ch >= '0' && ch <= '9' {
     return Some(ch.to_int() - '0'.to_int())
   }
@@ -223,7 +223,7 @@ fn aj_hex_digit_value(ch : Char) -> Int? {
 }
 
 ///|
-fn aj_octal_digit_value(ch : Char) -> Int? {
+fn aj_octal_digit_value(ch : Char) -> Int32? {
   if ch >= '0' && ch <= '7' {
     Some(ch.to_int() - '0'.to_int())
   } else {

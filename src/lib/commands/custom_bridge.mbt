@@ -6,14 +6,14 @@ priv struct CustomExecResponse {
   handled : Bool
   stdout : String
   stderr : String
-  exit_code : Int
+  exit_code : Int32
   error : String
   has_files : Bool
   files : Array[(String, String)]
 }
 
 ///|
-fn custom_hex_digit(n : Int) -> Char {
+fn custom_hex_digit(n : Int32) -> Char {
   if n < 10 {
     (n + 48).unsafe_to_char()
   } else {
@@ -140,7 +140,7 @@ fn custom_build_request_json(
 }
 
 ///|
-fn custom_parse_int(s : String) -> Int {
+fn custom_parse_int(s : String) -> Int32 {
   if s.length() == 0 {
     return 0
   }
@@ -199,8 +199,8 @@ fn custom_json_get_string(
 fn custom_json_get_int(
   obj : Map[String, Json],
   key : String,
-  default_value : Int,
-) -> Int {
+  default_value : Int32,
+) -> Int32 {
   match obj.get(key) {
     Some(Json::Number(n, ..)) => n.to_int()
     Some(Json::String(s)) => custom_parse_int(s)

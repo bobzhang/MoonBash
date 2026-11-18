@@ -10,7 +10,7 @@ fn jq_strip_bom(text : String) -> String {
 }
 
 ///|
-fn jq_json_from_int(n : Int) -> Json {
+fn jq_json_from_int(n : Int32) -> Json {
   @json.parse(n.to_string()[:]) catch {
     _ => Json::null()
   }
@@ -39,7 +39,7 @@ fn jq_trimstr_once(input : String, trim : String) -> String {
 }
 
 ///|
-fn jq_is_trim_ws_unit(code : Int) -> Bool {
+fn jq_is_trim_ws_unit(code : Int32) -> Bool {
   code == 9 ||
   code == 10 ||
   code == 11 ||
@@ -123,7 +123,7 @@ fn jq_manual_trim_map(input : Json, mode : String) -> Json? {
 }
 
 ///|
-fn jq_extract_object_number(obj : Map[String, Json], key : String) -> Int? {
+fn jq_extract_object_number(obj : Map[String, Json], key : String) -> Int32? {
   match obj.get(key) {
     Some(Json::Number(n, ..)) => Some(n.to_int())
     _ => None
@@ -131,7 +131,7 @@ fn jq_extract_object_number(obj : Map[String, Json], key : String) -> Int? {
 }
 
 ///|
-fn jq_bsearch_numbers(haystack : Array[Int], needle : Int) -> Int {
+fn jq_bsearch_numbers(haystack : Array[Int32], needle : Int32) -> Int32 {
   let mut low = 0
   let mut high = haystack.length()
   while low < high {

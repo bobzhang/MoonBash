@@ -242,7 +242,7 @@ fn json_escape_string(s : String) -> String {
 }
 
 ///|
-fn hex_digit(n : Int) -> Char {
+fn hex_digit(n : Int32) -> Char {
   if n < 10 {
     (n + 48).unsafe_to_char() // '0' = 48
   } else {
@@ -338,7 +338,7 @@ fn parse_json_object(json : String) -> Array[(String, String)] {
 ///|
 /// Parse a JSON string starting at position i (must be at opening quote).
 /// Returns (unescaped string, position after closing quote).
-fn parse_json_string(json : String, start : Int) -> (String, Int) {
+fn parse_json_string(json : String, start : Int32) -> (String, Int32) {
   let buf = StringBuilder::new()
   let len = json.length()
   let mut i = start + 1 // skip opening quote
@@ -389,7 +389,7 @@ fn parse_json_string(json : String, start : Int) -> (String, Int) {
 }
 
 ///|
-fn json_hex_value(ch : Char) -> Int {
+fn json_hex_value(ch : Char) -> Int32 {
   if ch >= '0' && ch <= '9' {
     ch.to_int() - '0'.to_int()
   } else if ch >= 'a' && ch <= 'f' {
@@ -402,7 +402,7 @@ fn json_hex_value(ch : Char) -> Int {
 }
 
 ///|
-fn parse_decimal_int(s : String) -> Int {
+fn parse_decimal_int(s : String) -> Int32 {
   let mut value = 0
   let mut sign = 1
   let mut i = 0

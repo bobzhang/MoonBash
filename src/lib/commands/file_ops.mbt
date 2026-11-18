@@ -64,7 +64,7 @@ fn cmd_cat(ctx : CommandContext) -> @ast.ExecResult {
 }
 
 ///|
-fn cmd_cat_line_prefix(n : Int) -> String {
+fn cmd_cat_line_prefix(n : Int32) -> String {
   let digits = n.to_string()
   let out = StringBuilder::new()
   let pad = 6 - digits.length()
@@ -82,8 +82,8 @@ fn cmd_cat_line_prefix(n : Int) -> String {
 fn cmd_cat_write_numbered(
   out : StringBuilder,
   content : String,
-  start_line : Int,
-) -> Int {
+  start_line : Int32,
+) -> Int32 {
   let line_buf = StringBuilder::new()
   let mut line_no = start_line
   for i = 0; i < content.length(); i = i + 1 {
@@ -265,7 +265,7 @@ fn cmd_ls_display_label(raw : String, abs_path : String) -> String {
 }
 
 ///|
-fn cmd_ls_entry_size(fs : @fs.InMemoryFs, abs_path : String) -> Int {
+fn cmd_ls_entry_size(fs : @fs.InMemoryFs, abs_path : String) -> Int32 {
   match fs.entries.get(abs_path) {
     Some(@fs.FsEntry::File(file)) => file.content.length()
     Some(@fs.FsEntry::Directory(_)) => 4096
@@ -275,7 +275,7 @@ fn cmd_ls_entry_size(fs : @fs.InMemoryFs, abs_path : String) -> Int {
 }
 
 ///|
-fn cmd_ls_format_human(size : Int, unit : Int, suffix : String) -> String {
+fn cmd_ls_format_human(size : Int32, unit : Int32, suffix : String) -> String {
   let whole = size / unit
   let rem = size % unit
   if whole < 10 {
@@ -287,7 +287,7 @@ fn cmd_ls_format_human(size : Int, unit : Int, suffix : String) -> String {
 }
 
 ///|
-fn cmd_ls_format_size(size : Int, human_readable : Bool) -> String {
+fn cmd_ls_format_size(size : Int32, human_readable : Bool) -> String {
   if !human_readable {
     return size.to_string()
   }
@@ -310,10 +310,10 @@ fn cmd_ls_read_entries(
   almost_all : Bool,
   reverse : Bool,
   sort_size : Bool,
-) -> Array[(String, Int)] {
+) -> Array[(String, Int32)] {
   let entries = fs.readdir(dir_abs) catch { @fs.FsError(_msg) => return [] }
 
-  let names : Array[(String, Int)] = []
+  let names : Array[(String, Int32)] = []
   if show_all {
     names.push((".", 4096))
     names.push(("..", 4096))
@@ -361,7 +361,7 @@ fn cmd_ls_read_entries(
 ///|
 fn cmd_ls_write_long(
   out : StringBuilder,
-  entries : Array[(String, Int)],
+  entries : Array[(String, Int32)],
   human_readable : Bool,
 ) -> Unit {
   for entry in entries {

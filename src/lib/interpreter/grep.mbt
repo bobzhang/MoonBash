@@ -77,7 +77,7 @@ fn path_basename(path : String) -> String {
 ///|
 fn grep_output_prefix(
   display_path : String,
-  line_number : Int,
+  line_number : Int32,
   show_filename : Bool,
   show_line_number : Bool,
 ) -> String {
@@ -94,14 +94,14 @@ fn grep_output_prefix(
 
 ///|
 fn filter_word_ranges(
-  ranges : Array[(Int, Int)],
+  ranges : Array[(Int32, Int32)],
   line : String,
   word_match : Bool,
-) -> Array[(Int, Int)] {
+) -> Array[(Int32, Int32)] {
   if !word_match {
     return ranges
   }
-  let filtered : Array[(Int, Int)] = []
+  let filtered : Array[(Int32, Int32)] = []
   for range in ranges {
     if is_word_boundary(line, range.0, range.1) {
       filtered.push(range)
@@ -111,7 +111,7 @@ fn filter_word_ranges(
 }
 
 ///|
-fn is_word_boundary(line : String, start : Int, end : Int) -> Bool {
+fn is_word_boundary(line : String, start : Int32, end : Int32) -> Bool {
   let left_ok = if start <= 0 {
     true
   } else {
@@ -314,7 +314,7 @@ fn ExecContext::builtin_grep(self : ExecContext, args : Array[String]) -> Unit {
   let targets : Array[GrepTarget] = []
   let mut had_io_error = false
   if file_args.length() == 0 {
-    targets.push({ display_path: "", content: self.stdin_buf })
+    targets.push({ display_path: "", content: self.stdin_buf, })
   } else {
     for raw_path in file_args {
       let resolved = @fs.resolve_path(self.cwd, raw_path) catch {
@@ -355,7 +355,7 @@ fn ExecContext::builtin_grep(self : ExecContext, args : Array[String]) -> Unit {
             }
             match self.fs.entries.get(full_path) {
               Some(@fs.FsEntry::File(file)) =>
-                targets.push({ display_path: display, content: file.content })
+                targets.push({ display_path: display, content: file.content, })
               _ => ()
             }
           }
@@ -372,7 +372,7 @@ fn ExecContext::builtin_grep(self : ExecContext, args : Array[String]) -> Unit {
               continue
             }
           }
-          targets.push({ display_path: raw_path, content })
+          targets.push({ display_path: raw_path, content, })
         }
       }
     }
@@ -385,7 +385,7 @@ fn ExecContext::builtin_grep(self : ExecContext, args : Array[String]) -> Unit {
   for target in targets {
     // Keep empty-line records (e.g. stdin="\n") for POSIX/GNU grep parity.
     let lines = split_lines(target.content)
-    let line_matches : Array[Array[(Int, Int)]] = []
+    let line_matches : Array[Array[(Int32, Int32)]] = []
     let selected_lines : Array[Bool] = []
     let mut selected_count = 0
 
@@ -506,14 +506,14 @@ fn ExecContext::builtin_grep(self : ExecContext, args : Array[String]) -> Unit {
 
 ///|
 fn filter_whole_line_ranges(
-  ranges : Array[(Int, Int)],
+  ranges : Array[(Int32, Int32)],
   line : String,
   whole_line : Bool,
-) -> Array[(Int, Int)] {
+) -> Array[(Int32, Int32)] {
   if !whole_line {
     return ranges
   }
-  let filtered : Array[(Int, Int)] = []
+  let filtered : Array[(Int32, Int32)] = []
   for range in ranges {
     if range.0 == 0 && range.1 == line.length() {
       filtered.push(range)

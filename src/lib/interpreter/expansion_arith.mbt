@@ -9,17 +9,17 @@ priv struct ArithValue {
 ///|
 priv struct ArithParser {
   tokens : Array[String]
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|
 fn arith_plain(value : Int64) -> ArithValue {
-  { value, target: NoTarget }
+  { value, target: NoTarget, }
 }
 
 ///|
 fn arith_with_target(value : Int64, target : ArithTarget) -> ArithValue {
-  { value, target }
+  { value, target, }
 }
 
 ///|
@@ -152,7 +152,7 @@ fn arith_parse_decimal_str(s : String) -> Int64? {
 }
 
 ///|
-fn arith_digit_value(ch : Char) -> Int? {
+fn arith_digit_value(ch : Char) -> Int32? {
   if ch >= '0' && ch <= '9' {
     Some(ch.to_int() - 48)
   } else if ch >= 'a' && ch <= 'z' {
@@ -169,7 +169,7 @@ fn arith_digit_value(ch : Char) -> Int? {
 }
 
 ///|
-fn arith_parse_base_digits(digits : String, base : Int) -> Int64? {
+fn arith_parse_base_digits(digits : String, base : Int32) -> Int64? {
   if digits.length() == 0 {
     return None
   }

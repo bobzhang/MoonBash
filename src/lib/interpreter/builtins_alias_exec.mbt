@@ -13,7 +13,7 @@ fn shell_is_digit(ch : Char) -> Bool {
 }
 
 ///|
-fn shell_parse_duration_ms(raw : String) -> Result[Int, String] {
+fn shell_parse_duration_ms(raw : String) -> Result[Int32, String] {
   if raw.length() == 0 {
     return Err("invalid time interval '\{raw}'")
   }
@@ -101,7 +101,7 @@ fn shell_parse_duration_ms(raw : String) -> Result[Int, String] {
 }
 
 ///|
-fn shell_parse_total_duration_ms(args : Array[String]) -> Result[Int, String] {
+fn shell_parse_total_duration_ms(args : Array[String]) -> Result[Int32, String] {
   let mut total = 0
   for raw in args {
     let duration_ms = match shell_parse_duration_ms(raw) {
@@ -117,7 +117,7 @@ fn shell_parse_total_duration_ms(args : Array[String]) -> Result[Int, String] {
 }
 
 ///|
-fn shell_pad3(value : Int) -> String {
+fn shell_pad3(value : Int32) -> String {
   if value < 10 {
     "00" + value.to_string()
   } else if value < 100 {
