@@ -55,7 +55,7 @@ fn aj_trim(s : String) -> String {
   } else if start >= end_ {
     ""
   } else {
-    s.view(start_offset=start, end_offset=end_).to_owned()
+    s.clamped_view(start~, end=end_).to_owned()
   }
 }
 
@@ -99,7 +99,7 @@ fn aj_substr(s : String, start : Int32, end_ : Int32) -> String {
   if start >= end_ {
     return ""
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = start; i < end_; i = i + 1 {
     out.write_char(s[i].to_int().unsafe_to_char())
   }
@@ -147,7 +147,7 @@ fn aj_find_substring(s : String, needle : String, start~ : Int32 = 0) -> Int32 {
 ///|
 fn aj_split_lines_records(input : String) -> Array[String] {
   let lines : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
     if ch == '\n' {
@@ -180,7 +180,7 @@ fn aj_split_by_delim(s : String, delim : String) -> Array[String] {
     return [s]
   }
   let parts : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let mut match_found = true
@@ -233,7 +233,7 @@ fn aj_octal_digit_value(ch : Char) -> Int32? {
 
 ///|
 fn aj_decode_c_escapes(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()

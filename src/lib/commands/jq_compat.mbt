@@ -26,7 +26,7 @@ fn jq_string_all_char(s : String, needle : Char) -> Bool {
 ///|
 fn jq_decode_base64_for_jq(input : String) -> String? {
   // jq accepts optional trailing '=' padding and treats "=" as empty.
-  let cleaned = StringBuilder::new()
+  let cleaned = StringBuilder::StringBuilder()
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
     if ch != ' ' && ch != '\t' && ch != '\n' && ch != '\r' {

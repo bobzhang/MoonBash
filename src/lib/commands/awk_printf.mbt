@@ -3,7 +3,7 @@
 ///|
 fn awk_split_csv_args(s : String) -> Array[String] {
   let parts : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut quote : Char? = None
   let mut paren_depth = 0
   let mut bracket_depth = 0
@@ -98,7 +98,7 @@ fn awk_to_hex_string(value : Int32) -> String {
     chars.push(hex[digit].to_int().unsafe_to_char())
     v /= 16
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = chars.length() - 1; i >= 0; i = i - 1 {
     out.write_char(chars[i])
   }
@@ -110,7 +110,7 @@ fn awk_pad_left(text : String, width : Int32, pad : Char) -> String {
   if width <= text.length() {
     return text
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut remaining = width - text.length()
   while remaining > 0 {
     out.write_char(pad)
@@ -125,7 +125,7 @@ fn awk_pad_right(text : String, width : Int32, pad : Char) -> String {
   if width <= text.length() {
     return text
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_string(text)
   let mut remaining = width - text.length()
   while remaining > 0 {
@@ -218,7 +218,7 @@ fn awk_trim_trailing_fraction_zeros(text : String) -> String {
 ///|
 fn awk_format_printf(format : String, args : Array[String]) -> String {
   let decoded = aj_decode_c_escapes(format)
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut arg_idx = 0
   let mut i = 0
   while i < decoded.length() {

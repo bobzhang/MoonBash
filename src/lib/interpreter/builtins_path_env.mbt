@@ -37,7 +37,7 @@ fn ExecContext::builtin_basename(
       continue
     }
     if arg.has_prefix("-s") && arg.length() > 2 {
-      suffix = Some(arg.view(start_offset=2).to_owned())
+      suffix = Some(arg.clamped_view(start=2).to_owned())
       allow_multiple = true
       i += 1
       continue
@@ -63,7 +63,7 @@ fn ExecContext::builtin_basename(
       Some(s) =>
         if name.length() > s.length() && name.has_suffix(s) {
           name = name
-            .view(start_offset=0, end_offset=name.length() - s.length())
+            .clamped_view(start=0, end=name.length() - s.length())
             .to_owned()
         }
       None => ()
@@ -80,7 +80,7 @@ fn ExecContext::builtin_basename(
       Some(s) =>
         if name.length() > s.length() && name.has_suffix(s) {
           name = name
-            .view(start_offset=0, end_offset=name.length() - s.length())
+            .clamped_view(start=0, end=name.length() - s.length())
             .to_owned()
         }
       None => ()
@@ -132,7 +132,7 @@ fn trim_trailing_slashes_for_path(path : String) -> String {
   if end == path.length() {
     path
   } else {
-    path.view(start_offset=0, end_offset=end).to_owned()
+    path.clamped_view(start=0, end~).to_owned()
   }
 }
 

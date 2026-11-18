@@ -44,7 +44,7 @@ fn ExecContext::builtin_nl(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-b") && arg.length() > 2 {
-      let style = arg.view(start_offset=2).to_owned()
+      let style = arg.clamped_view(start=2).to_owned()
       number_all = style == "a"
       i += 1
       continue
@@ -55,7 +55,7 @@ fn ExecContext::builtin_nl(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-n") && arg.length() > 2 {
-      number_format = arg.view(start_offset=2).to_owned()
+      number_format = arg.clamped_view(start=2).to_owned()
       i += 1
       continue
     }
@@ -65,7 +65,7 @@ fn ExecContext::builtin_nl(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-w") && arg.length() > 2 {
-      width = parse_int32_str(arg.view(start_offset=2).to_owned())
+      width = parse_int32_str(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -75,7 +75,7 @@ fn ExecContext::builtin_nl(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-s") && arg.length() > 2 {
-      separator = arg.view(start_offset=2).to_owned()
+      separator = arg.clamped_view(start=2).to_owned()
       i += 1
       continue
     }
@@ -85,7 +85,7 @@ fn ExecContext::builtin_nl(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-v") && arg.length() > 2 {
-      current_number = parse_int32_str(arg.view(start_offset=2).to_owned())
+      current_number = parse_int32_str(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -95,7 +95,7 @@ fn ExecContext::builtin_nl(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-i") && arg.length() > 2 {
-      increment = parse_int32_str(arg.view(start_offset=2).to_owned())
+      increment = parse_int32_str(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -164,7 +164,7 @@ fn ExecContext::builtin_fold(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-w") && arg.length() > 2 {
-      width = parse_int32_str(arg.view(start_offset=2).to_owned())
+      width = parse_int32_str(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -176,7 +176,7 @@ fn ExecContext::builtin_fold(self : ExecContext, args : Array[String]) -> Unit {
           's' => break_spaces = true
           'w' => {
             if j + 1 < arg.length() {
-              width = parse_int32_str(arg.view(start_offset=j + 1).to_owned())
+              width = parse_int32_str(arg.clamped_view(start=j + 1).to_owned())
             } else if i + 1 < args.length() {
               i += 1
               width = parse_int32_str(args[i])
@@ -239,7 +239,7 @@ fn ExecContext::builtin_expand(
       continue
     }
     if arg.has_prefix("-t") && arg.length() > 2 {
-      tab_width = parse_int32_str(arg.view(start_offset=2).to_owned())
+      tab_width = parse_int32_str(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -295,7 +295,7 @@ fn ExecContext::builtin_unexpand(
       continue
     }
     if arg.has_prefix("-t") && arg.length() > 2 {
-      tab_width = parse_int32_str(arg.view(start_offset=2).to_owned())
+      tab_width = parse_int32_str(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -307,7 +307,7 @@ fn ExecContext::builtin_unexpand(
           't' => {
             if j + 1 < arg.length() {
               tab_width = parse_int32_str(
-                arg.view(start_offset=j + 1).to_owned(),
+                arg.clamped_view(start=j + 1).to_owned(),
               )
             } else if i + 1 < args.length() {
               i += 1
@@ -372,7 +372,7 @@ fn ExecContext::builtin_paste(self : ExecContext, args : Array[String]) -> Unit 
       continue
     }
     if arg.has_prefix("-d") && arg.length() > 2 {
-      delimiter_spec = arg.view(start_offset=2).to_owned()
+      delimiter_spec = arg.clamped_view(start=2).to_owned()
       i += 1
       continue
     }
@@ -383,7 +383,7 @@ fn ExecContext::builtin_paste(self : ExecContext, args : Array[String]) -> Unit 
           's' => serial_mode = true
           'd' => {
             if j + 1 < arg.length() {
-              delimiter_spec = arg.view(start_offset=j + 1).to_owned()
+              delimiter_spec = arg.clamped_view(start=j + 1).to_owned()
             } else if i + 1 < args.length() {
               i += 1
               delimiter_spec = args[i]
@@ -526,7 +526,7 @@ fn ExecContext::builtin_column(
       continue
     }
     if arg.has_prefix("-s") && arg.length() > 2 {
-      separator = Some(arg.view(start_offset=2).to_owned())
+      separator = Some(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -537,7 +537,7 @@ fn ExecContext::builtin_column(
           't' => table_mode = true
           's' => {
             if j + 1 < arg.length() {
-              separator = Some(arg.view(start_offset=j + 1).to_owned())
+              separator = Some(arg.clamped_view(start=j + 1).to_owned())
             } else if i + 1 < args.length() {
               i += 1
               separator = Some(args[i])
@@ -601,7 +601,7 @@ fn ExecContext::builtin_join(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-1") && arg.length() > 2 {
-      field1 = parse_int32_str(arg.view(start_offset=2).to_owned())
+      field1 = parse_int32_str(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -611,7 +611,7 @@ fn ExecContext::builtin_join(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-2") && arg.length() > 2 {
-      field2 = parse_int32_str(arg.view(start_offset=2).to_owned())
+      field2 = parse_int32_str(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -621,7 +621,7 @@ fn ExecContext::builtin_join(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-t") && arg.length() > 2 {
-      delimiter = arg.view(start_offset=2).to_owned()
+      delimiter = arg.clamped_view(start=2).to_owned()
       i += 1
       continue
     }
@@ -636,7 +636,7 @@ fn ExecContext::builtin_join(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-a") && arg.length() > 2 {
-      let side = parse_int32_str(arg.view(start_offset=2).to_owned())
+      let side = parse_int32_str(arg.clamped_view(start=2).to_owned())
       if side == 1 {
         include_unpair_1 = true
       } else if side == 2 {
@@ -654,7 +654,7 @@ fn ExecContext::builtin_join(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-v") && arg.length() > 2 {
-      let side = parse_int32_str(arg.view(start_offset=2).to_owned())
+      let side = parse_int32_str(arg.clamped_view(start=2).to_owned())
       if side == 1 || side == 2 {
         only_unpair_file = Some(side)
       }

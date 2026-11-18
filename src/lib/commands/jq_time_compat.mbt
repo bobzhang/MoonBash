@@ -149,12 +149,14 @@ fn jq_time_plain_datetime_from_iso_utc(text : String) -> @time.PlainDateTime? {
   if !text.has_suffix("Z") || text.length() <= 1 {
     return None
   }
-  let plain = text.view(start_offset=0, end_offset=text.length() - 1).to_owned()
-  let dt = Some(@time.PlainDateTime::from_string(plain)) catch { _ => None }
+  let plain = text.clamped_view(start=0, end=text.length() - 1).to_owned()
+  let dt : @time.PlainDateTime? = Some(@string.FromStr::from_str(plain)) catch {
+    _ => None
+  }
   dt
 }
 
 ///|
 fn jq_time_unix_from_plain_datetime(dt : @time.PlainDateTime) -> Int64 {
-  @time.ZonedDateTime::from_plain_datetime(dt, zone=@time.utc_zone).to_unix_second()
+  dt.to_unix_second()
 }

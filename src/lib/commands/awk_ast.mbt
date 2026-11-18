@@ -80,7 +80,7 @@ fn awk_stringify_simple_expr_for_getline(expr_ast : AwkExprAst) -> String? {
   match expr_ast {
     Raw(text) => Some(aj_trim(text))
     Concat(parts) => {
-      let out = StringBuilder::new()
+      let out = StringBuilder::StringBuilder()
       let mut wrote = false
       for part in parts {
         match part {

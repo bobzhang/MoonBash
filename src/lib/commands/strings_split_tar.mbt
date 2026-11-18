@@ -50,7 +50,7 @@ fn cst_substr(s : String, start : Int32, end_ : Int32) -> String {
   if start >= end_ {
     return ""
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = start; i < end_; i = i + 1 {
     out.write_char(s[i].to_int().unsafe_to_char())
   }
@@ -64,7 +64,7 @@ fn cst_split_path(path : String) -> Array[String] {
   for i = 0; i <= path.length(); i = i + 1 {
     if i == path.length() || path[i] == '/' {
       if i > start {
-        parts.push(path.view(start_offset=start, end_offset=i).to_owned())
+        parts.push(path.clamped_view(start~, end=i).to_owned())
       }
       start = i + 1
     }
@@ -74,7 +74,7 @@ fn cst_split_path(path : String) -> Array[String] {
 
 ///|
 fn cst_join_path(parts : Array[String], start_idx : Int32) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = start_idx; i < parts.length(); i = i + 1 {
     if i > start_idx {
       out.write_char('/')
@@ -130,7 +130,7 @@ fn cmd_strings_collect(
   out : StringBuilder,
 ) -> Unit {
   let normalized = decode_strings_escapes(content)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let flush = () => {
     let s = buf.to_string()
     if s.length() >= min_len {
@@ -153,7 +153,7 @@ fn cmd_strings_collect(
 
 ///|
 fn decode_strings_escapes(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()
@@ -232,7 +232,7 @@ fn cmd_strings(ctx : CommandContext) -> @ast.ExecResult {
       continue
     }
     if arg.has_prefix("-n") && arg.length() > 2 {
-      min_len = cst_parse_int(arg.view(start_offset=2).to_owned())
+      min_len = cst_parse_int(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -243,7 +243,7 @@ fn cmd_strings(ctx : CommandContext) -> @ast.ExecResult {
     min_len = 1
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   if files.length() == 0 {
     cmd_strings_collect(ctx.stdin_content, min_len, out)
     return @ast.ExecResult::ok(out.to_string())
@@ -272,7 +272,7 @@ fn cmd_split_suffix(index : Int32) -> String {
   let n = if index < 0 { 0 } else { index }
   let first = n / 26 % 26
   let second = n % 26
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char(alphabet[first].to_int().unsafe_to_char())
   out.write_char(alphabet[second].to_int().unsafe_to_char())
   out.to_string()
@@ -281,7 +281,7 @@ fn cmd_split_suffix(index : Int32) -> String {
 ///|
 fn cmd_split_lines_preserve(input : String) -> Array[String] {
   let lines : Array[String] = []
-  let line = StringBuilder::new()
+  let line = StringBuilder::StringBuilder()
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
     line.write_char(ch)
@@ -330,7 +330,7 @@ fn cmd_split(ctx : CommandContext) -> @ast.ExecResult {
       continue
     }
     if arg.has_prefix("-l") && arg.length() > 2 {
-      lines_per_chunk = cst_parse_int(arg.view(start_offset=2).to_owned())
+      lines_per_chunk = cst_parse_int(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -340,7 +340,9 @@ fn cmd_split(ctx : CommandContext) -> @ast.ExecResult {
       continue
     }
     if arg.has_prefix("-b") && arg.length() > 2 {
-      bytes_per_chunk = Some(cst_parse_int(arg.view(start_offset=2).to_owned()))
+      bytes_per_chunk = Some(
+        cst_parse_int(arg.clamped_view(start=2).to_owned()),
+      )
       i += 1
       continue
     }
@@ -385,7 +387,7 @@ fn cmd_split(ctx : CommandContext) -> @ast.ExecResult {
       let lines = cmd_split_lines_preserve(input)
       let mut pos = 0
       while pos < lines.length() {
-        let out = StringBuilder::new()
+        let out = StringBuilder::StringBuilder()
         let mut count = 0
         while pos < lines.length() && count < lines_per_chunk {
           out.write_string(lines[pos])
@@ -416,7 +418,7 @@ fn tar_clean_path(path : String) -> String {
     start += 2
   }
   let trimmed = if start > 0 {
-    path.view(start_offset=start).to_owned()
+    path.clamped_view(start~).to_owned()
   } else {
     path
   }
@@ -427,7 +429,7 @@ fn tar_clean_path(path : String) -> String {
   if end_ == trimmed.length() {
     trimmed
   } else {
-    trimmed.view(start_offset=0, end_offset=end_).to_owned()
+    trimmed.clamped_view(start=0, end=end_).to_owned()
   }
 }
 
@@ -468,7 +470,7 @@ fn tar_collect_tree(
 
 ///|
 fn tar_serialize(entries : Array[TarEntry]) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_string("MBTAR1\n")
   for entry in entries {
     if entry.is_dir {
@@ -517,7 +519,7 @@ fn tar_deserialize(content : String) -> Array[TarEntry] {
     }
 
     if cst_starts_with(header, "D\t") {
-      let path = header.view(start_offset=2).to_owned()
+      let path = header.clamped_view(start=2).to_owned()
       entries.push({ path, is_dir: true, content: "", })
       continue
     }
@@ -555,7 +557,7 @@ fn tar_strip_components(path : String, strip : Int32) -> String? {
   let mut p = path
   let is_dir = p.length() > 0 && p[p.length() - 1] == '/'
   if is_dir && p.length() > 1 {
-    p = p.view(start_offset=0, end_offset=p.length() - 1).to_owned()
+    p = p.clamped_view(start=0, end=p.length() - 1).to_owned()
   }
   let parts = cst_split_path(p)
   if strip >= parts.length() {
@@ -589,7 +591,7 @@ fn cmd_tar(ctx : CommandContext) -> @ast.ExecResult {
       continue
     }
     if arg.has_prefix("--strip-components=") {
-      strip_components = cst_parse_int(arg.view(start_offset=19).to_owned())
+      strip_components = cst_parse_int(arg.clamped_view(start=19).to_owned())
       if strip_components < 0 {
         strip_components = 0
       }
@@ -605,7 +607,7 @@ fn cmd_tar(ctx : CommandContext) -> @ast.ExecResult {
           'z' => ()
           'f' =>
             if j + 1 < arg.length() {
-              archive_file = Some(arg.view(start_offset=j + 1).to_owned())
+              archive_file = Some(arg.clamped_view(start=j + 1).to_owned())
               j = arg.length()
             } else if i + 1 < ctx.args.length() {
               i += 1
@@ -663,7 +665,7 @@ fn cmd_tar(ctx : CommandContext) -> @ast.ExecResult {
   let entries = tar_deserialize(archive_content)
 
   if mode == "t" {
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     for entry in entries {
       out.write_string(entry.path)
       out.write_char('\n')
@@ -686,9 +688,7 @@ fn cmd_tar(ctx : CommandContext) -> @ast.ExecResult {
       }
       let clean = if extracted.length() > 0 &&
         extracted[extracted.length() - 1] == '/' {
-        extracted
-        .view(start_offset=0, end_offset=extracted.length() - 1)
-        .to_owned()
+        extracted.clamped_view(start=0, end=extracted.length() - 1).to_owned()
       } else {
         extracted
       }

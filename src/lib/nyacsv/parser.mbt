@@ -29,7 +29,7 @@ fn nyacsv_trim_field(s : String) -> String {
     }
     end_exclusive -= 1
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = start; i < end_exclusive; i = i + 1 {
     out.write_char(s[i].to_int().unsafe_to_char())
   }
@@ -57,9 +57,9 @@ fn[T : CSVReader] parse(
     trim_spaces: false,
   },
 ) -> Array[Array[String]] {
-  let rows : Array[Array[String]] = Array::new()
-  let mut row : Array[String] = Array::new()
-  let mut field = StringBuilder::new()
+  let rows : Array[Array[String]] = Array()
+  let mut row : Array[String] = Array()
+  let mut field = StringBuilder::StringBuilder()
   let mut in_quotes = false
 
   while !reader.is_eof() {
@@ -97,8 +97,8 @@ fn[T : CSVReader] parse(
         if !row.is_empty() || !options.skip_empty_lines {
           rows.push(row)
         }
-        row = Array::new()
-        field = StringBuilder::new()
+        row = Array()
+        field = StringBuilder::StringBuilder()
       } else {
         field.write_char(ch)
       }
@@ -110,14 +110,14 @@ fn[T : CSVReader] parse(
       }
     } else if ch == options.delimiter {
       row.push(nyacsv_finalize_field(field, options.trim_spaces))
-      field = StringBuilder::new()
+      field = StringBuilder::StringBuilder()
     } else if ch == '\n' {
       row.push(nyacsv_finalize_field(field, options.trim_spaces))
       if !row.is_empty() || !options.skip_empty_lines {
         rows.push(row)
       }
-      row = Array::new()
-      field = StringBuilder::new()
+      row = Array()
+      field = StringBuilder::StringBuilder()
     } else {
       field.write_char(ch)
     }

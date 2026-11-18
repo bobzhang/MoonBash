@@ -123,11 +123,11 @@ fn ExecContext::expand_double_quoted_array_words(
     return None
   }
 
-  let prefix_buf = StringBuilder::new()
+  let prefix_buf = StringBuilder::StringBuilder()
   for i = 0; i < multiword_index; i = i + 1 {
     prefix_buf.write_string(self.expand_word_part(inner_parts[i]))
   }
-  let suffix_buf = StringBuilder::new()
+  let suffix_buf = StringBuilder::StringBuilder()
   for i = multiword_index + 1; i < inner_parts.length(); i = i + 1 {
     suffix_buf.write_string(self.expand_word_part(inner_parts[i]))
   }
@@ -393,11 +393,9 @@ fn ExecContext::expand_array_parameter_transform(
 fn parse_indirection_array_keys_mode(name : String) -> (String, Bool)? {
   if name.length() >= 3 {
     let suffix = name
-      .view(start_offset=name.length() - 3, end_offset=name.length())
+      .clamped_view(start=name.length() - 3, end=name.length())
       .to_owned()
-    let base = name
-      .view(start_offset=0, end_offset=name.length() - 3)
-      .to_owned()
+    let base = name.clamped_view(start=0, end=name.length() - 3).to_owned()
     if base.length() == 0 {
       return None
     }
@@ -416,9 +414,9 @@ fn join_values_with_ifs(values : Array[String], ifs : String) -> String {
   let sep = if ifs.length() == 0 {
     ""
   } else {
-    ifs.view(start_offset=0, end_offset=1).to_owned()
+    ifs.clamped_view(start=0, end=1).to_owned()
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < values.length(); i = i + 1 {
     if i > 0 {
       out.write_string(sep)
@@ -442,10 +440,7 @@ fn parse_parameter_transform_name(name : String) -> (String, Char)? {
     return None
   }
   Some(
-    (
-      name.view(start_offset=0, end_offset=name.length() - 2).to_owned(),
-      transform,
-    ),
+    (name.clamped_view(start=0, end=name.length() - 2).to_owned(), transform),
   )
 }
 
@@ -509,7 +504,7 @@ fn quote_value_for_q_transform(value : String) -> String {
     return printf_shell_quote(value)
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_string("$'")
   for i = 0; i < value.length(); i = i + 1 {
     let ch = value[i].to_int().unsafe_to_char()
@@ -597,7 +592,7 @@ fn ExecContext::expand_word_parts(
   self : ExecContext,
   parts : Array[@ast.WordPart],
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for part in parts {
     buf.write_string(self.expand_word_part(part))
   }
@@ -611,7 +606,7 @@ fn ExecContext::expand_word_parts_with_brace(
 ) -> Array[String] {
   let mut has_quoted_part = false
   let placeholders : Array[@ast.WordPart] = []
-  let template = StringBuilder::new()
+  let template = StringBuilder::StringBuilder()
   for part in parts {
     match part {
       @ast.WordPart::Literal(text) => template.write_string(text)
@@ -708,7 +703,7 @@ fn ExecContext::expand_brace_candidate_with_placeholders(
   placeholders : Array[@ast.WordPart],
   defer_tilde_expansion : Bool,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < candidate.length() {
     if candidate[i].to_int().unsafe_to_char() == '\u001d' {
@@ -718,7 +713,7 @@ fn ExecContext::expand_brace_candidate_with_placeholders(
         j += 1
       }
       if j < candidate.length() {
-        let token = candidate.view(start_offset=i + 1, end_offset=j).to_owned()
+        let token = candidate.clamped_view(start=i + 1, end=j).to_owned()
         match parse_brace_placeholder_index(token) {
           Some(idx) =>
             if idx >= 0 && idx < placeholders.length() {
@@ -760,8 +755,8 @@ fn ExecContext::expand_tilde_after_brace(
       break
     }
   }
-  let user = value.view(start_offset=1, end_offset=slash_idx).to_owned()
-  let rest = value.view(start_offset=slash_idx).to_owned()
+  let user = value.clamped_view(start=1, end=slash_idx).to_owned()
+  let rest = value.clamped_view(start=slash_idx).to_owned()
   self.expand_tilde(user) + rest
 }
 
@@ -795,7 +790,7 @@ fn ExecContext::expand_word_part(
       let marker_key = "__MOON_BASH_IN_DQUOTE_EXPANSION__"
       let saved_marker = self.env.get(marker_key)
       self.env[marker_key] = "1"
-      let buf = StringBuilder::new()
+      let buf = StringBuilder::StringBuilder()
       for p in inner_parts {
         buf.write_string(self.expand_word_part(p))
       }
@@ -830,7 +825,7 @@ fn ExecContext::expand_variable(self : ExecContext, name : String) -> String {
     "!" => "0"
     "@" | "*" => self.env.get("@").unwrap_or("")
     "-" => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder::StringBuilder()
       if self.options.errexit {
         buf.write_char('e')
       }
@@ -991,13 +986,11 @@ fn ExecContext::expand_array_index_expr(
     let first = trimmed[0].to_int().unsafe_to_char()
     let last = trimmed[trimmed.length() - 1].to_int().unsafe_to_char()
     if first == '\'' && last == '\'' {
-      return trimmed
-        .view(start_offset=1, end_offset=trimmed.length() - 1)
-        .to_owned()
+      return trimmed.clamped_view(start=1, end=trimmed.length() - 1).to_owned()
     }
     if first == '"' && last == '"' {
       let inner = trimmed
-        .view(start_offset=1, end_offset=trimmed.length() - 1)
+        .clamped_view(start=1, end=trimmed.length() - 1)
         .to_owned()
       return self.expand_word_to_string(@parser.parse_word_content(inner))
     }
@@ -1031,7 +1024,7 @@ fn ExecContext::expand_word_with_split_protection(
   self : ExecContext,
   word : @ast.Word,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for part in word.parts {
     buf.write_string(self.expand_word_part_with_split_protection(part))
   }
@@ -1062,7 +1055,7 @@ fn ExecContext::expand_double_quoted_parts(
   let marker_key = "__MOON_BASH_IN_DQUOTE_EXPANSION__"
   let saved_marker = self.env.get(marker_key)
   self.env[marker_key] = "1"
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for p in inner_parts {
     buf.write_string(self.expand_word_part(p))
   }
@@ -1083,7 +1076,7 @@ fn ExecContext::encode_word_split_protected_text(
   }
   let ifs = self.env.get("IFS").unwrap_or(" \t\n")
   let marker = word_split_protect_marker()
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < text.length(); i = i + 1 {
     let ch = text[i].to_int().unsafe_to_char()
     if ch == marker || is_ifs_char(ch, ifs) {
@@ -1100,7 +1093,7 @@ fn escape_split_protect_marker_only(text : String) -> String {
     return text
   }
   let marker = word_split_protect_marker()
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < text.length(); i = i + 1 {
     let ch = text[i].to_int().unsafe_to_char()
     if ch == marker {
@@ -1512,14 +1505,14 @@ fn expand_scalar_substring(
     ""
   } else {
     value
-    .view(start_offset=actual_offset.to_int(), end_offset=end.to_int())
+    .clamped_view(start=actual_offset.to_int(), end=end.to_int())
     .to_owned()
   }
 }
 
 ///|
 fn join_values_with_space(values : Array[String]) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < values.length(); i = i + 1 {
     if i > 0 {
       out.write_char(' ')
@@ -1721,9 +1714,9 @@ fn ExecContext::expand_command_sub(
   )
 
   // Execute in a sub-context
-  self.stdout_buf = StringBuilder::new()
+  self.stdout_buf = StringBuilder::StringBuilder()
   match pending_cmd_sub_stderr_spec {
-    Some(_) => self.stderr_buf = StringBuilder::new()
+    Some(_) => self.stderr_buf = StringBuilder::StringBuilder()
     None => ()
   }
   self.env = clone_string_map(saved_env)
@@ -1782,7 +1775,7 @@ fn ExecContext::stash_pending_cmd_sub_stderr(
   if output.length() == 0 || spec.length() < 3 || spec[1] != ':' {
     return
   }
-  let path = spec.view(start_offset=2).to_owned()
+  let path = spec.clamped_view(start=2).to_owned()
   let resolved = @fs.resolve_path(self.cwd, path) catch { _ => path }
   let pending_path_key = "__MOON_BASH_PENDING_CMD_SUB_STDERR_CAPTURE_PATH__"
   let pending_data_key = "__MOON_BASH_PENDING_CMD_SUB_STDERR_CAPTURE_DATA__"

@@ -56,7 +56,7 @@ fn ExecContext::builtin_tr(self : ExecContext, args : Array[String]) -> Unit {
     // Keep compatibility with quoted sets that include a trailing space.
     squeeze_set.push(' ')
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut prev_written : Char? = None
   for i = 0; i < input.length(); i = i + 1 {
     let ch = input[i].to_int().unsafe_to_char()
@@ -106,7 +106,7 @@ fn ExecContext::builtin_sort(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-k") && arg.length() > 2 {
-      key_field = Some(parse_int32_str(arg.view(start_offset=2).to_owned()))
+      key_field = Some(parse_int32_str(arg.clamped_view(start=2).to_owned()))
       i += 1
       continue
     }
@@ -116,7 +116,7 @@ fn ExecContext::builtin_sort(self : ExecContext, args : Array[String]) -> Unit {
       continue
     }
     if arg.has_prefix("-t") && arg.length() > 2 {
-      delimiter = Some(arg.view(start_offset=2).to_owned())
+      delimiter = Some(arg.clamped_view(start=2).to_owned())
       i += 1
       continue
     }
@@ -257,7 +257,7 @@ fn ExecContext::builtin_uniq(self : ExecContext, args : Array[String]) -> Unit {
     if pad < 0 {
       pad = 0
     }
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     for i = 0; i < pad; i = i + 1 {
       out.write_char(' ')
     }
@@ -327,14 +327,16 @@ fn ExecContext::builtin_cut(self : ExecContext, args : Array[String]) -> Unit {
       char_ranges = parse_cut_char_spec(args[i + 1])
       i += 2
     } else if args[i].has_prefix("-d") {
-      delimiter = args[i].view(start_offset=2).to_owned()
+      delimiter = args[i].clamped_view(start=2).to_owned()
       i += 1
     } else if args[i].has_prefix("-f") {
-      fields = parse_field_spec(args[i].view(start_offset=2).to_owned())
+      fields = parse_field_spec(args[i].clamped_view(start=2).to_owned())
       i += 1
     } else if args[i].has_prefix("-c") {
       char_mode = true
-      char_ranges = parse_cut_char_spec(args[i].view(start_offset=2).to_owned())
+      char_ranges = parse_cut_char_spec(
+        args[i].clamped_view(start=2).to_owned(),
+      )
       i += 1
     } else {
       input_file = Some(args[i])
@@ -362,7 +364,7 @@ fn ExecContext::builtin_cut(self : ExecContext, args : Array[String]) -> Unit {
       self.stdout_buf.write_string(cut_by_char_ranges(line, char_ranges) + "\n")
     } else {
       let parts = split_string_by_delimiter(line, delimiter)
-      let out_buf = StringBuilder::new()
+      let out_buf = StringBuilder::StringBuilder()
       let mut first = true
       for field_num in fields {
         if field_num > 0 && field_num <= parts.length() {
@@ -433,7 +435,7 @@ fn cut_by_char_ranges(line : String, ranges : Array[(Int32, Int32)]) -> String {
     }
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for pos = 1; pos <= line.length(); pos = pos + 1 {
     if selected[pos] {
       out.write_char(line[pos - 1].to_int().unsafe_to_char())

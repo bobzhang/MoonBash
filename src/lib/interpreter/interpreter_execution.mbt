@@ -145,7 +145,7 @@ fn ExecContext::execute_pipeline(
       self.break_count = 0
       self.continue_count = 0
       self.stdin_buf = pipe_input
-      self.stdout_buf = StringBuilder::new()
+      self.stdout_buf = StringBuilder::StringBuilder()
       self.execute_command(commands[i])
       pipeline_statuses.push(self.exit_code.to_string())
       pipe_input = self.stdout_buf.to_string()
@@ -220,25 +220,25 @@ fn ExecContext::execute_command(self : ExecContext, cmd : @ast.Command) -> Unit 
             let target = self.expand_word_to_string(redir.target)
             if target == "/dev/null" {
               null_output = true
-              self.stdout_buf = StringBuilder::new()
+              self.stdout_buf = StringBuilder::StringBuilder()
             } else if target == "/dev/stderr" {
               stdout_to_stderr = true
-              self.stdout_buf = StringBuilder::new()
+              self.stdout_buf = StringBuilder::StringBuilder()
             } else if target != "/dev/stdout" {
               redirected_file = Some(target)
               redirect_append = false
-              self.stdout_buf = StringBuilder::new()
+              self.stdout_buf = StringBuilder::StringBuilder()
             }
           }
           @ast.RedirectOp::Append => {
             let target = self.expand_word_to_string(redir.target)
             if target == "/dev/null" {
               null_output = true
-              self.stdout_buf = StringBuilder::new()
+              self.stdout_buf = StringBuilder::StringBuilder()
             } else if target != "/dev/stdout" && target != "/dev/stderr" {
               redirected_file = Some(target)
               redirect_append = true
-              self.stdout_buf = StringBuilder::new()
+              self.stdout_buf = StringBuilder::StringBuilder()
             }
           }
           @ast.RedirectOp::Input => {
@@ -274,14 +274,14 @@ fn ExecContext::execute_command(self : ExecContext, cmd : @ast.Command) -> Unit 
             }
             if source_fd == 1 && (target == "2" || target == "/dev/stderr") {
               stdout_to_stderr = true
-              self.stdout_buf = StringBuilder::new()
+              self.stdout_buf = StringBuilder::StringBuilder()
             } else if source_fd == 2 &&
               (target == "1" || target == "/dev/stdout") {
               stderr_to_stdout = true
-              self.stderr_buf = StringBuilder::new()
+              self.stderr_buf = StringBuilder::StringBuilder()
             } else if source_fd == 1 && target == "-" {
               null_output = true
-              self.stdout_buf = StringBuilder::new()
+              self.stdout_buf = StringBuilder::StringBuilder()
             }
           }
           _ => ()
@@ -734,14 +734,14 @@ fn ExecContext::execute_simple(
         if source_fd == 2 {
           if target == "/dev/null" {
             null_stderr = true
-            self.stderr_buf = StringBuilder::new()
+            self.stderr_buf = StringBuilder::StringBuilder()
           } else if target == "/dev/stdout" || target == "1" {
             stderr_to_stdout = true
-            self.stderr_buf = StringBuilder::new()
+            self.stderr_buf = StringBuilder::StringBuilder()
           } else {
             redirected_stderr_file = Some(target)
             redirect_stderr_append = false
-            self.stderr_buf = StringBuilder::new()
+            self.stderr_buf = StringBuilder::StringBuilder()
           }
           continue
         }
@@ -750,14 +750,14 @@ fn ExecContext::execute_simple(
         }
         if target == "/dev/null" {
           null_output = true
-          self.stdout_buf = StringBuilder::new()
+          self.stdout_buf = StringBuilder::StringBuilder()
         } else if target == "/dev/stderr" {
           stdout_to_stderr = true
-          self.stdout_buf = StringBuilder::new()
+          self.stdout_buf = StringBuilder::StringBuilder()
         } else {
           redirected_file = Some(target)
           redirect_append = false
-          self.stdout_buf = StringBuilder::new()
+          self.stdout_buf = StringBuilder::StringBuilder()
         }
       }
       @ast.RedirectOp::Append => {
@@ -773,14 +773,14 @@ fn ExecContext::execute_simple(
         if source_fd == 2 {
           if target == "/dev/null" {
             null_stderr = true
-            self.stderr_buf = StringBuilder::new()
+            self.stderr_buf = StringBuilder::StringBuilder()
           } else if target == "/dev/stdout" || target == "1" {
             stderr_to_stdout = true
-            self.stderr_buf = StringBuilder::new()
+            self.stderr_buf = StringBuilder::StringBuilder()
           } else {
             redirected_stderr_file = Some(target)
             redirect_stderr_append = true
-            self.stderr_buf = StringBuilder::new()
+            self.stderr_buf = StringBuilder::StringBuilder()
           }
           continue
         }
@@ -789,11 +789,11 @@ fn ExecContext::execute_simple(
         }
         if target == "/dev/null" {
           null_output = true
-          self.stdout_buf = StringBuilder::new()
+          self.stdout_buf = StringBuilder::StringBuilder()
         } else {
           redirected_file = Some(target)
           redirect_append = true
-          self.stdout_buf = StringBuilder::new()
+          self.stdout_buf = StringBuilder::StringBuilder()
         }
       }
       @ast.RedirectOp::Input => {
@@ -851,14 +851,14 @@ fn ExecContext::execute_simple(
             Some((path, append_mode)) => {
               if path == "/dev/null" {
                 null_output = true
-                self.stdout_buf = StringBuilder::new()
+                self.stdout_buf = StringBuilder::StringBuilder()
               } else if path == "/dev/stderr" {
                 stdout_to_stderr = true
-                self.stdout_buf = StringBuilder::new()
+                self.stdout_buf = StringBuilder::StringBuilder()
               } else {
                 redirected_file = Some(path)
                 redirect_append = append_mode
-                self.stdout_buf = StringBuilder::new()
+                self.stdout_buf = StringBuilder::StringBuilder()
               }
               continue
             }
@@ -867,24 +867,24 @@ fn ExecContext::execute_simple(
         }
         if source_fd == 2 && (target == "1" || target == "/dev/stdout") {
           stderr_to_stdout = true
-          self.stderr_buf = StringBuilder::new()
+          self.stderr_buf = StringBuilder::StringBuilder()
         } else if source_fd == 2 && target == "-" {
           null_stderr = true
-          self.stderr_buf = StringBuilder::new()
+          self.stderr_buf = StringBuilder::StringBuilder()
         }
         if source_fd == 1 && (target == "2" || target == "/dev/stderr") {
           stdout_to_stderr = true
-          self.stdout_buf = StringBuilder::new()
+          self.stdout_buf = StringBuilder::StringBuilder()
         } else if source_fd == 1 && target == "-" {
           null_output = true
-          self.stdout_buf = StringBuilder::new()
+          self.stdout_buf = StringBuilder::StringBuilder()
         }
       }
       @ast.RedirectOp::AndOutput => {
         let target = self.expand_word_to_string(redir.target)
         if target == "/dev/null" {
           null_output = true
-          self.stdout_buf = StringBuilder::new()
+          self.stdout_buf = StringBuilder::StringBuilder()
         }
       }
       _ => ()
@@ -1182,7 +1182,7 @@ fn word_is_single_tilde(word : @ast.Word) -> Bool {
 
 ///|
 fn escape_conditional_glob_meta(text : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < text.length(); i = i + 1 {
     let ch = text[i].to_int().unsafe_to_char()
     if ch == '*' || ch == '?' || ch == '[' || ch == '\\' {
@@ -1202,7 +1202,7 @@ fn ExecContext::expand_conditional_part_text(
     @ast.WordPart::Literal(text) => text
     @ast.WordPart::SingleQuoted(text) => escape_conditional_glob_meta(text)
     @ast.WordPart::DoubleQuoted(inner_parts) => {
-      let out = StringBuilder::new()
+      let out = StringBuilder::StringBuilder()
       for inner in inner_parts {
         out.write_string(self.expand_word_part(inner))
       }
@@ -1217,7 +1217,7 @@ fn ExecContext::expand_conditional_test_word(
   self : ExecContext,
   word : @ast.Word,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for part in word.parts {
     out.write_string(self.expand_conditional_part_text(part))
   }
@@ -1275,7 +1275,7 @@ fn encode_assignment_quoted_marker(text : String) -> String {
   if text.length() == 0 {
     return "\u0001\u0000"
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < text.length(); i = i + 1 {
     out.write_char('\u0001')
     out.write_char(text[i].to_int().unsafe_to_char())
@@ -1288,7 +1288,7 @@ fn ExecContext::expand_compound_assignment_word_preserving_quotes(
   self : ExecContext,
   word : @ast.Word,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for part in word.parts {
     out.write_string(
       self.expand_compound_assignment_part_preserving_quotes(part),

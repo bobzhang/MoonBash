@@ -123,7 +123,7 @@ fn parse_int32_str(s : String) -> Int32 {
 ///|
 fn split_by_whitespace(s : String) -> Array[String] {
   let result : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch == ' ' || ch == '\t' || ch == '\n' {
@@ -146,7 +146,7 @@ fn split_by_whitespace(s : String) -> Array[String] {
 ///|
 fn split_lines(s : String) -> Array[String] {
   let result : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch == '\n' {
@@ -183,7 +183,7 @@ fn split_lines_no_trailing(s : String) -> Array[String] {
 
 ///|
 fn repeat_char(ch : Char, count : Int32) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let total = if count < 0 { 0 } else { count }
   for i = 0; i < total; i = i + 1 {
     out.write_char(ch)
@@ -219,7 +219,7 @@ fn substring_slice(s : String, start : Int32, end : Int32) -> String {
   if start >= end || start < 0 || end > s.length() {
     return ""
   }
-  s.view(start_offset=start, end_offset=end).to_owned()
+  s.clamped_view(start~, end~).to_owned()
 }
 
 ///|
@@ -247,7 +247,7 @@ fn parse_field_spec(spec : String) -> Array[Int32] {
 ///|
 fn split_string_by_delimiter(s : String, delim : String) -> Array[String] {
   let result : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let delim_len = delim.length()
   if delim_len == 0 {
     result.push(s)
@@ -400,7 +400,7 @@ fn test_token_is_tilde(token : String) -> Bool {
 ///|
 fn test_token_raw(token : String) -> String {
   if test_token_has_meta(token) {
-    token.view(start_offset=1).to_owned()
+    token.clamped_view(start=1).to_owned()
   } else {
     token
   }
@@ -875,7 +875,7 @@ fn ExecContext::test_eval_regex_with_status(
   match matcher.find_first_with_groups(text) {
     Some((start, end, groups)) => {
       let values : Array[String] = []
-      values.push(text.view(start_offset=start, end_offset=end).to_owned())
+      values.push(text.clamped_view(start~, end~).to_owned())
       for group in groups {
         values.push(group)
       }
@@ -1289,7 +1289,7 @@ fn test_has_glob_escape(s : String) -> Bool {
 
 ///|
 fn test_unescape_glob_escapes(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()
@@ -1309,7 +1309,7 @@ fn test_unescape_glob_escapes(s : String) -> String {
 
 ///|
 fn test_escape_regex_literal(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch == '\\' ||
@@ -1339,7 +1339,7 @@ fn test_escape_regex_literal(s : String) -> String {
 
 ///|
 fn format_printf(format : String, args : Array[String]) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut arg_idx = 0
   let mut first_pass = true
   while true {
@@ -1575,7 +1575,7 @@ fn printf_repeat_char(ch : Char, count : Int32) -> String {
   if count <= 0 {
     return ""
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < count; i = i + 1 {
     out.write_char(ch)
   }
@@ -1611,7 +1611,7 @@ fn printf_to_hex(value : Int64) -> String {
     return "0"
   }
   let mut v = if value < 0L { -value } else { value }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   while v > 0L {
     let digit = v % 16L
     let ch = if digit < 10L {
@@ -1678,7 +1678,7 @@ fn printf_shell_quote(value : String) -> String {
     return value
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('\'')
   for i = 0; i < value.length(); i = i + 1 {
     let ch = value[i].to_int().unsafe_to_char()
@@ -1719,8 +1719,8 @@ fn printf_format_float(raw : String, precision : Int32) -> String {
     }
   }
 
-  let int_buf = StringBuilder::new()
-  let frac_buf = StringBuilder::new()
+  let int_buf = StringBuilder::StringBuilder()
+  let frac_buf = StringBuilder::StringBuilder()
   let mut in_frac = false
   while i < raw.length() {
     let ch = raw[i].to_int().unsafe_to_char()
@@ -1809,7 +1809,7 @@ fn printf_increment_digits(digits : String) -> String {
       break
     }
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   if carry == 1 {
     out.write_char('1')
   }
@@ -1843,7 +1843,7 @@ fn printf_increment_fraction(frac : String) -> (String, Bool) {
       break
     }
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for ch in chars {
     out.write_char(ch)
   }

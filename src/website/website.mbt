@@ -26,7 +26,7 @@ fn mount_demo_impl() -> Unit {
     ignore(
       @dom_ffi.set_timeout(
         fn() { start_verification(app) },
-        UInt32::trunc_double(delay_ms.to_double()),
+        delay_ms.reinterpret_as_uint(),
       ),
     )
   }

@@ -77,8 +77,8 @@ pub fn ExecContext::new(
     functions: Map([]),
     options: @ast.ShellOptions::default(),
     stdin_buf: initial_stdin,
-    stdout_buf: StringBuilder::new(),
-    stderr_buf: StringBuilder::new(),
+    stdout_buf: StringBuilder::StringBuilder(),
+    stderr_buf: StringBuilder::StringBuilder(),
     exit_code: 0,
     should_exit: false,
     loop_depth: 0,
@@ -102,8 +102,8 @@ pub fn ExecContext::execute(
   script : String,
 ) -> @ast.ExecResult {
   // Reset I/O buffers
-  self.stdout_buf = StringBuilder::new()
-  self.stderr_buf = StringBuilder::new()
+  self.stdout_buf = StringBuilder::StringBuilder()
+  self.stderr_buf = StringBuilder::StringBuilder()
   self.should_exit = false
   self.return_requested = false
   self.substitution_depth = 0

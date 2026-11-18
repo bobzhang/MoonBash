@@ -150,7 +150,7 @@ pub fn execute_with_state(
 ///|
 /// Convert ExecResult to JSON string
 fn result_to_json(result : @ast.ExecResult) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   buf.write_string("{\"stdout\":")
   buf.write_string(json_escape_string(result.stdout))
   buf.write_string(",\"stderr\":")
@@ -171,7 +171,7 @@ fn result_with_state_to_json(
   modes : Array[(String, String)],
   env : Array[(String, String)],
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   buf.write_string("{\"stdout\":")
   buf.write_string(json_escape_string(result.stdout))
   buf.write_string(",\"stderr\":")
@@ -195,7 +195,7 @@ fn result_with_state_to_json(
 ///|
 /// Convert string pairs into a JSON object.
 fn json_object_from_pairs(pairs : Array[(String, String)]) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   buf.write_char('{')
   for i = 0; i < pairs.length(); i = i + 1 {
     if i > 0 {
@@ -213,7 +213,7 @@ fn json_object_from_pairs(pairs : Array[(String, String)]) -> String {
 ///|
 /// Escape a string for JSON output
 fn json_escape_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   buf.write_char('"')
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
@@ -339,7 +339,7 @@ fn parse_json_object(json : String) -> Array[(String, String)] {
 /// Parse a JSON string starting at position i (must be at opening quote).
 /// Returns (unescaped string, position after closing quote).
 fn parse_json_string(json : String, start : Int32) -> (String, Int32) {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let len = json.length()
   let mut i = start + 1 // skip opening quote
   while i < len {
@@ -522,7 +522,7 @@ fn parse_limits(limits_json : String) -> @ast.ExecutionLimits {
 /// Ensure parent directories exist for a file path
 fn ensure_parents(fs : @fs.InMemoryFs, path : String) -> Unit {
   let parts : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = 0; i < path.length(); i = i + 1 {
     let ch = path[i].to_int().unsafe_to_char()
     if ch == '/' {
@@ -537,7 +537,7 @@ fn ensure_parents(fs : @fs.InMemoryFs, path : String) -> Unit {
   }
   // Don't include the last component (that's the file itself)
   // Build parent dirs incrementally
-  let dir_buf = StringBuilder::new()
+  let dir_buf = StringBuilder::StringBuilder()
   for i = 0; i < parts.length(); i = i + 1 {
     dir_buf.write_char('/')
     dir_buf.write_string(parts[i])

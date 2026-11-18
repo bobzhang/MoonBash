@@ -7,7 +7,7 @@ fn cmd_rmdir(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
     return @ast.ExecResult::err("rmdir: missing operand\n")
   }
-  let errbuf = StringBuilder::new()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for arg in ctx.args {
     let resolved = @fs.resolve_path(ctx.cwd, arg) catch {
@@ -56,7 +56,7 @@ fn cmd_rmdir(ctx : CommandContext) -> @ast.ExecResult {
 ///|
 /// Format octal mode as permission string like -rw-r--r--
 fn format_mode_string(mode : Int32, is_dir : Bool, is_link : Bool) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   if is_dir {
     buf.write_char('d')
   } else if is_link {
@@ -97,8 +97,8 @@ fn cmd_stat(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
     return @ast.ExecResult::err("stat: missing operand\n")
   }
-  let out = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for arg in ctx.args {
     let resolved = @fs.resolve_path(ctx.cwd, arg) catch {
@@ -149,8 +149,8 @@ fn cmd_file(ctx : CommandContext) -> @ast.ExecResult {
   if ctx.args.length() == 0 {
     return @ast.ExecResult::err("file: missing operand\n")
   }
-  let out = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for arg in ctx.args {
     let resolved = @fs.resolve_path(ctx.cwd, arg) catch {
@@ -208,7 +208,7 @@ fn cmd_tree(ctx : CommandContext) -> @ast.ExecResult {
       return @ast.ExecResult::err("tree: '\{path}': Not a directory\n")
     _ => ()
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_string(path + "\n")
   let mut dir_count = 0
   let mut file_count = 0
@@ -316,7 +316,9 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
       continue
     }
     if arg.has_prefix("--max-depth=") {
-      max_depth = Some(cmd_find_parse_int(arg.view(start_offset=12).to_owned()))
+      max_depth = Some(
+        cmd_find_parse_int(arg.clamped_view(start=12).to_owned()),
+      )
       i += 1
       continue
     }
@@ -347,8 +349,8 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
   if paths.length() == 0 {
     paths.push(".")
   }
-  let out = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for path in paths {
     let resolved = @fs.resolve_path(ctx.cwd, path) catch {
@@ -380,7 +382,7 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
           0
         } else {
           cmd_du_relative_depth(
-            key.view(start_offset=resolved.length()).to_owned(),
+            key.clamped_view(start=resolved.length()).to_owned(),
           )
         }
         let include_entry = match max_depth {
@@ -393,7 +395,7 @@ fn cmd_du(ctx : CommandContext) -> @ast.ExecResult {
           let display = if key == resolved {
             path
           } else {
-            let rel = key.view(start_offset=resolved.length()).to_owned()
+            let rel = key.clamped_view(start=resolved.length()).to_owned()
             if path == "." {
               "." + rel
             } else {
@@ -512,7 +514,7 @@ fn cmd_chmod(ctx : CommandContext) -> @ast.ExecResult {
   if chmod_apply_mode_string(0, mode_str) is None {
     return @ast.ExecResult::err("chmod: invalid mode: '\{mode_str}'\n")
   }
-  let errbuf = StringBuilder::new()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for i = 1; i < args.length(); i = i + 1 {
     let path = args[i]
@@ -628,8 +630,8 @@ fn cmd_readlink(ctx : CommandContext) -> @ast.ExecResult {
   if paths.length() == 0 {
     return @ast.ExecResult::err("readlink: missing operand\n")
   }
-  let out = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for path in paths {
     let resolved = @fs.resolve_path(ctx.cwd, path) catch {

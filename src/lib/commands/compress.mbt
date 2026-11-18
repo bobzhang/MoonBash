@@ -79,7 +79,7 @@ fn str_ends_with(s : String, suffix : String) -> Bool {
 /// Strip a suffix from a string if present, otherwise return the string.
 fn str_strip_suffix(s : String, suffix : String) -> String {
   if str_ends_with(s, suffix) {
-    s.view(start_offset=0, end_offset=s.length() - suffix.length()).to_owned()
+    s.clamped_view(start=0, end=s.length() - suffix.length()).to_owned()
   } else {
     s
   }
@@ -103,8 +103,8 @@ fn gunzip_core(
     }
     return @ast.ExecResult::ok(gzip_decode(ctx.stdin_content))
   }
-  let out = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for arg in ctx.args {
     if !str_ends_with(arg, ".gz") && !str_ends_with(arg, ".tgz") && !force {
@@ -237,8 +237,8 @@ fn cmd_gzip(ctx : CommandContext) -> @ast.ExecResult {
   if files.length() == 0 {
     return @ast.ExecResult::ok(gzip_encode(ctx.stdin_content))
   }
-  let out = StringBuilder::new()
-  let errbuf = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for file in files {
     if str_ends_with(file, ".gz") {

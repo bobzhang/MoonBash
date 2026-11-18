@@ -42,7 +42,7 @@ fn decode_fd_output_mapping(spec : String) -> (String, Bool)? {
   if spec[1].to_int().unsafe_to_char() != ':' {
     return None
   }
-  let path = spec.view(start_offset=2).to_owned()
+  let path = spec.clamped_view(start=2).to_owned()
   if mode == 'A' {
     Some((path, true))
   } else if mode == 'W' {
@@ -270,8 +270,8 @@ fn parse_array_assignment_explicit_entry(
     return None
   }
 
-  let raw_key = token.view(start_offset=1, end_offset=close).to_owned()
-  let value = token.view(start_offset=value_start).to_owned()
+  let raw_key = token.clamped_view(start=1, end=close).to_owned()
+  let value = token.clamped_view(start=value_start).to_owned()
   let key = normalize_array_assignment_index(raw_key)
   Some((key, value, append_mode))
 }
@@ -342,21 +342,21 @@ fn ExecContext::normalize_compound_assignment_value(
   }
 
   let home = self.env.get("HOME").unwrap_or("/home/user")
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut segment_start = 0
   let mut i = 0
   while i <= cleaned_value.length() {
     if i == cleaned_value.length() ||
       cleaned_value[i].to_int().unsafe_to_char() == ':' {
       let segment = cleaned_value
-        .view(start_offset=segment_start, end_offset=i)
+        .clamped_view(start=segment_start, end=i)
         .to_owned()
       let normalized = if segment == "~" {
         home
       } else if segment.length() >= 2 &&
         segment[0].to_int().unsafe_to_char() == '~' &&
         segment[1].to_int().unsafe_to_char() == '/' {
-        home + segment.view(start_offset=1).to_owned()
+        home + segment.clamped_view(start=1).to_owned()
       } else {
         segment
       }
@@ -610,7 +610,7 @@ fn split_array_assignment_items(
 ) -> Array[@ast.Word]? {
   let items : Array[@ast.Word] = []
   let mut current_parts : Array[@ast.WordPart] = []
-  let literal_buf = StringBuilder::new()
+  let literal_buf = StringBuilder::StringBuilder()
   let mut started = false
   let mut ended = false
 
@@ -772,7 +772,7 @@ fn ExecContext::refresh_array_metadata(
       key.length() > prefix.length() &&
       key[key.length() - 1] == ']' {
       let inner = key
-        .view(start_offset=prefix.length(), end_offset=key.length() - 1)
+        .clamped_view(start=prefix.length(), end=key.length() - 1)
         .to_owned()
       if inner != "@" && inner != "*" {
         keys.push(inner)
@@ -797,7 +797,7 @@ fn ExecContext::refresh_array_metadata(
 
 ///|
 fn join_values_for_array_storage(values : Array[String]) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < values.length(); i = i + 1 {
     if i > 0 {
       out.write_char(' ')
@@ -837,13 +837,13 @@ fn parse_array_element_assignment_name(name : String) -> (String, String)? {
     return None
   }
 
-  let base = name.view(start_offset=0, end_offset=bracket).to_owned()
+  let base = name.clamped_view(start=0, end=bracket).to_owned()
   if !is_valid_shell_name(base) {
     return None
   }
 
   let raw_index = name
-    .view(start_offset=bracket + 1, end_offset=name.length() - 1)
+    .clamped_view(start=bracket + 1, end=name.length() - 1)
     .to_owned()
   let index = normalize_array_assignment_index(raw_index)
 
@@ -858,9 +858,7 @@ fn normalize_array_assignment_index(raw_index : String) -> String {
     let first = cleaned[0].to_int().unsafe_to_char()
     let last = cleaned[cleaned.length() - 1].to_int().unsafe_to_char()
     if (first == '"' && last == '"') || (first == '\'' && last == '\'') {
-      return cleaned
-        .view(start_offset=1, end_offset=cleaned.length() - 1)
-        .to_owned()
+      return cleaned.clamped_view(start=1, end=cleaned.length() - 1).to_owned()
     }
   }
   cleaned
@@ -886,12 +884,12 @@ fn trim_ascii_space_for_array_index(s : String) -> String {
       break
     }
   }
-  s.view(start_offset=start, end_offset=end_).to_owned()
+  s.clamped_view(start~, end=end_).to_owned()
 }
 
 ///|
 fn strip_array_assignment_index_markers(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < s.length() {
     let ch = s[i].to_int().unsafe_to_char()

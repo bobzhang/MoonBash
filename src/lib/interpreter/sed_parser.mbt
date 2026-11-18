@@ -545,7 +545,7 @@ fn parse_sed_until_delim(
   delim : Char,
   regex_part~ : Bool = false,
 ) -> (String, Int32)? {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = start
   let mut in_char_class = false
   while i < expr.length() {
@@ -588,7 +588,7 @@ fn parse_sed_translit_part(
   start : Int32,
   delim : Char,
 ) -> (String, Int32)? {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut i = start
   while i < expr.length() {
     let ch = expr[i].to_int().unsafe_to_char()
@@ -651,7 +651,7 @@ fn parse_sed_text_payload(raw : String) -> String? {
 
 ///|
 fn decode_sed_escapes(text : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut i = 0
   while i < text.length() {
     let ch = text[i].to_int().unsafe_to_char()

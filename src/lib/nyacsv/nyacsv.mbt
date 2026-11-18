@@ -25,8 +25,8 @@ pub fn CSV::shape(self : CSV) -> (Int32, Int32) {
 
 ///|
 pub fn CSV::new() -> CSV {
-  let headers : Array[String] = Array::new()
-  let rows : Array[Array[String]] = Array::new()
+  let headers : Array[String] = Array()
+  let rows : Array[Array[String]] = Array()
   { headers, rows, }
 }
 
@@ -42,7 +42,7 @@ pub fn CSV::from_array(
 
   if has_header {
     let headers = data[0]
-    let rows : Array[Array[String]] = Array::new()
+    let rows : Array[Array[String]] = Array()
     for i = 1; i < data.length(); i = i + 1 {
       rows.push(data[i])
     }
@@ -51,7 +51,7 @@ pub fn CSV::from_array(
 
   if generate_headers {
     let column_count = data[0].length()
-    let headers : Array[String] = Array::new()
+    let headers : Array[String] = Array()
     for i = 0; i < column_count; i = i + 1 {
       headers.push("column\{i + 1}")
     }
@@ -59,7 +59,7 @@ pub fn CSV::from_array(
   }
 
   let column_count = data[0].length()
-  let headers : Array[String] = Array::new()
+  let headers : Array[String] = Array()
   for _i = 0; _i < column_count; _i = _i + 1 {
     headers.push("")
   }

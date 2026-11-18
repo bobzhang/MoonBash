@@ -22,7 +22,7 @@ fn net_hex_digit(n : Int32) -> Char {
 
 ///|
 fn net_json_escape_string(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('"')
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
@@ -50,7 +50,7 @@ fn net_json_escape_string(s : String) -> String {
 
 ///|
 fn net_headers_to_json(headers : Array[(String, String)]) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('{')
   for i = 0; i < headers.length(); i = i + 1 {
     if i > 0 {
@@ -72,7 +72,7 @@ fn net_build_fetch_request_json(
   headers : Array[(String, String)],
   body : String?,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_char('{')
   out.write_string("\"url\":")
   out.write_string(net_json_escape_string(url))
@@ -235,7 +235,7 @@ fn net_write_output_file(
 
 ///|
 fn net_ascii_upper(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch >= 'a' && ch <= 'z' {
@@ -249,7 +249,7 @@ fn net_ascii_upper(s : String) -> String {
 
 ///|
 fn net_ascii_lower(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
     if ch >= 'A' && ch <= 'Z' {
@@ -335,7 +335,7 @@ fn net_replace_all(s : String, old : String, new_ : String) -> String {
   if old.length() == 0 {
     return s
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut cursor = 0
   while cursor < s.length() {
     let idx = net_index_of_from(s, old, cursor)
@@ -385,7 +385,7 @@ fn net_remove_block_tag(s : String, tag : String) -> String {
 
 ///|
 fn net_strip_html_tags(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut in_tag = false
   for i = 0; i < s.length(); i = i + 1 {
     let ch = s[i].to_int().unsafe_to_char()
@@ -436,7 +436,7 @@ fn net_extract_href(open_tag : String) -> String {
 
 ///|
 fn net_convert_links(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut cursor = 0
   while cursor < s.length() {
     let start = net_index_of_from(s, "<a", cursor)
@@ -497,7 +497,7 @@ fn net_normalize_markdown(s : String) -> String {
   if trimmed.length() == 0 {
     return ""
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let mut newline_run = 0
   for i = 0; i < trimmed.length(); i = i + 1 {
     let ch = trimmed[i].to_int().unsafe_to_char()
@@ -592,7 +592,7 @@ fn net_format_status_line(resp : NetFetchResponse) -> String {
 
 ///|
 fn net_format_headers(resp : NetFetchResponse) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   out.write_string(net_format_status_line(resp))
   for i = 0; i < resp.headers.length(); i = i + 1 {
     let (k, v) = resp.headers[i]

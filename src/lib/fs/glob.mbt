@@ -156,8 +156,5 @@ pub fn glob_match(pattern : String, text : String) -> Bool {
   if glob_pattern_has_char_class(pattern) {
     return glob_match_with_char_class(pattern, text, 0, 0)
   }
-  @glob.glob(pattern, text) catch {
-    // Keep call sites deterministic if pattern parsing fails.
-    _ => false
-  }
+  @glob.glob(pattern, text)
 }

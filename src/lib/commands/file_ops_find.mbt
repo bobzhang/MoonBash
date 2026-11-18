@@ -17,7 +17,7 @@ fn cmd_mkdir(ctx : CommandContext) -> @ast.ExecResult {
     return @ast.ExecResult::err("mkdir: missing operand\n")
   }
 
-  let errbuf = StringBuilder::new()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for path in paths {
     let resolved = @fs.resolve_path(ctx.cwd, path) catch {
@@ -60,7 +60,7 @@ fn cmd_rm(ctx : CommandContext) -> @ast.ExecResult {
     return @ast.ExecResult::err("rm: missing operand\n")
   }
 
-  let errbuf = StringBuilder::new()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for path in paths {
     let resolved = @fs.resolve_path(ctx.cwd, path) catch {
@@ -171,7 +171,7 @@ fn cmd_mv(ctx : CommandContext) -> @ast.ExecResult {
 /// touch: create empty files or update timestamps
 fn cmd_touch_parse_date_value(spec : String) -> Int64? {
   let normalized = spec.replace(old="/", new="-")
-  let parsed = @time.PlainDate::from_string(normalized) catch {
+  let parsed : @time.PlainDate = @string.FromStr::from_str(normalized) catch {
     _ => return None
   }
   let year = parsed.year()
@@ -241,7 +241,7 @@ fn cmd_touch(ctx : CommandContext) -> @ast.ExecResult {
     return @ast.ExecResult::err("touch: missing file operand\n")
   }
 
-  let errbuf = StringBuilder::new()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
   for arg in paths {
     let resolved = @fs.resolve_path(ctx.cwd, arg) catch {
@@ -308,7 +308,7 @@ fn cmd_find_trim_trailing_slashes(path : String) -> String {
   if end == path.length() {
     path
   } else {
-    path.view(start_offset=0, end_offset=end).to_owned()
+    path.clamped_view(start=0, end~).to_owned()
   }
 }
 
@@ -339,7 +339,7 @@ fn cmd_find_display_basename(path : String) -> String {
   } else if slash + 1 >= path.length() {
     ""
   } else {
-    path.view(start_offset=slash + 1).to_owned()
+    path.clamped_view(start=slash + 1).to_owned()
   }
 }
 
@@ -373,10 +373,10 @@ fn cmd_find_perm_matches(expr : String, mode : Int32) -> Bool {
   }
   let first = expr[0].to_int().unsafe_to_char()
   if first == '-' {
-    let mask = cmd_find_parse_octal(expr.view(start_offset=1).to_owned())
+    let mask = cmd_find_parse_octal(expr.clamped_view(start=1).to_owned())
     mode.land(mask) == mask
   } else if first == '/' {
-    let mask = cmd_find_parse_octal(expr.view(start_offset=1).to_owned())
+    let mask = cmd_find_parse_octal(expr.clamped_view(start=1).to_owned())
     mode.land(mask) != 0
   } else {
     let expected = cmd_find_parse_octal(expr)
@@ -610,7 +610,7 @@ fn cmd_find(ctx : CommandContext) -> @ast.ExecResult {
   groups.push(current_group)
 
   let matches : Array[String] = []
-  let errbuf = StringBuilder::new()
+  let errbuf = StringBuilder::StringBuilder()
   let mut exit_code = 0
 
   for start_arg in start_paths {
@@ -643,7 +643,7 @@ fn cmd_find(ctx : CommandContext) -> @ast.ExecResult {
 
   // Keep deterministic output even before external `sort`.
   matches.sort_by(fn(a, b) { cmd_find_compare_ascii(a, b) })
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for m in matches {
     out.write_string(m + "\n")
   }

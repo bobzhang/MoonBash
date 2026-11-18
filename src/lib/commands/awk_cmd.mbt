@@ -91,7 +91,7 @@ fn cmd_awk(ctx : CommandContext) -> @ast.ExecResult {
     (ctx.stdin_content, "-")
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   let vars : Map[String, String] = Map([])
   let array_vars : Map[String, String] = Map([])
   let lines = aj_split_lines_records(input)

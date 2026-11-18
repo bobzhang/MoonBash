@@ -910,7 +910,7 @@ fn Lexer::is_assignment_prefix_position(self : Lexer) -> Bool {
 
 ///|
 fn Lexer::scan_word(self : Lexer) -> Unit raise @ast.BashError {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   let mut had_quoted = false
 
   while !self.at_end() {
@@ -1151,7 +1151,7 @@ fn Lexer::scan_double_quote(
 ///|
 /// Extract a substring by charcode (UTF-16) indices.
 fn substr(s : String, start : Int32, end : Int32) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder::StringBuilder()
   for i = start; i < end && i < s.length(); i = i + 1 {
     buf.write_char(char_at(s, i))
   }

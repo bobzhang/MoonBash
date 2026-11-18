@@ -254,7 +254,7 @@ fn ExecContext::collect_alias_names_sorted(self : ExecContext) -> Array[String] 
   for key, _value in self.env {
     if key.has_prefix(completion_alias_prefix) {
       names.push(
-        key.view(start_offset=completion_alias_prefix.length()).to_owned(),
+        key.clamped_view(start=completion_alias_prefix.length()).to_owned(),
       )
     }
   }
@@ -394,16 +394,14 @@ fn ExecContext::collect_path_completion_candidates(
     dir_part = if slash_idx == 0 {
       "/"
     } else {
-      query.view(start_offset=0, end_offset=slash_idx).to_owned()
+      query.clamped_view(start=0, end=slash_idx).to_owned()
     }
     name_prefix = if slash_idx + 1 < query.length() {
-      query.view(start_offset=slash_idx + 1).to_owned()
+      query.clamped_view(start=slash_idx + 1).to_owned()
     } else {
       ""
     }
-    output_prefix = query
-      .view(start_offset=0, end_offset=slash_idx + 1)
-      .to_owned()
+    output_prefix = query.clamped_view(start=0, end=slash_idx + 1).to_owned()
   }
 
   let base_dir = if dir_part.length() == 0 {

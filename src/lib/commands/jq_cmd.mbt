@@ -118,7 +118,7 @@ fn cmd_jq(ctx : CommandContext) -> @ast.ExecResult {
   }
 
   if query_opt is None {
-    let out = StringBuilder::new()
+    let out = StringBuilder::StringBuilder()
     for input in inputs {
       match jq_manual_compat_values(jq_filter, input) {
         Some(values) =>
@@ -149,7 +149,7 @@ fn cmd_jq(ctx : CommandContext) -> @ast.ExecResult {
     None => return @ast.ExecResult::err(parse_err)
   }
 
-  let out = StringBuilder::new()
+  let out = StringBuilder::StringBuilder()
   for input in inputs {
     let values = match jq_manual_compat_values(jq_filter, input) {
       Some(values) => values
