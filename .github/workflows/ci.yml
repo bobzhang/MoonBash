@@ -61,7 +61,9 @@ jobs:
         env:
           MOONBASH_TEST_HEAP_MB: 1536
           MOONBASH_TEST_SKIP_FUZZ: 1
-        run: pnpm exec vp run test:safe 2>&1 | tee compatibility.log
+        run: |
+          set -euo pipefail
+          pnpm exec vp run test:safe 2>&1 | tee compatibility.log
       - name: Upload compatibility log
         if: always()
         uses: actions/upload-artifact@v4
