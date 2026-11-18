@@ -19,7 +19,7 @@ priv trait CSVReader {
 ///|
 pub(all) struct StringReader {
   source : String
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|

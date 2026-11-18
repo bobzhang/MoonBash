@@ -122,7 +122,7 @@ fn command_has_virtual_external(name : String) -> Bool {
 }
 
 ///|
-fn command_mode_has_execute_permission(mode : Int) -> Bool {
+fn command_mode_has_execute_permission(mode : Int32) -> Bool {
   (mode & 0o111) != 0
 }
 

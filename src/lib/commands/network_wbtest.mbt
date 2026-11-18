@@ -3,7 +3,7 @@
 ///|
 fn test_network_context(
   args : Array[String],
-  stdin_content? : String = "",
+  stdin_content~ : String = "",
 ) -> CommandContext {
   {
     args,

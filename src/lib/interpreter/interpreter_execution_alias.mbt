@@ -42,7 +42,7 @@ fn alias_is_operator_char(ch : Char) -> Bool {
 }
 
 ///|
-fn alias_first_word_span(source : String) -> (Int, Int, String)? {
+fn alias_first_word_span(source : String) -> (Int32, Int32, String)? {
   let mut i = 0
   while i < source.length() {
     let ch = source[i].to_int().unsafe_to_char()

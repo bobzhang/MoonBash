@@ -121,15 +121,15 @@ pub extern "js" fn html_input_set_disabled(
 #cfg(target="js")
 pub extern "js" fn html_input_selection_start(
   input : @dom_ffi.HtmlInputElement,
-) -> Int =
+) -> Int32 =
   #| (input) => input.selectionStart ?? input.value.length
 
 ///|
 #cfg(target="js")
 pub extern "js" fn html_input_set_selection_range(
   input : @dom_ffi.HtmlInputElement,
-  start : Int,
-  end_ : Int,
+  start : Int32,
+  end_ : Int32,
 ) -> Unit =
   #| (input, start, end) => input.setSelectionRange(start, end)
 

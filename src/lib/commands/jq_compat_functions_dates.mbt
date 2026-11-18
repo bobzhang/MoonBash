@@ -37,7 +37,7 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
   if trimmed == "bsearch(0,1,2,3,4)" {
     match input {
       Json::Array(items) => {
-        let nums : Array[Int] = []
+        let nums : Array[Int32] = []
         for item in items {
           match item {
             Json::Number(n, ..) => nums.push(n.to_int())
@@ -58,7 +58,7 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
   if trimmed == "bsearch(0)" {
     match input {
       Json::Array(items) => {
-        let nums : Array[Int] = []
+        let nums : Array[Int32] = []
         for item in items {
           match item {
             Json::Number(n, ..) => nums.push(n.to_int())
@@ -74,7 +74,7 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
   if trimmed == "bsearch({x:1})" {
     match input {
       Json::Array(items) => {
-        let nums : Array[Int] = []
+        let nums : Array[Int32] = []
         for item in items {
           match item {
             Json::Object(obj) =>
@@ -94,7 +94,7 @@ fn jq_compat_functions_dates(trimmed : String, input : Json) -> Array[Json]? {
   if trimmed == "try [\"OK\", bsearch(0)] catch [\"KO\",.]" {
     match input {
       Json::Array(items) => {
-        let nums : Array[Int] = []
+        let nums : Array[Int32] = []
         for item in items {
           match item {
             Json::Number(n, ..) => nums.push(n.to_int())

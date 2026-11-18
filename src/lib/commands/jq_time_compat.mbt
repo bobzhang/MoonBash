@@ -1,7 +1,7 @@
 // jq date/time compatibility helpers backed by moonbitlang/x/time
 
 ///|
-fn jq_time_json_to_int(value : Json) -> Int? {
+fn jq_time_json_to_int(value : Json) -> Int32? {
   match value {
     Json::Number(n, ..) => Some(n.to_int())
     _ => None
@@ -9,7 +9,7 @@ fn jq_time_json_to_int(value : Json) -> Int? {
 }
 
 ///|
-fn jq_time_weekday_index(weekday : @time.Weekday) -> Int {
+fn jq_time_weekday_index(weekday : @time.Weekday) -> Int32 {
   match weekday {
     Sunday => 0
     Monday => 1
@@ -35,7 +35,7 @@ fn jq_time_weekday_name(weekday : @time.Weekday) -> String {
 }
 
 ///|
-fn jq_time_month_name(month : Int) -> String {
+fn jq_time_month_name(month : Int32) -> String {
   match month {
     1 => "January"
     2 => "February"
@@ -54,7 +54,7 @@ fn jq_time_month_name(month : Int) -> String {
 }
 
 ///|
-fn jq_time_pad2(value : Int) -> String {
+fn jq_time_pad2(value : Int32) -> String {
   if value >= 0 && value < 10 {
     "0" + value.to_string()
   } else {

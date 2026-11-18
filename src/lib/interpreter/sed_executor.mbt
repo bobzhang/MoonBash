@@ -262,10 +262,10 @@ fn ExecContext::builtin_sed(self : ExecContext, args : Array[String]) -> Unit {
 priv struct SedRuntime {
   commands : Array[SedCommand]
   lines : Array[(String, Bool)]
-  total_lines : Int
+  total_lines : Int32
   range_states : Array[SedRangeState]
   label_names : Array[String]
-  label_indices : Array[Int]
+  label_indices : Array[Int32]
   out : StringBuilder
 }
 
@@ -290,9 +290,9 @@ fn sed_build_runtime(
 ///|
 fn sed_collect_label_table(
   commands : Array[SedCommand],
-) -> (Array[String], Array[Int]) {
+) -> (Array[String], Array[Int32]) {
   let label_names : Array[String] = []
-  let label_indices : Array[Int] = []
+  let label_indices : Array[Int32] = []
   for cmd_idx = 0; cmd_idx < commands.length(); cmd_idx = cmd_idx + 1 {
     match commands[cmd_idx].kind {
       Label(name) => {
@@ -317,7 +317,7 @@ fn sed_new_state() -> SedState {
 }
 
 ///|
-fn sed_new_cycle(runtime : SedRuntime, line_idx : Int) -> SedCycle {
+fn sed_new_cycle(runtime : SedRuntime, line_idx : Int32) -> SedCycle {
   {
     line_no: line_idx + 1,
     line: runtime.lines[line_idx].0,
@@ -335,7 +335,7 @@ fn ExecContext::sed_render_input(
   self : ExecContext,
   commands : Array[SedCommand],
   input : String,
-  quiet? : Bool = false,
+  quiet~ : Bool = false,
 ) -> (String, Bool) {
   let runtime = sed_build_runtime(commands, input)
   let state = sed_new_state()
@@ -426,7 +426,7 @@ fn ExecContext::sed_skip_unmatched_command(
   self : ExecContext,
   runtime : SedRuntime,
   cycle : SedCycle,
-  cmd_idx : Int,
+  cmd_idx : Int32,
 ) -> CycleAction {
   match runtime.commands[cmd_idx].kind {
     GroupStart => {
@@ -445,7 +445,7 @@ fn ExecContext::sed_skip_unmatched_command(
 fn sed_tick_remaining_addresses(
   runtime : SedRuntime,
   cycle : SedCycle,
-  start_idx : Int,
+  start_idx : Int32,
   last_regex : @regex.GrepMatcher?,
 ) -> @regex.GrepMatcher? {
   let mut next_last = last_regex
@@ -510,9 +510,9 @@ fn ExecContext::sed_execute_one_command(
   state : SedState,
   cycle : SedCycle,
   cmd : SedCommand,
-  cmd_idx : Int,
-  line_idx : Int,
-  quiet? : Bool = false,
+  cmd_idx : Int32,
+  line_idx : Int32,
+  quiet~ : Bool = false,
 ) -> CycleAction {
   match cmd.kind {
     GroupStart | GroupEnd => Next
@@ -571,7 +571,7 @@ fn sed_execute_delete(
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
-  cmd_idx : Int,
+  cmd_idx : Int32,
 ) -> CycleAction {
   state.last_regex = sed_tick_remaining_addresses(
     runtime,
@@ -588,7 +588,7 @@ fn sed_execute_delete_first_line(
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
-  cmd_idx : Int,
+  cmd_idx : Int32,
 ) -> CycleAction {
   let nl_idx = sed_find_newline(cycle.line)
   if nl_idx < 0 {
@@ -660,7 +660,7 @@ fn ExecContext::sed_execute_substitute(
 fn sed_execute_append_next_line(
   runtime : SedRuntime,
   cycle : SedCycle,
-  line_idx : Int,
+  line_idx : Int32,
 ) -> CycleAction {
   let next_idx = line_idx + cycle.consumed_extra + 1
   if next_idx < runtime.total_lines {
@@ -680,8 +680,8 @@ fn sed_execute_next_line(
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
-  line_idx : Int,
-  quiet? : Bool = false,
+  line_idx : Int32,
+  quiet~ : Bool = false,
 ) -> CycleAction {
   if !quiet {
     state.pending_no_newline = sed_emit_chunk(
@@ -851,7 +851,7 @@ fn ExecContext::sed_execute_conditional_branch(
   runtime : SedRuntime,
   cycle : SedCycle,
   label : String?,
-  branch_on_subst? : Bool = true,
+  branch_on_subst~ : Bool = true,
 ) -> CycleAction {
   let should_branch = if branch_on_subst {
     cycle.substituted
@@ -884,7 +884,7 @@ fn sed_execute_quit(
   runtime : SedRuntime,
   state : SedState,
   cycle : SedCycle,
-  quiet? : Bool = false,
+  quiet~ : Bool = false,
 ) -> CycleAction {
   if !quiet {
     state.pending_no_newline = sed_emit_chunk(
@@ -923,13 +923,13 @@ fn sed_version_supported(required : String?) -> Bool {
 }
 
 ///|
-fn parse_sed_version_triplet(text : String) -> (Int, Int, Int)? {
+fn parse_sed_version_triplet(text : String) -> (Int32, Int32, Int32)? {
   let trimmed = trim_ascii_space(text)
   if trimmed.length() == 0 {
     return None
   }
 
-  let parts : Array[Int] = []
+  let parts : Array[Int32] = []
   let mut segment_start = 0
   let mut i = 0
   while i <= trimmed.length() {

@@ -1,19 +1,21 @@
 // moon_bash Commands - awk statement AST parsing
 
 ///|
+#derive(Debug)
 priv enum AwkGetlineTarget {
   Record
   Var(String)
   Field(AwkExprAst)
   ArrayElem(String, AwkExprAst)
   Invalid(String)
-} derive(Debug)
+}
 
 ///|
+#derive(Debug)
 priv enum AwkAssignTarget {
   Var(String)
   ArrayElem(String, AwkExprAst)
-} derive(Debug)
+}
 
 ///|
 fn awk_parse_getline_target(target : String) -> AwkGetlineTarget {
@@ -34,6 +36,7 @@ fn awk_parse_getline_target(target : String) -> AwkGetlineTarget {
 }
 
 ///|
+#derive(Debug)
 priv enum AwkStmt {
   If(AwkExprAst, AwkGetlineTarget?, Array[AwkStmt], Array[AwkStmt]?)
   For(
@@ -41,7 +44,7 @@ priv enum AwkStmt {
     AwkExprAst?,
     AwkGetlineTarget?,
     Array[AwkStmt],
-    Array[AwkStmt]
+    Array[AwkStmt],
   )
   ForIn(String, String, Array[AwkStmt])
   While(AwkExprAst, AwkGetlineTarget?, Array[AwkStmt])
@@ -59,7 +62,7 @@ priv enum AwkStmt {
   AssignStmt(AwkAssignTarget, AwkExprAst)
   CompoundAssignStmt(AwkAssignTarget, String, AwkExprAst)
   ExprStmt(AwkExprAst)
-} derive(Debug)
+}
 
 ///|
 fn awk_is_zero_literal_expr_for_getline(expr_ast : AwkExprAst) -> Bool {

@@ -295,7 +295,7 @@ test "parse word with brace expansion" {
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::ParameterExpansion(
-      @ast.ParamExpansion::Default(name, _, colon)
+      @ast.ParamExpansion::Default(name, _, colon),
     ) => {
       assert_eq(name, "VAR")
       assert_true(colon)
@@ -337,7 +337,7 @@ test "parse quoted assoc subscript expansion in command word" {
               assert_eq(inner.length(), 1)
               match inner[0] {
                 @ast.WordPart::ParameterExpansion(
-                  @ast.ParamExpansion::Simple(name)
+                  @ast.ParamExpansion::Simple(name),
                 ) => assert_eq(name, "foo[\"key\"]")
                 _ => fail("expected simple parameter expansion")
               }
@@ -370,7 +370,7 @@ test "parse quoted assoc subscript expansion in compound assignment value" {
                 for inner_part in inner {
                   match inner_part {
                     @ast.WordPart::ParameterExpansion(
-                      @ast.ParamExpansion::Simple(name)
+                      @ast.ParamExpansion::Simple(name),
                     ) => assert_eq(name, "foo[\"key\"]")
                     _ => ()
                   }
@@ -378,7 +378,7 @@ test "parse quoted assoc subscript expansion in compound assignment value" {
                 if inner.length() == 2 {
                   match inner[0] {
                     @ast.WordPart::ParameterExpansion(
-                      @ast.ParamExpansion::Simple(_)
+                      @ast.ParamExpansion::Simple(_),
                     ) =>
                       match inner[1] {
                         @ast.WordPart::Literal(text) => {
@@ -423,7 +423,7 @@ test "parse reassignment with quoted assoc subscript expansion in value" {
                 for inner_part in inner {
                   match inner_part {
                     @ast.WordPart::ParameterExpansion(
-                      @ast.ParamExpansion::Simple(name)
+                      @ast.ParamExpansion::Simple(name),
                     ) => assert_eq(name, "foo[\"key\"]")
                     _ => ()
                   }
@@ -431,7 +431,7 @@ test "parse reassignment with quoted assoc subscript expansion in value" {
                 if inner.length() == 2 {
                   match inner[0] {
                     @ast.WordPart::ParameterExpansion(
-                      @ast.ParamExpansion::Simple(_)
+                      @ast.ParamExpansion::Simple(_),
                     ) =>
                       match inner[1] {
                         @ast.WordPart::Literal(text) => {
@@ -491,7 +491,7 @@ test "parse substring with ternary offset and length" {
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::ParameterExpansion(
-      @ast.ParamExpansion::Substring(name, offset, length)
+      @ast.ParamExpansion::Substring(name, offset, length),
     ) => {
       assert_eq(name, "s")
       match offset {
@@ -513,7 +513,7 @@ test "parse substring empty length expression" {
   assert_eq(word.parts.length(), 1)
   match word.parts[0] {
     @ast.WordPart::ParameterExpansion(
-      @ast.ParamExpansion::Substring(name, offset, length)
+      @ast.ParamExpansion::Substring(name, offset, length),
     ) => {
       assert_eq(name, "a[@]")
       match offset {

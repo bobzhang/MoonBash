@@ -5,8 +5,8 @@ fn awk_eval_expr(
   expr : String,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> String {

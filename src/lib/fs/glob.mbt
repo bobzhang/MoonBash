@@ -3,7 +3,7 @@
 // for bracket character classes that are not implemented upstream yet.
 
 ///|
-fn glob_char_at(s : String, idx : Int) -> Char {
+fn glob_char_at(s : String, idx : Int32) -> Char {
   s[idx].to_int().unsafe_to_char()
 }
 
@@ -35,9 +35,9 @@ fn glob_pattern_has_char_class(pattern : String) -> Bool {
 ///|
 fn glob_class_contains(
   pattern : String,
-  class_start : Int,
+  class_start : Int32,
   target : Char,
-) -> (Bool, Int, Bool) {
+) -> (Bool, Int32, Bool) {
   let mut i = class_start + 1
   if i >= pattern.length() {
     return (false, class_start + 1, false)
@@ -86,8 +86,8 @@ fn glob_class_contains(
 fn glob_match_with_char_class(
   pattern : String,
   text : String,
-  pi : Int,
-  ti : Int,
+  pi : Int32,
+  ti : Int32,
 ) -> Bool {
   if pi >= pattern.length() {
     return ti >= text.length()

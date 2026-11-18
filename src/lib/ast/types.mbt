@@ -6,6 +6,7 @@
 // ============================================================================
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum Token {
   // Literals
   Word(String)
@@ -64,8 +65,8 @@ pub(all) enum Token {
 
   // Special
   EOF
-  FdNumber(Int) // File descriptor number before redirect
-} derive(Debug, Eq)
+  FdNumber(Int32) // File descriptor number before redirect
+}
 
 ///|
 pub impl Show for Token with fn output(self, logger) {
@@ -78,46 +79,52 @@ pub impl Show for Token with fn output(self, logger) {
 
 ///|
 /// Top-level script: a sequence of statements.
+#derive(Debug)
 pub(all) struct Script {
   statements : Array[Statement]
-} derive(Debug)
+}
 
 ///|
 /// A statement is a pipeline combined with list operators.
+#derive(Debug)
 pub(all) enum Statement {
   Pipeline(Pipeline)
   AndList(Pipeline, Statement) // cmd1 && cmd2
   OrList(Pipeline, Statement) // cmd1 || cmd2
   Background(Pipeline) // cmd &
   Sequence(Pipeline, Statement) // cmd1 ; cmd2
-} derive(Debug)
+}
 
 ///|
 /// A pipeline connects commands via pipes.
+#derive(Debug)
 pub(all) struct Pipeline {
   negated : Bool // ! prefix
   commands : Array[Command]
   pipe_stderr : Bool // |& instead of |
-} derive(Debug)
+}
 
 ///|
 /// Command variants.
+#derive(Debug)
 pub(all) enum Command {
   Simple(SimpleCommand)
   Compound(CompoundCommand, Array[Redirection])
   FunctionDef(FunctionDef)
-} derive(Debug)
+}
 
 ///|
 /// A simple command with optional assignments, words, and redirections.
+#derive(Debug)
 pub(all) struct SimpleCommand {
   assignments : Array[Assignment]
   words : Array[Word]
   redirections : Array[Redirection]
-} derive(Debug)
+}
 
 ///|
 /// Compound command variants.
+#derive(Debug)
 pub(all) enum CompoundCommand {
   If(IfClause)
   For(ForClause)
@@ -129,78 +136,87 @@ pub(all) enum CompoundCommand {
   Group(Script)
   ArithmeticCommand(ArithExpr)
   ConditionalCommand(CondExpr)
-} derive(Debug)
+}
 
 ///|
 /// if/elif/else/fi clause.
+#derive(Debug)
 pub(all) struct IfClause {
   condition : Script
   then_branch : Script
   elif_branches : Array[(Script, Script)]
   else_branch : Script?
-} derive(Debug)
+}
 
 ///|
 /// for var in words; do body; done
+#derive(Debug)
 pub(all) struct ForClause {
   var_name : String
   words : Array[Word]? // None = "$@"
   body : Script
-} derive(Debug)
+}
 
 ///|
 /// C-style for: for (( init; cond; update )); do body; done
+#derive(Debug)
 pub(all) struct CStyleForClause {
   init : ArithExpr
   condition : ArithExpr
   update : ArithExpr
   body : Script
-} derive(Debug)
+}
 
 ///|
 /// while condition; do body; done
+#derive(Debug)
 pub(all) struct WhileClause {
   condition : Script
   body : Script
-} derive(Debug)
+}
 
 ///|
 /// until condition; do body; done
+#derive(Debug)
 pub(all) struct UntilClause {
   condition : Script
   body : Script
-} derive(Debug)
+}
 
 ///|
 /// case word in pattern) body ;; esac
+#derive(Debug)
 pub(all) struct CaseClause {
   word : Word
   items : Array[CaseItem]
-} derive(Debug)
+}
 
 ///|
 /// A single case item: pattern) body terminator
+#derive(Debug)
 pub(all) struct CaseItem {
   patterns : Array[Word]
   body : Script
   terminator : CaseTerminator
-} derive(Debug)
+}
 
 ///|
 /// Case item terminators.
+#derive(Debug, Eq)
 pub(all) enum CaseTerminator {
   Break // ;;
   Fallthrough // ;&
   Continue // ;;&
-} derive(Debug, Eq)
+}
 
 ///|
 /// Function definition.
+#derive(Debug)
 pub(all) struct FunctionDef {
   name : String
   body : CompoundCommand
   redirections : Array[Redirection]
-} derive(Debug)
+}
 
 // ============================================================================
 // Word and Expansion Types
@@ -208,12 +224,14 @@ pub(all) struct FunctionDef {
 
 ///|
 /// A word is composed of parts that may need expansion.
+#derive(Debug)
 pub(all) struct Word {
   parts : Array[WordPart]
-} derive(Debug)
+}
 
 ///|
 /// Individual parts of a word.
+#derive(Debug)
 pub(all) enum WordPart {
   Literal(String)
   SingleQuoted(String)
@@ -225,10 +243,11 @@ pub(all) enum WordPart {
   BraceExpansion(Array[Array[WordPart]])
   TildePrefix(String)
   Glob(GlobPattern)
-} derive(Debug)
+}
 
 ///|
 /// Parameter expansion variants.
+#derive(Debug)
 pub(all) enum ParamExpansion {
   Simple(String) // $VAR
   Default(String, Word, Bool) // ${VAR:-word} / ${VAR-word}
@@ -243,16 +262,17 @@ pub(all) enum ParamExpansion {
   Uppercase(String, Word?, Bool) // ${VAR^pat} / ${VAR^^pat}
   Lowercase(String, Word?, Bool) // ${VAR,pat} / ${VAR,,pat}
   Indirection(String) // ${!VAR}
-} derive(Debug)
+}
 
 ///|
 /// Replace mode for ${VAR/pat/str} variants.
+#derive(Debug, Eq)
 pub(all) enum ReplaceMode {
   First // ${VAR/pat/str}
   All // ${VAR//pat/str}
   Prefix // ${VAR/#pat/str}
   Suffix // ${VAR/%pat/str}
-} derive(Debug, Eq)
+}
 
 // ============================================================================
 // Redirection Types
@@ -260,15 +280,17 @@ pub(all) enum ReplaceMode {
 
 ///|
 /// A redirection specification.
+#derive(Debug)
 pub(all) struct Redirection {
-  fd : Int? // File descriptor (None = default)
+  fd : Int32? // File descriptor (None = default)
   fd_var : String? // {varname} for fd variable
   op : RedirectOp
   target : Word
-} derive(Debug)
+}
 
 ///|
 /// Redirection operator variants.
+#derive(Debug, Eq)
 pub(all) enum RedirectOp {
   Input // <
   Output // >
@@ -281,7 +303,7 @@ pub(all) enum RedirectOp {
   DupOutput // >&
   AndOutput // &>
   AndAppend // &>>
-} derive(Debug, Eq)
+}
 
 ///|
 pub impl Show for RedirectOp with fn output(self, logger) {
@@ -294,17 +316,19 @@ pub impl Show for RedirectOp with fn output(self, logger) {
 
 ///|
 /// A variable assignment: name=value or name+=value
+#derive(Debug)
 pub(all) struct Assignment {
   name : String
   value : Word?
   append : Bool // += vs =
-} derive(Debug)
+}
 
 // ============================================================================
 // Arithmetic Expressions (placeholder, expanded later)
 // ============================================================================
 
 ///|
+#derive(Debug)
 pub(all) enum ArithExpr {
   Num(Int64)
   Var(String)
@@ -313,9 +337,10 @@ pub(all) enum ArithExpr {
   Assign(String, ArithExpr)
   Ternary(ArithExpr, ArithExpr, ArithExpr)
   Raw(String)
-} derive(Debug)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum ArithBinOp {
   Add
   Sub
@@ -336,9 +361,10 @@ pub(all) enum ArithBinOp {
   ShiftRight
   LogicalAnd
   LogicalOr
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum ArithUnaryOp {
   Negate
   BitwiseNot
@@ -347,13 +373,14 @@ pub(all) enum ArithUnaryOp {
   PreDecr
   PostIncr
   PostDecr
-} derive(Debug, Eq)
+}
 
 // ============================================================================
 // Conditional Expressions (placeholder, expanded later)
 // ============================================================================
 
 ///|
+#derive(Debug)
 pub(all) enum CondExpr {
   UnaryTest(String, Word) // -f, -d, -e, -z, -n, etc.
   BinaryTest(Word, String, Word) // =, !=, -eq, -gt, etc.
@@ -361,48 +388,50 @@ pub(all) enum CondExpr {
   Or(CondExpr, CondExpr) // ||
   Not(CondExpr) // !
   Regex(Word, Word) // =~
-} derive(Debug)
+}
 
 // ============================================================================
 // Glob Pattern (placeholder)
 // ============================================================================
 
 ///|
+#derive(Debug)
 pub(all) struct GlobPattern {
   pattern : String
-} derive(Debug)
+}
 
 // ============================================================================
 // Execution Result
 // ============================================================================
 
 ///|
+#derive(Debug)
 pub(all) struct ExecResult {
   stdout : String
   stderr : String
-  exit_code : Int
-} derive(Debug)
+  exit_code : Int32
+}
 
 ///|
 /// Create a successful result with stdout output.
 pub fn ExecResult::ok(stdout : String) -> ExecResult {
-  { stdout, stderr: "", exit_code: 0 }
+  { stdout, stderr: "", exit_code: 0, }
 }
 
 ///|
 /// Create an error result with stderr output.
 pub fn ExecResult::err(stderr : String) -> ExecResult {
-  { stdout: "", stderr, exit_code: 1 }
+  { stdout: "", stderr, exit_code: 1, }
 }
 
 ///|
 /// Create a result with named parameters.
 pub fn ExecResult::new(
-  stdout? : String = "",
-  stderr? : String = "",
-  exit_code? : Int = 0,
+  stdout~ : String = "",
+  stderr~ : String = "",
+  exit_code~ : Int32 = 0,
 ) -> ExecResult {
-  { stdout, stderr, exit_code }
+  { stdout, stderr, exit_code, }
 }
 
 // ============================================================================
@@ -419,19 +448,20 @@ pub(all) suberror BashError {
 // ============================================================================
 
 ///|
+#derive(Debug)
 pub(all) struct ExecutionLimits {
-  max_call_depth : Int
-  max_command_count : Int
-  max_loop_iterations : Int
-  max_string_length : Int
-  max_array_elements : Int
-  max_heredoc_size : Int
-  max_substitution_depth : Int
-  max_glob_operations : Int
-  max_awk_iterations : Int
-  max_sed_iterations : Int
-  max_jq_iterations : Int
-} derive(Debug)
+  max_call_depth : Int32
+  max_command_count : Int32
+  max_loop_iterations : Int32
+  max_string_length : Int32
+  max_array_elements : Int32
+  max_heredoc_size : Int32
+  max_substitution_depth : Int32
+  max_glob_operations : Int32
+  max_awk_iterations : Int32
+  max_sed_iterations : Int32
+  max_jq_iterations : Int32
+}
 
 ///|
 pub fn ExecutionLimits::default() -> ExecutionLimits {
@@ -455,6 +485,7 @@ pub fn ExecutionLimits::default() -> ExecutionLimits {
 // ============================================================================
 
 ///|
+#derive(Debug)
 pub(all) struct ShellOptions {
   mut errexit : Bool // set -e
   mut nounset : Bool // set -u
@@ -463,7 +494,7 @@ pub(all) struct ShellOptions {
   mut xtrace : Bool // set -x
   mut noglob : Bool // set -f
   mut allexport : Bool // set -a
-} derive(Debug)
+}
 
 ///|
 pub fn ShellOptions::default() -> ShellOptions {

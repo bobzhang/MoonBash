@@ -4,7 +4,7 @@
 fn awk_find_regex_match_range(
   pattern_expr : String,
   input : String,
-) -> (Int, Int) {
+) -> (Int32, Int32) {
   let mut pat = aj_trim(pattern_expr)
   if aj_starts_with(pat, "/") && aj_ends_with(pat, "/") && pat.length() >= 2 {
     pat = aj_substr(pat, 1, pat.length() - 1)
@@ -248,7 +248,7 @@ fn awk_render_print_output_ast(
   expr_asts : Array[AwkExprAst],
   line : String,
   fields : Array[String],
-  nr : Int,
+  nr : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> String {
@@ -301,8 +301,8 @@ fn awk_pattern_match_program(
   prog : AwkProgram,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
   in_range : Bool,
@@ -647,7 +647,7 @@ fn awk_merge_if_else_statements(statements : Array[String]) -> Array[String] {
 }
 
 ///|
-let awk_loop_guard_limit : Int = 10_000
+let awk_loop_guard_limit : Int32 = 10_000
 
 ///|
 fn awk_parse_while_statement(stmt : String) -> (String, String)? {

@@ -49,7 +49,7 @@ fn nyacsv_finalize_field(field : StringBuilder, trim_spaces : Bool) -> String {
 ///|
 fn[T : CSVReader] parse(
   reader : T,
-  options? : CSVOptions = {
+  options~ : CSVOptions = {
     delimiter: ',',
     allow_newlines_in_quotes: true,
     quote_char: '"',

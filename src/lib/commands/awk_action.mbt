@@ -5,17 +5,17 @@ fn awk_execute_action(
   ctx : CommandContext,
   action : String,
   lines : Array[String],
-  line_idx : Int,
+  line_idx : Int32,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   fs : String,
   filename : String,
   vars : Map[String, String],
   array_vars : Map[String, String],
   out : StringBuilder,
-) -> (String, Array[String], Int, Int) {
+) -> (String, Array[String], Int32, Int32) {
   ignore(nf)
   let act = aj_trim(action)
   if act.length() == 0 {
@@ -34,9 +34,9 @@ fn awk_execute_action(
 fn awk_execute_empty_action_branch(
   line : String,
   fields : Array[String],
-  nr : Int,
+  nr : Int32,
   out : StringBuilder,
-) -> (String, Array[String], Int, Int) {
+) -> (String, Array[String], Int32, Int32) {
   out.write_string(line)
   out.write_char('\n')
   (line, fields, 0, nr)
@@ -68,7 +68,7 @@ fn awk_apply_getline_target(
   array_vars : Map[String, String],
   current_line : String,
   current_fields : Array[String],
-  current_nr : Int,
+  current_nr : Int32,
 ) -> (String, Array[String]) {
   match target {
     Record =>
@@ -133,16 +133,16 @@ fn awk_execute_action_ast_list(
   ctx : CommandContext,
   statements : Array[AwkStmt],
   lines : Array[String],
-  line_idx : Int,
+  line_idx : Int32,
   line : String,
   fields : Array[String],
-  nr : Int,
+  nr : Int32,
   fs : String,
   filename : String,
   vars : Map[String, String],
   array_vars : Map[String, String],
   out : StringBuilder,
-) -> (String, Array[String], Int, Int) {
+) -> (String, Array[String], Int32, Int32) {
   let mut current_line = line
   let mut current_fields = fields
   let mut current_nr = nr

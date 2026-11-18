@@ -3,7 +3,7 @@
 
 ///|
 /// Safely extract substring from start index to end of string.
-fn cmd_substr_from(s : String, start : Int) -> String {
+fn cmd_substr_from(s : String, start : Int32) -> String {
   let buf = StringBuilder::new()
   for i = start; i < s.length(); i = i + 1 {
     buf.write_char(s[i].to_int().unsafe_to_char())
@@ -13,7 +13,7 @@ fn cmd_substr_from(s : String, start : Int) -> String {
 
 ///|
 /// Safely extract substring from [start, end).
-fn cmd_substr_slice(s : String, start : Int, end_ : Int) -> String {
+fn cmd_substr_slice(s : String, start : Int32, end_ : Int32) -> String {
   let mut start = start
   let mut end_ = end_
   if start < 0 {
@@ -84,7 +84,7 @@ fn cmd_parse_int(s : String) -> Int64 {
 /// head: output the first N lines (default 10)
 fn cmd_head(ctx : CommandContext) -> @ast.ExecResult {
   let mut num_lines = 10
-  let mut num_bytes : Int? = None
+  let mut num_bytes : Int32? = None
   let input_files : Array[String] = []
   let mut i = 0
   while i < ctx.args.length() {
@@ -178,7 +178,7 @@ fn cmd_head(ctx : CommandContext) -> @ast.ExecResult {
 /// tail: output the last N lines (default 10)
 fn cmd_tail(ctx : CommandContext) -> @ast.ExecResult {
   let mut num_lines = 10
-  let mut num_bytes : Int? = None
+  let mut num_bytes : Int32? = None
   let input_files : Array[String] = []
   let mut i = 0
   while i < ctx.args.length() {
@@ -309,7 +309,7 @@ fn cmd_tail(ctx : CommandContext) -> @ast.ExecResult {
 
 ///|
 /// wc: word, line, character count
-fn cmd_wc_count(input : String) -> (Int, Int, Int) {
+fn cmd_wc_count(input : String) -> (Int32, Int32, Int32) {
   // Count lines
   let mut line_count = 0
   for i = 0; i < input.length(); i = i + 1 {
@@ -339,19 +339,19 @@ fn cmd_wc_count(input : String) -> (Int, Int, Int) {
 ///|
 fn cmd_wc_write_row(
   out : StringBuilder,
-  line_count : Int,
-  word_count : Int,
-  char_count : Int,
+  line_count : Int32,
+  word_count : Int32,
+  char_count : Int32,
   show_lines : Bool,
   show_words : Bool,
   show_chars : Bool,
-  line_width : Int,
-  word_width : Int,
-  char_width : Int,
+  line_width : Int32,
+  word_width : Int32,
+  char_width : Int32,
   label : String?,
 ) -> Unit {
   let mut first = true
-  let write_col = (value : Int, width : Int) => {
+  let write_col = (value : Int32, width : Int32) => {
     if !first {
       out.write_char(' ')
     }
@@ -445,7 +445,7 @@ fn cmd_wc(ctx : CommandContext) -> @ast.ExecResult {
   let mut total_lines = 0
   let mut total_words = 0
   let mut total_chars = 0
-  let rows : Array[(Int, Int, Int, String)] = []
+  let rows : Array[(Int32, Int32, Int32, String)] = []
 
   for path in input_files {
     let input = {

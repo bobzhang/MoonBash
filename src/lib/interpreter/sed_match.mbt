@@ -20,7 +20,7 @@ fn sed_emit_chunk(
 }
 
 ///|
-fn sed_find_newline(text : String) -> Int {
+fn sed_find_newline(text : String) -> Int32 {
   for i = 0; i < text.length(); i = i + 1 {
     if text[i].to_int().unsafe_to_char() == '\n' {
       return i
@@ -32,9 +32,9 @@ fn sed_find_newline(text : String) -> Int {
 ///|
 fn sed_find_label_index(
   names : Array[String],
-  indices : Array[Int],
+  indices : Array[Int32],
   label : String,
-) -> Int {
+) -> Int32 {
   for i = 0; i < names.length(); i = i + 1 {
     if names[i] == label {
       return indices[i]
@@ -44,7 +44,7 @@ fn sed_find_label_index(
 }
 
 ///|
-fn sed_find_group_end(commands : Array[SedCommand], start_idx : Int) -> Int {
+fn sed_find_group_end(commands : Array[SedCommand], start_idx : Int32) -> Int32 {
   let mut depth = 0
   for i = start_idx; i < commands.length(); i = i + 1 {
     match commands[i].kind {
@@ -153,8 +153,8 @@ fn ExecContext::sed_append_write(
 fn sed_address_applies(
   address : SedAddressRange?,
   line : String,
-  line_no : Int,
-  total_lines : Int,
+  line_no : Int32,
+  total_lines : Int32,
   state : SedRangeState,
   last_regex : @regex.GrepMatcher?,
 ) -> (Bool, SedRangeState, @regex.GrepMatcher?) {
@@ -264,8 +264,8 @@ fn sed_address_applies(
 fn sed_address_tick_skipped(
   address : SedAddressRange?,
   line : String,
-  line_no : Int,
-  total_lines : Int,
+  line_no : Int32,
+  total_lines : Int32,
   state : SedRangeState,
   last_regex : @regex.GrepMatcher?,
 ) -> (SedRangeState, @regex.GrepMatcher?) {
@@ -355,8 +355,8 @@ fn sed_address_tick_skipped(
 fn sed_address_matches(
   address : SedAddress,
   line : String,
-  line_no : Int,
-  total_lines : Int,
+  line_no : Int32,
+  total_lines : Int32,
   last_regex : @regex.GrepMatcher?,
 ) -> (Bool, @regex.GrepMatcher?) {
   match address {
@@ -378,8 +378,8 @@ fn sed_substitute_line(
   matcher : @regex.GrepMatcher,
   replacement : String,
   global : Bool,
-  occurrence : Int,
-  literal_ampersand? : Bool = false,
+  occurrence : Int32,
+  literal_ampersand~ : Bool = false,
 ) -> (String, Bool) {
   if !global {
     if occurrence > 1 {
@@ -526,7 +526,7 @@ fn apply_sed_replacement(
   template : String,
   matched : String,
   groups : Array[String],
-  literal_ampersand? : Bool = false,
+  literal_ampersand~ : Bool = false,
 ) -> String {
   let out = StringBuilder::new()
   let mut i = 0

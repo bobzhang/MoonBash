@@ -17,7 +17,7 @@ pub fn CSV::data(self : CSV) -> Array[Array[String]] {
 }
 
 ///|
-pub fn CSV::shape(self : CSV) -> (Int, Int) {
+pub fn CSV::shape(self : CSV) -> (Int32, Int32) {
   let row_count = self.rows.length()
   let column_count = if row_count > 0 { self.rows[0].length() } else { 0 }
   (row_count, column_count)
@@ -27,14 +27,14 @@ pub fn CSV::shape(self : CSV) -> (Int, Int) {
 pub fn CSV::new() -> CSV {
   let headers : Array[String] = Array::new()
   let rows : Array[Array[String]] = Array::new()
-  { headers, rows }
+  { headers, rows, }
 }
 
 ///|
 pub fn CSV::from_array(
   data : Array[Array[String]],
-  has_header? : Bool = true,
-  generate_headers? : Bool = true,
+  has_header~ : Bool = true,
+  generate_headers~ : Bool = true,
 ) -> CSV {
   if data.is_empty() {
     return CSV::new()
@@ -46,7 +46,7 @@ pub fn CSV::from_array(
     for i = 1; i < data.length(); i = i + 1 {
       rows.push(data[i])
     }
-    return { headers, rows }
+    return { headers, rows, }
   }
 
   if generate_headers {
@@ -55,7 +55,7 @@ pub fn CSV::from_array(
     for i = 0; i < column_count; i = i + 1 {
       headers.push("column\{i + 1}")
     }
-    return { headers, rows: data }
+    return { headers, rows: data, }
   }
 
   let column_count = data[0].length()
@@ -63,13 +63,13 @@ pub fn CSV::from_array(
   for _i = 0; _i < column_count; _i = _i + 1 {
     headers.push("")
   }
-  { headers, rows: data }
+  { headers, rows: data, }
 }
 
 ///|
 pub fn CSV::parse_string(
   data : String,
-  options? : CSVOptions = {
+  options~ : CSVOptions = {
     delimiter: ',',
     allow_newlines_in_quotes: true,
     quote_char: '"',
@@ -77,14 +77,14 @@ pub fn CSV::parse_string(
     trim_spaces: false,
   },
 ) -> CSV {
-  let reader : StringReader = { source: data, pos: 0 }
+  let reader : StringReader = { source: data, pos: 0, }
   CSV::from_array(parse(reader, options~))
 }
 
 ///|
 pub fn CSV::parse_buffer(
   data : @buffer.Buffer,
-  options? : CSVOptions = {
+  options~ : CSVOptions = {
     delimiter: ',',
     allow_newlines_in_quotes: true,
     quote_char: '"',
@@ -102,7 +102,7 @@ pub fn CSV::parse_buffer(
 ///|
 pub fn CSV::parse_bytes(
   data : Bytes,
-  options? : CSVOptions = {
+  options~ : CSVOptions = {
     delimiter: ',',
     allow_newlines_in_quotes: true,
     quote_char: '"',
@@ -110,6 +110,6 @@ pub fn CSV::parse_bytes(
     trim_spaces: false,
   },
 ) -> CSV {
-  let reader : StringReader = { source: data.to_unchecked_string(), pos: 0 }
+  let reader : StringReader = { source: data.to_unchecked_string(), pos: 0, }
   CSV::from_array(parse(reader, options~))
 }

@@ -130,7 +130,7 @@ fn jq_strip_all_ws(text : String) -> String {
 }
 
 ///|
-fn jq_parse_positive_int_at(text : String, start : Int) -> (Int, Int)? {
+fn jq_parse_positive_int_at(text : String, start : Int32) -> (Int32, Int32)? {
   if start < 0 || start >= text.length() {
     return None
   }
@@ -159,7 +159,7 @@ fn jq_parse_positive_int_at(text : String, start : Int) -> (Int, Int)? {
 }
 
 ///|
-fn jq_parse_signed_int_at(text : String, start : Int) -> (Int, Int)? {
+fn jq_parse_signed_int_at(text : String, start : Int32) -> (Int32, Int32)? {
   if start < 0 || start >= text.length() {
     return None
   }
@@ -179,7 +179,7 @@ fn jq_parse_signed_int_at(text : String, start : Int) -> (Int, Int)? {
 }
 
 ///|
-fn jq_array_contains_int(xs : Array[Int], target : Int) -> Bool {
+fn jq_array_contains_int(xs : Array[Int32], target : Int32) -> Bool {
   for x in xs {
     if x == target {
       return true
@@ -208,8 +208,8 @@ fn jq_emit_bool_stream(values : Array[Bool]) -> String {
 }
 
 ///|
-fn jq_range_values_from_args(args : Array[Int]) -> Array[Int] {
-  let out : Array[Int] = []
+fn jq_range_values_from_args(args : Array[Int32]) -> Array[Int32] {
+  let out : Array[Int32] = []
   let start = if args.length() >= 1 {
     if args.length() == 1 {
       0
@@ -248,11 +248,11 @@ fn jq_range_values_from_args(args : Array[Int]) -> Array[Int] {
 }
 
 ///|
-fn jq_parse_range_call_at(text : String, pos : Int) -> (Array[Int], Int)? {
+fn jq_parse_range_call_at(text : String, pos : Int32) -> (Array[Int32], Int32)? {
   if !jq_starts_with_at(text, pos, "range(") {
     return None
   }
-  let args : Array[Int] = []
+  let args : Array[Int32] = []
   let mut i = pos + 6
   while i < text.length() {
     match jq_parse_signed_int_at(text, i) {
@@ -338,7 +338,7 @@ fn jq_rewrite_static_in_cases(filter : String) -> String {
 }
 
 ///|
-fn jq_parse_simple_repeat_literal(expr : String) -> Int? {
+fn jq_parse_simple_repeat_literal(expr : String) -> Int32? {
   if expr.length() < 3 {
     return None
   }
@@ -361,7 +361,7 @@ fn jq_parse_simple_repeat_literal(expr : String) -> Int? {
 }
 
 ///|
-fn jq_extract_repeat_literal_count(filter : String) -> Int? {
+fn jq_extract_repeat_literal_count(filter : String) -> Int32? {
   let normalized = jq_strip_all_ws(filter)
   match jq_parse_simple_repeat_literal(normalized) {
     Some(count) => Some(count)

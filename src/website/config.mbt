@@ -5,10 +5,10 @@ priv struct DemoStep {
   label : String
   text : String
   command : String
-  expect_exit_code : Int?
+  expect_exit_code : Int32?
   expect_stdout_includes : Array[String]
   expect_stderr_includes : Array[String]
-  delay_ms : Int
+  delay_ms : Int32
 }
 
 ///|
@@ -18,7 +18,7 @@ priv struct DemoMode {
   summary : String
   intro : String
   autoplay : Bool
-  initial_delay_ms : Int
+  initial_delay_ms : Int32
   steps : Array[DemoStep]
 }
 
@@ -34,7 +34,7 @@ priv struct WebsiteConfig {
   showcase_title : String
   default_mode : String
   verification_auto_start : Bool
-  verification_initial_delay_ms : Int
+  verification_initial_delay_ms : Int32
   command_names : Array[String]
   env : Map[String, String]
   cwd : String
@@ -44,7 +44,7 @@ priv struct WebsiteConfig {
 priv struct ExecResult {
   stdout : String
   stderr : String
-  exit_code : Int
+  exit_code : Int32
   env : Map[String, String]
 }
 
@@ -176,7 +176,7 @@ fn create_showcase_step(
   label : String,
   command : String,
   expect_stdout_includes : Array[String],
-  delay_ms? : Int = 180,
+  delay_ms~ : Int32 = 180,
 ) -> DemoStep {
   {
     kind: "command",

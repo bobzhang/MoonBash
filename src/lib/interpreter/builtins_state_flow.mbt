@@ -369,7 +369,7 @@ fn ExecContext::parse_loop_control_count_arg(
   self : ExecContext,
   builtin_name : String,
   args : Array[String],
-) -> Int? {
+) -> Int32? {
   if args.length() == 0 {
     return Some(1)
   }
@@ -715,7 +715,10 @@ fn ExecContext::capture_local_binding(
 }
 
 ///|
-fn ExecContext::restore_local_bindings(self : ExecContext, depth : Int) -> Unit {
+fn ExecContext::restore_local_bindings(
+  self : ExecContext,
+  depth : Int32,
+) -> Unit {
   if depth <= 0 {
     return
   }
@@ -747,17 +750,17 @@ fn ExecContext::restore_local_bindings(self : ExecContext, depth : Int) -> Unit 
 }
 
 ///|
-fn local_scope_names_key(depth : Int) -> String {
+fn local_scope_names_key(depth : Int32) -> String {
   "__MOON_BASH_LOCAL_NAMES__" + depth.to_string()
 }
 
 ///|
-fn local_scope_saved_set_key(depth : Int, name : String) -> String {
+fn local_scope_saved_set_key(depth : Int32, name : String) -> String {
   "__MOON_BASH_LOCAL_SET__" + depth.to_string() + "__" + name
 }
 
 ///|
-fn local_scope_saved_value_key(depth : Int, name : String) -> String {
+fn local_scope_saved_value_key(depth : Int32, name : String) -> String {
   "__MOON_BASH_LOCAL_VAL__" + depth.to_string() + "__" + name
 }
 
@@ -1557,7 +1560,7 @@ fn parse_name_value_spec(spec : String) -> (String, String?, Bool)? {
 }
 
 ///|
-fn find_name_value_separator_pos(spec : String) -> Int {
+fn find_name_value_separator_pos(spec : String) -> Int32 {
   let mut bracket_depth = 0
   for i = 0; i < spec.length(); i = i + 1 {
     let ch = spec[i].to_int().unsafe_to_char()
@@ -1586,7 +1589,7 @@ fn getopts_char_string(ch : Char) -> String {
 }
 
 ///|
-fn getopts_find_option(spec : String, ch : Char) -> Int {
+fn getopts_find_option(spec : String, ch : Char) -> Int32 {
   for i = 0; i < spec.length(); i = i + 1 {
     if spec[i].to_int().unsafe_to_char() == ch {
       return i
@@ -1596,7 +1599,7 @@ fn getopts_find_option(spec : String, ch : Char) -> Int {
 }
 
 ///|
-fn getopts_option_takes_argument(spec : String, opt_idx : Int) -> Bool {
+fn getopts_option_takes_argument(spec : String, opt_idx : Int32) -> Bool {
   if opt_idx < 0 || opt_idx + 1 >= spec.length() {
     return false
   }

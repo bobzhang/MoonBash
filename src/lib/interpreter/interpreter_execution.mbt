@@ -27,7 +27,7 @@ fn ExecContext::execute_statement(
   stmt : @ast.Statement,
 ) -> Unit {
   let pipelines : Array[@ast.Pipeline] = []
-  let ops : Array[Int] = []
+  let ops : Array[Int32] = []
   self.flatten_statement(stmt, pipelines, ops)
   if pipelines.length() == 0 {
     return
@@ -72,7 +72,7 @@ fn ExecContext::flatten_statement(
   self : ExecContext,
   stmt : @ast.Statement,
   pipelines : Array[@ast.Pipeline],
-  ops : Array[Int],
+  ops : Array[Int32],
 ) -> Unit {
   match stmt {
     @ast.Statement::Pipeline(pipeline) => pipelines.push(pipeline)
@@ -1047,7 +1047,7 @@ fn assignment_builtin_active_for_expanded_words(
 }
 
 ///|
-fn parse_command_builtin_mode_token(token : String) -> Int? {
+fn parse_command_builtin_mode_token(token : String) -> Int32? {
   if token.length() < 2 || token[0].to_int().unsafe_to_char() != '-' {
     return None
   }

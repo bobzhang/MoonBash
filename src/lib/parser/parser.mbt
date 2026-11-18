@@ -2,7 +2,7 @@
 // Recursive descent parser that converts token stream into AST.
 
 ///|
-let max_depth : Int = 100
+let max_depth : Int32 = 100
 
 // ============================================================================
 // Parser State
@@ -11,8 +11,8 @@ let max_depth : Int = 100
 ///|
 pub(all) struct Parser {
   tokens : Array[@ast.Token]
-  mut pos : Int
-  mut depth : Int
+  mut pos : Int32
+  mut depth : Int32
 }
 
 // ============================================================================
@@ -31,7 +31,7 @@ pub fn parse(input : String) -> @ast.Script raise @ast.BashError {
 pub fn parse_tokens(
   tokens : Array[@ast.Token],
 ) -> @ast.Script raise @ast.BashError {
-  let parser : Parser = { tokens, pos: 0, depth: 0 }
+  let parser : Parser = { tokens, pos: 0, depth: 0, }
   let script = parser.parse_script()
   parser.skip_newlines()
   if !parser.at_end() {
@@ -330,7 +330,7 @@ fn Parser::is_script_terminator(self : Parser) -> Bool {
 }
 
 ///|
-fn Parser::peek_at_offset(self : Parser, offset : Int) -> @ast.Token {
+fn Parser::peek_at_offset(self : Parser, offset : Int32) -> @ast.Token {
   let idx = self.pos + offset
   if idx >= self.tokens.length() {
     @ast.Token::EOF
@@ -416,7 +416,7 @@ fn Parser::parse_pipeline(self : Parser) -> @ast.Pipeline raise @ast.BashError {
     }
   }
 
-  { negated, commands, pipe_stderr }
+  { negated, commands, pipe_stderr, }
 }
 
 // ============================================================================
@@ -571,7 +571,7 @@ fn Parser::parse_double_bracket_simple_command(
     redirections.push(self.parse_redirection())
   }
 
-  { assignments, words, redirections }
+  { assignments, words, redirections, }
 }
 
 // ============================================================================
@@ -598,7 +598,7 @@ fn Parser::parse_simple_command(
         } else {
           None
         }
-        assignments.push({ name, value: word_value, append })
+        assignments.push({ name, value: word_value, append, })
       }
       _ => break
     }
@@ -636,7 +636,7 @@ fn Parser::parse_simple_command(
 
   self.consume_heredoc_bodies(redirections)
 
-  { assignments, words, redirections }
+  { assignments, words, redirections, }
 }
 
 // ============================================================================
@@ -681,7 +681,7 @@ fn Parser::parse_redirections(
 fn Parser::parse_redirection(
   self : Parser,
 ) -> @ast.Redirection raise @ast.BashError {
-  let mut fd : Int? = None
+  let mut fd : Int32? = None
 
   // Check for fd number prefix
   match self.peek() {
@@ -735,7 +735,7 @@ fn Parser::parse_redirection(
     tok => raise @ast.BashError("expected word after redirection, got \{tok}")
   }
 
-  { fd, fd_var: None, op, target }
+  { fd, fd_var: None, op, target, }
 }
 
 ///|
@@ -769,7 +769,7 @@ fn Parser::consume_heredoc_bodies(
         )
         let body = self.read_heredoc_until(delimiter)
         let body_word : @ast.Word = if quoted_delim {
-          { parts: [@ast.WordPart::SingleQuoted(body)] }
+          { parts: [@ast.WordPart::SingleQuoted(body)], }
         } else {
           parse_word_content(body)
         }
@@ -978,7 +978,7 @@ fn Parser::parse_function_def(
     _ => raise @ast.BashError("function body must be a compound command")
   }
   let redirections = self.parse_redirections()
-  @ast.Command::FunctionDef({ name, body, redirections })
+  @ast.Command::FunctionDef({ name, body, redirections, })
 }
 
 ///|
@@ -1024,7 +1024,7 @@ fn Parser::parse_posix_function_def(
     _ => raise @ast.BashError("function body must be a compound command")
   }
   let redirections = self.parse_redirections()
-  @ast.Command::FunctionDef({ name, body, redirections })
+  @ast.Command::FunctionDef({ name, body, redirections, })
 }
 
 // ============================================================================
@@ -1034,7 +1034,7 @@ fn Parser::parse_posix_function_def(
 ///|
 /// Create a word with a single literal part.
 fn make_literal_word(s : String) -> @ast.Word {
-  { parts: [@ast.WordPart::Literal(s)] }
+  { parts: [@ast.WordPart::Literal(s)], }
 }
 
 ///|

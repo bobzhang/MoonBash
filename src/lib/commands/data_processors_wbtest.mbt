@@ -3,7 +3,7 @@
 ///|
 fn test_data_processors_context(
   args : Array[String],
-  stdin_content? : String = "",
+  stdin_content~ : String = "",
 ) -> CommandContext {
   {
     args,

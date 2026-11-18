@@ -18,7 +18,7 @@ priv struct NetHtmlToMarkdownConfig {
 }
 
 ///|
-fn net_arg_char_at(arg : String, idx : Int) -> Char {
+fn net_arg_char_at(arg : String, idx : Int32) -> Char {
   arg[idx].to_int().unsafe_to_char()
 }
 

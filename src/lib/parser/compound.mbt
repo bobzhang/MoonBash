@@ -42,7 +42,7 @@ fn Parser::parse_if(self : Parser) -> @ast.IfClause raise @ast.BashError {
 
   self.skip_newlines()
   self.expect(@ast.Token::Fi)
-  { condition, then_branch, elif_branches, else_branch }
+  { condition, then_branch, elif_branches, else_branch, }
 }
 
 // ============================================================================
@@ -124,7 +124,7 @@ fn Parser::parse_for(
   let body = self.parse_script()
   self.skip_newlines()
   self.expect(@ast.Token::Done)
-  @ast.CompoundCommand::For({ var_name, words, body })
+  @ast.CompoundCommand::For({ var_name, words, body, })
 }
 
 ///|
@@ -197,7 +197,7 @@ fn Parser::parse_while(self : Parser) -> @ast.WhileClause raise @ast.BashError {
   let body = self.parse_script()
   self.skip_newlines()
   self.expect(@ast.Token::Done)
-  { condition, body }
+  { condition, body, }
 }
 
 // ============================================================================
@@ -216,7 +216,7 @@ fn Parser::parse_until(self : Parser) -> @ast.UntilClause raise @ast.BashError {
   let body = self.parse_script()
   self.skip_newlines()
   self.expect(@ast.Token::Done)
-  { condition, body }
+  { condition, body, }
 }
 
 // ============================================================================
@@ -287,10 +287,10 @@ fn Parser::parse_case(self : Parser) -> @ast.CaseClause raise @ast.BashError {
       @ast.CaseTerminator::Break
     }
 
-    items.push({ patterns, body, terminator })
+    items.push({ patterns, body, terminator, })
     self.skip_newlines()
   }
 
   self.expect(@ast.Token::Esac)
-  { word, items }
+  { word, items, }
 }

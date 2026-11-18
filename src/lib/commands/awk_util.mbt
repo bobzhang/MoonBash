@@ -361,8 +361,8 @@ fn awk_eval_split_delim(
   expr : String,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> String {
@@ -378,8 +378,8 @@ fn awk_eval_sub_pattern_ast(
   expr_ast : AwkExprAst,
   line : String,
   fields : Array[String],
-  nr : Int,
-  nf : Int,
+  nr : Int32,
+  nf : Int32,
   vars : Map[String, String],
   array_vars : Map[String, String],
 ) -> String {
@@ -441,7 +441,7 @@ fn awk_strip_outer_parens(expr : String) -> String {
 }
 
 ///|
-fn awk_find_top_level_ternary_colon(expr : String, start_idx : Int) -> Int {
+fn awk_find_top_level_ternary_colon(expr : String, start_idx : Int32) -> Int32 {
   let mut quote : Char? = None
   let mut paren_depth = 0
   let mut bracket_depth = 0
@@ -488,7 +488,7 @@ fn awk_replace_first_literal(
   source : String,
   pattern : String,
   replacement : String,
-) -> (String, Int) {
+) -> (String, Int32) {
   if pattern.length() == 0 {
     return (source, 0)
   }
@@ -522,7 +522,7 @@ fn awk_replace_all_literal(
   source : String,
   pattern : String,
   replacement : String,
-) -> (String, Int) {
+) -> (String, Int32) {
   if pattern.length() == 0 {
     return (source, 0)
   }
@@ -562,7 +562,7 @@ fn awk_replace_all_literal(
 }
 
 ///|
-fn awk_find_top_level_token(expr : String, token : String) -> Int {
+fn awk_find_top_level_token(expr : String, token : String) -> Int32 {
   if token.length() == 0 || token.length() > expr.length() {
     return -1
   }
@@ -629,7 +629,7 @@ fn awk_find_top_level_token(expr : String, token : String) -> Int {
 }
 
 ///|
-fn awk_find_top_level_operator(expr : String, ops : String) -> Int {
+fn awk_find_top_level_operator(expr : String, ops : String) -> Int32 {
   let mut quote : Char? = None
   let mut paren_depth = 0
   let mut bracket_depth = 0

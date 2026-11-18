@@ -270,7 +270,7 @@ fn cmd_touch(ctx : CommandContext) -> @ast.ExecResult {
 
 ///|
 /// Parse integer from string with optional sign.
-fn cmd_find_parse_int(s : String) -> Int {
+fn cmd_find_parse_int(s : String) -> Int32 {
   let mut result = 0
   let mut neg = false
   let mut start = 0
@@ -344,7 +344,7 @@ fn cmd_find_display_basename(path : String) -> String {
 }
 
 ///|
-fn cmd_find_parse_octal(s : String) -> Int {
+fn cmd_find_parse_octal(s : String) -> Int32 {
   let mut value = 0
   let mut i = 0
   if s.length() >= 2 &&
@@ -367,7 +367,7 @@ fn cmd_find_parse_octal(s : String) -> Int {
 }
 
 ///|
-fn cmd_find_perm_matches(expr : String, mode : Int) -> Bool {
+fn cmd_find_perm_matches(expr : String, mode : Int32) -> Bool {
   if expr.length() == 0 {
     return false
   }
@@ -390,7 +390,7 @@ fn cmd_find_matches(
   display_path : String,
   is_file : Bool,
   is_directory : Bool,
-  mode : Int,
+  mode : Int32,
   groups : Array[Array[(String, String)]],
   has_predicates : Bool,
 ) -> Bool {
@@ -442,9 +442,9 @@ fn cmd_find_walk(
   fs : @fs.InMemoryFs,
   abs_path : String,
   display_path : String,
-  depth : Int,
-  mindepth : Int,
-  maxdepth : Int?,
+  depth : Int32,
+  mindepth : Int32,
+  maxdepth : Int32?,
   groups : Array[Array[(String, String)]],
   has_predicates : Bool,
   matches : Array[String],
@@ -512,7 +512,7 @@ fn cmd_find_walk(
 
 ///|
 /// ASCII byte-wise string compare for deterministic ordering.
-fn cmd_find_compare_ascii(a : String, b : String) -> Int {
+fn cmd_find_compare_ascii(a : String, b : String) -> Int32 {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
   for i = 0; i < min_len; i = i + 1 {
     if a[i] < b[i] {
@@ -551,7 +551,7 @@ fn cmd_find(ctx : CommandContext) -> @ast.ExecResult {
   let groups : Array[Array[(String, String)]] = []
   let mut current_group : Array[(String, String)] = []
   let mut has_predicates = false
-  let mut maxdepth : Int? = None
+  let mut maxdepth : Int32? = None
   let mut mindepth = 0
 
   while i < ctx.args.length() {

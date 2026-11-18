@@ -213,9 +213,9 @@ fn compgen_glob_match(value : String, pattern : String) -> Bool {
 ///|
 fn compgen_glob_match_at(
   value : String,
-  vi : Int,
+  vi : Int32,
   pattern : String,
-  pi : Int,
+  pi : Int32,
 ) -> Bool {
   if pi >= pattern.length() {
     return vi >= value.length()
@@ -374,7 +374,7 @@ fn completion_tilde_path(path : String, home : String) -> String {
 }
 
 ///|
-fn completion_last_slash(text : String) -> Int {
+fn completion_last_slash(text : String) -> Int32 {
   let mut idx = -1
   for i = 0; i < text.length(); i = i + 1 {
     if text[i].to_int().unsafe_to_char() == '/' {

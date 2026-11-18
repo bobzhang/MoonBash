@@ -7,10 +7,10 @@
 
 ///|
 /// The two-byte magic header that marks gzip format.
-let gzip_magic_0 : Int = 0x1F
+let gzip_magic_0 : Int32 = 0x1F
 
 ///|
-let gzip_magic_1 : Int = 0x8B
+let gzip_magic_1 : Int32 = 0x8B
 
 ///|
 /// Check whether content starts with the gzip magic header.

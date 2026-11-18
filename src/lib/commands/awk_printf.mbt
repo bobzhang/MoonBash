@@ -74,7 +74,7 @@ fn awk_parse_printf(action : String) -> (String, Array[String]) {
 }
 
 ///|
-fn awk_pow10_int(exp : Int) -> Int {
+fn awk_pow10_int(exp : Int32) -> Int32 {
   let mut out = 1
   let mut i = 0
   let limit = if exp < 0 { 0 } else if exp > 9 { 9 } else { exp }
@@ -86,7 +86,7 @@ fn awk_pow10_int(exp : Int) -> Int {
 }
 
 ///|
-fn awk_to_hex_string(value : Int) -> String {
+fn awk_to_hex_string(value : Int32) -> String {
   if value == 0 {
     return "0"
   }
@@ -106,7 +106,7 @@ fn awk_to_hex_string(value : Int) -> String {
 }
 
 ///|
-fn awk_pad_left(text : String, width : Int, pad : Char) -> String {
+fn awk_pad_left(text : String, width : Int32, pad : Char) -> String {
   if width <= text.length() {
     return text
   }
@@ -121,7 +121,7 @@ fn awk_pad_left(text : String, width : Int, pad : Char) -> String {
 }
 
 ///|
-fn awk_pad_right(text : String, width : Int, pad : Char) -> String {
+fn awk_pad_right(text : String, width : Int32, pad : Char) -> String {
   if width <= text.length() {
     return text
   }
@@ -138,7 +138,7 @@ fn awk_pad_right(text : String, width : Int, pad : Char) -> String {
 ///|
 fn awk_apply_printf_width(
   text : String,
-  width : Int,
+  width : Int32,
   left_align : Bool,
   zero_pad : Bool,
 ) -> String {
@@ -161,7 +161,7 @@ fn awk_apply_printf_width(
 ///|
 fn awk_format_fixed_number(
   raw : Double,
-  precision : Int,
+  precision : Int32,
   plus_sign : Bool,
   space_sign : Bool,
 ) -> String {

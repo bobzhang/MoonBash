@@ -3,8 +3,8 @@
 
 ///|
 fn format_nl_number(
-  number : Int,
-  width : Int,
+  number : Int32,
+  width : Int32,
   number_format : String,
 ) -> String {
   let text = number.to_string()
@@ -20,7 +20,7 @@ fn format_nl_number(
 }
 
 ///|
-fn fold_text(input : String, width : Int, break_spaces : Bool) -> String {
+fn fold_text(input : String, width : Int32, break_spaces : Bool) -> String {
   let out = StringBuilder::new()
   let line = StringBuilder::new()
 
@@ -44,7 +44,11 @@ fn fold_text(input : String, width : Int, break_spaces : Bool) -> String {
 }
 
 ///|
-fn fold_single_line(line : String, width : Int, break_spaces : Bool) -> String {
+fn fold_single_line(
+  line : String,
+  width : Int32,
+  break_spaces : Bool,
+) -> String {
   if line.length() <= width {
     return line
   }
@@ -85,7 +89,7 @@ fn fold_single_line(line : String, width : Int, break_spaces : Bool) -> String {
 }
 
 ///|
-fn expand_tabs(input : String, tab_width : Int) -> String {
+fn expand_tabs(input : String, tab_width : Int32) -> String {
   let width = if tab_width <= 0 { 8 } else { tab_width }
   let out = StringBuilder::new()
   let mut col = 0
@@ -112,9 +116,9 @@ fn expand_tabs(input : String, tab_width : Int) -> String {
 ///|
 fn write_unexpand_space_run(
   out : StringBuilder,
-  count : Int,
-  start_col : Int,
-  tab_width : Int,
+  count : Int32,
+  start_col : Int32,
+  tab_width : Int32,
 ) -> Unit {
   let mut remaining = count
   let mut col = start_col
@@ -136,7 +140,11 @@ fn write_unexpand_space_run(
 }
 
 ///|
-fn unexpand_tabs(input : String, tab_width : Int, convert_all : Bool) -> String {
+fn unexpand_tabs(
+  input : String,
+  tab_width : Int32,
+  convert_all : Bool,
+) -> String {
   let width = if tab_width <= 0 { 8 } else { tab_width }
   let out = StringBuilder::new()
   let mut col = 0
@@ -226,7 +234,7 @@ fn format_column_table(input : String, separator : String?) -> String {
   }
 
   let rows : Array[Array[String]] = []
-  let widths : Array[Int] = []
+  let widths : Array[Int32] = []
   for line in lines {
     let fields = match separator {
       Some(delim) => split_string_by_delimiter(line, delim)
@@ -268,7 +276,7 @@ fn split_join_fields(line : String, delimiter : String) -> Array[String] {
 }
 
 ///|
-fn join_field_value(fields : Array[String], index : Int) -> String {
+fn join_field_value(fields : Array[String], index : Int32) -> String {
   if index >= 0 && index < fields.length() {
     fields[index]
   } else {
@@ -295,8 +303,8 @@ fn join_parts_with_delimiter(
 fn format_join_line(
   fields1 : Array[String],
   fields2 : Array[String],
-  join_idx1 : Int,
-  join_idx2 : Int,
+  join_idx1 : Int32,
+  join_idx2 : Int32,
   delimiter : String,
 ) -> String {
   let parts : Array[String] = []
@@ -326,7 +334,7 @@ fn reverse_string(s : String) -> String {
 }
 
 ///|
-fn compare_ints(a : Int, b : Int) -> Int {
+fn compare_ints(a : Int32, b : Int32) -> Int32 {
   if a < b {
     -1
   } else if a > b {
@@ -337,7 +345,7 @@ fn compare_ints(a : Int, b : Int) -> Int {
 }
 
 ///|
-fn compare_strings(a : String, b : String) -> Int {
+fn compare_strings(a : String, b : String) -> Int32 {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
   for i = 0; i < min_len; i = i + 1 {
     if a[i] < b[i] {
@@ -357,7 +365,7 @@ fn compare_strings(a : String, b : String) -> Int {
 }
 
 ///|
-fn compare_sort_text(a : String, b : String) -> Int {
+fn compare_sort_text(a : String, b : String) -> Int32 {
   let min_len = if a.length() < b.length() { a.length() } else { b.length() }
   for i = 0; i < min_len; i = i + 1 {
     let ch_a = a[i].to_int().unsafe_to_char()
@@ -377,7 +385,7 @@ fn compare_sort_text(a : String, b : String) -> Int {
 }
 
 ///|
-fn compare_sort_char(a : Char, b : Char) -> Int {
+fn compare_sort_char(a : Char, b : Char) -> Int32 {
   let (a_class, a_base, a_case, a_code) = sort_char_key(a)
   let (b_class, b_base, b_case, b_code) = sort_char_key(b)
   if a_class < b_class {
@@ -408,7 +416,7 @@ fn compare_sort_char(a : Char, b : Char) -> Int {
 }
 
 ///|
-fn sort_char_key(ch : Char) -> (Int, Int, Int, Int) {
+fn sort_char_key(ch : Char) -> (Int32, Int32, Int32, Int32) {
   let code = ch.to_int()
   if ch >= 'a' && ch <= 'z' {
     (2, code, 0, code)
@@ -456,7 +464,7 @@ fn split_version_tokens(s : String) -> Array[String] {
 }
 
 ///|
-fn compare_version_like(a : String, b : String) -> Int {
+fn compare_version_like(a : String, b : String) -> Int32 {
   let ta = split_version_tokens(a)
   let tb = split_version_tokens(b)
   let max_len = if ta.length() > tb.length() {
@@ -501,7 +509,7 @@ fn is_numeric_token(s : String) -> Bool {
 }
 
 ///|
-fn parse_human_size(s : String) -> Int {
+fn parse_human_size(s : String) -> Int32 {
   let trimmed = ltrim_blanks(s)
   if trimmed.length() == 0 {
     return 0
@@ -557,7 +565,7 @@ fn is_ascii_digit(ch : Char) -> Bool {
 ///|
 fn extract_sort_key(
   line : String,
-  key_field : Int?,
+  key_field : Int32?,
   delimiter : String?,
   ignore_leading_blanks : Bool,
 ) -> String {
